@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+    </style>
+</head>
+
+<body>
+    <h3>객체 값 출력</h3>
+
+    <h4 th:text="${name}"></h4>
+    <h4>[[${name}]]</h4>
+    <input type="text" name="" id="" th:value="${name}">
+    <h4 th:text="${dto}"></h4>
+    <ul>
+        <li>ID : <span th:text="${dto.id}"></span></li>
+        <li>first : <span th:text="${dto.first}"></span></li>
+        <li>last : <span th:text="${dto.last}"></span></li>
+        <li>regTime : <span th:text="${dto.regDateTime}"></span></li>
+    </ul>
+    <!-- 리스트 출력 -->
+    <ul>
+        <li th:each=" dto: ${list}" th:text="${dto}"></li>
+    </ul>
+    <!-- 리스트 테이블 출력 -->
+    <table>
+        <tr>
+            <th>아이디</th>
+            <th>first</th>
+            <th>last</th>
+            <th>regTime</th>
+        </tr>
+        <tr th:each=" dto : ${list}">
+            <td th:text="${dto.id}"></td>
+            <td th:text="${dto.first}"></td>
+            <td th:text="${dto.last}"></td>
+            <!-- ${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')} 날짜 형식 원하는대로 지정 -->
+            <td th:text="${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')}"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <th>아이디</th>
+            <th>first</th>
+            <th>last</th>
+            <th>regTime</th>
+            <th>index</th>
+            <th>count</th>
+            <th>size</th>
+            <th>odd/even</th>
+        </tr>
+        <!-- each를 쓸때 state 를 이용해 추가 정보 추출  -->
+        <tr th:each=" dto,state : ${list}">
+            <td th:text="${dto.id}"></td>
+            <td th:text="${dto.first}"></td>
+            <td th:text="${dto.last}"></td>
+            <!-- ${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')} 날짜 형식 원하는대로 지정 -->
+            <td th:text="${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')}"></td>
+            <!-- 인덱스 번호  -->
+            <td th:text="${state.index}"></td>
+            <!-- 카운트 번호 -->
+            <td th:text="${state.count}"></td>
+            <!-- 값 사이즈  -->
+            <td th:text="${state.size}"></td>
+            <!-- 홀수or짝수 true/false -->
+            <td th:text="${state.odd} + '/' + ${state.even}"></td>
+        </tr>
+    </table>
+    <!-- th:if ~ th:unless => if~else 와 같은 개념 -->
+    <table>
+        <tr>
+            <th>아이디</th>
+            <th>first</th>
+            <th>last</th>
+            <th>regTime</th>
+        </tr>
+        <tr th:each=" dto : ${list}" th:if="${dto.id % 5 == 0}">
+            <td th:text="${dto.id}"></td>
+            <td th:text="${dto.first}"></td>
+            <td th:text="${dto.last}"></td>
+            <!-- ${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')} 날짜 형식 원하는대로 지정 -->
+            <td th:text="${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')}"></td>
+        </tr>
+    </table>
+
+    <ul>
+        <li th:each=" dto : ${list}">
+            <span th:if="${dto.id % 5 == 0}" th:text="${'======='+dto.id}"></span>
+            <span th:unless="${dto.id % 5 == 0}" th:text="${dto.id}"></span>
+        </li>
+    </ul>
+    <h3>삼항 연산자로 변경해보기</h3>
+    <ul>
+        <li th:each=" dto : ${list}">
+            <span th:text="${dto.id % 5 == 0}?${'--------'+dto.id % 5 == 0}:${dto.id}"></span>
+        </li>
+    </ul>
+
+    <h3>swich-case 로 변경해보기</h3>
+    <ul>
+        <li th:each=" dto,state : ${list}" th:switch="${state.even}">
+            <span th:case="true" th:text="${dto.first}"></span>
+            <span th:case="false" th:text="${dto.last}"></span>
+        </li>
+    </ul>
+    <!-- 스크립트로도 불러올 수 있음 -->
+    <script>
+        const name = "[[${ name }]]";
+    </script>
+</body>
+
+</html>

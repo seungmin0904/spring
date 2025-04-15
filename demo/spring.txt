@@ -1,0 +1,160 @@
+서버단 작성
+1) spring framework : 웹 개발 할때 주로 사용 / 빈번한 설정 작업 요구
+2) spring boot : spring framework의 간편화 버전
+
+프로젝트 생성
+1. 빌드 툴 설정
+build : 프로젝트 생성, 라이브러리 설정, 코드작업, 컴파일, 테스트, 패키지 작성, 배포
+1) gradle : text 기반 , 후발주자(maven개선)
+2) maven : xml 기반
+
+2. spring boot version 선택 : 3.4.4 spring initialize
+4. 패키지명 : com.example.demo (자유지정) ㅁㄴㅇ.ㅁㄴㅇ.ㅁㄴㅇ
+5. 패키징타입 : jar(java압축파일), war(java web 압축파일-jsp)
+6. java 버전 선택 : 부트버전에 따라 선택이 달라질 수 있음 
+7. 필요 라이브 러리 선택 :
+    spring web , dev tools, thymeleaf, lombok
+
+    화면(front) 단 작성 : html + css + javascript + java
+    1) jsp 활용 : *.jsp
+        html + java 동시 작성 가능
+        spring boot 에서 사용하기 위해서 사전 설정이 필요함
+
+    2) 템플릿 엔진 활용 : *.html
+        thymeleaf, mustache, groovy, freemaker, velocity
+       
+
+    스프링의 주요 개념
+    1) IoC(Inversion of Control) : 메소드나 객체의 호출 작업을 개발자가 결정하는 것이 아니라 외부(Spring Container)에서 결정(제어의 역전)
+
+        컨테이너는 어느 객체를 생성 할 것인지 알아야 함 => 어노테이션으로 알려주기
+        - 컨테이너가 생성한 객체 : been 
+        - 싱글톤 방식(객체는 하나만 생성)으로 객체 생성 
+        - @Controller, @Service, @Component
+
+    2) 경로 임의로 생성
+        http://localhost:8080/ ==> Controller 파일의 메소드와 매핑
+        
+        uri 설계
+        ex) 게시판 개발 
+        게시글 작성 : /board/create
+        게시글 목록 : /board/list
+        게시글 조회 : /board/read
+        게시글 수정 : /board/update  
+
+
+        @RequestMapping("/board")
+        public class BoardController{
+         @GetMapping("/create")
+        public String method(){
+            return "info";
+          }
+        }
+
+
+         @GetMapping("/update")
+        public void method(){
+            
+        }
+        -String
+        http://localhost:8080/board/create 브라우저 요청 => 컨트롤러 응답 => templates 찾기(templates / return 값 찾기)
+        => templates/info.html 작성
+        
+        -void
+        http://localhost:8080/board/update 브라우저 요청 => 컨트롤러 응답 => templates 찾기(templates / board/update)
+        => templates/board/update.html 작성
+
+    3) 내장 서버: Tomcat(설치 후 사용 - 스프링 부트를 사용한다면 내장되어 있음)
+     http://localhost:8080 : Tomcat 기본 경로 
+    브라우저를 통해 http, https 프로토콜에 응답하는 서버 : SW웹서버(Apache, NginX)
+    WAS(Web Application Server) : 웹서버 + 자바해석 => Tomcat
+    
+    4) 오류 발생 : 오류페이지 caused by 찾기
+       400 : (type=Bad Request) 사용자 입력값 오류
+       404 : 컨트롤러 경로확인
+       405 : 컨트롤러 경로 + 매핑방식 확인 (type=Method Not Allowed, status=405) html action과 관련있음
+            
+
+    5) 사용자 입력값 가져오기 
+        
+
+         1 - 변수 이용
+                
+            postLogin() 괄호 안에 입력값을 불러올 변수명은 html form의 요소의 이름(name)과 
+            그 요소와 맞는 타입을 넣어줌
+                
+            @PostMapping("/login")
+            public void postLogin(String userid, String password) { 
+            log.info("로그인 요청 {},{}", userid, password);
+
+            }
+
+         2 - 커맨드 DTO 폼을 활용해서 관리 
+
+             변수명은 html form의 요소의 이름(name)과 일치해야함
+             templates 페이지까지 입력값이 유지됨
+
+             @PostMapping("/login")
+             public void postLogin(LoginDTO loginDTO) {
+             log.info("로그인 요청 {},{}", loginDTO.getUserid(), loginDTO.getPassword());
+
+             }
+         3 - HttpServletRequest : 사용자의 정보 및 서버의 정보 추출 스프링을 사용 안하면 
+            쓰는 방법
+            -------------------------------------------------------------------------------
+            <ul id="result">
+            <!-- DTO 폼 활용 시 사용자 입력값 가져와서 웹에 보여주는 방법
+             command 객체명 : 첫문자만 소문자로 바꿔서  -->
+            <li>아이디: [[${loginDTO?.userid}]]</li> = ?는 없을수도 있다는 걸 미리 알려주는 용도
+            <li>비밀번호: [[${loginDTO?.password}]]</li>
+            </ul>
+
+            <!-- model 활용 사용자 입력값 화면에 보여주는 방법 ${입력값변수}-->
+            <div id="result" th:text="${result}"></div>
+            -------------------------------------------------------------------------------
+            // HttpServletRequest : 사용자의 정보 및 서버의 정보 추출 스프링을 사용 안하면 
+            쓰는 방법
+            
+            public void postLogin(HttpServletRequest request) {
+            String userid = request.getParameter("userid");
+            String password = request.getParameter("password");
+            String remote = request.getRemoteAddr();
+            String local = request.getLocalAddr();
+            log.info("로그인 요청 {},{}", userid, password);
+            log.info("클라이언트 정보 {},{}", remote, local);
+            }
+
+     6) @ModelAttribute
+        - 별칭
+        - model.addAttribute("num1", num1); == @ModelAttribute("num1") : templates 페이지에서 값을 유지하고 싶다면
+
+        redirect:/ : 다시 주소경로를 요청해서 이동함(다른경로)
+        
+        redirect:/ 로 움직이면서 값을 유지하고 싶다면
+        rttr.addAttribute("name", name); // th:text="${param.name}"
+        rttr.addFlashAttribute("name", name); // th:text="${name}"
+
+
+     7) RedirectAttributes : 컨트롤러에서 움직이는 방식이 redirect 일때만 사용
+        redirect로 움직이면서 특정값을 보내고 싶을때 사용
+        -----------------------------------------------------------------------------------
+        rttr.addAttribute("userid", memberDTO.getUserid());
+        rttr.addAttribute("userid","10"); ?userid=10 => 탬플릿 ${param.userid}
+        rttr.addFlashAttribute("password", "12"); : session 객체에 담는것과 같은 방식 => ${password}
+        return "redirect:/member/login";
+        -----------------------------------------------------------------------------------
+
+     8) 데이터 유지하기
+      -login.html 입력값 => 컨트롤러 => logout.html 까지 입력값을 유지 
+        - forward 방식 : @ModelAttribute , Model , 커맨드 객체(DTO) (내부이동 , 같은요청 안 속성)
+        - redirect 방식 : RedirectAttributes 이용 : (1회성 사용, 새로운 요청 속성)
+
+      -login.html 입력값 => 컨트롤러 => 모든 페이지에서 입력값을 유지 
+        - 세션 : 값을 서버쪽에 저장함(객체 형태로 담는 것 가능)
+            로그인 정보, 장바구니, 사용자 상태 등 지속적으로 필요한 정보에 적합
+         HttpSession 을 이용해 저장 => 필요 없는 경우 제거 or 현재 세션이 유지 되고있는 브라우저를 닫으면 종료됨
+        - 쿠키 : 값을 클라이언트 브라우저로 전송 후 저장함
+
+      -login.html 입력값 => 컨트롤러 => 다른 페이지에서 입력값이 소멸
+        - 컨트롤러에서 변수로 값을 받아내는 경우      
+      
