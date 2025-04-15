@@ -9,9 +9,15 @@ import org.springframework.ui.Model;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.demo.dto.SampleDTO;
+import com.example.demo.dto.SampleListWrapper;
+
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @Log4j2
 @Controller
@@ -42,5 +48,13 @@ public class SampleController {
         model.addAttribute("list", list);
 
     }
-
+    @PostMapping("/submitList")
+    public String submitList(@ModelAttribute SampleListWrapper listWrapper) {
+        List<SampleDTO> list = listWrapper.getList();
+        for (SampleDTO sampleDTO : list) {
+           log.info("전송받은 데이터 :{}", sampleDTO);
+        }
+        return "redirect:/sample";
+    }
+    
 }
