@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en" layout:decorate="~{layouts/layout}">
+<th:block layout:fragment="section">
+    <div th:replace="~{fragments/section::section}"></div>
+</th:block>
+<div layout:fragment="content" class="row g-5">
+    <!-- 페이지마다 다른 본문 작성 -->
+    <h1>HOME</h1>
+</div>
+
+</html>
