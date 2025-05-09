@@ -1,0 +1,24 @@
+<!-- templates/team/memberRead.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>멤버 상세 정보</title>
+</head>
+<body>
+<h1 th:text="'멤버 정보 - ' + ${dto.name}"></h1>
+
+<ul>
+    <li>ID: <span th:text="${dto.id}"></span></li>
+    <li>이름: <span th:text="${dto.name}"></span></li>
+    <li>팀: <span th:text="${dto.teamName}"></span></li>
+    <li>포지션: <span th:text="${dto.position}"></span></li>
+    <li>나이: <span th:text="${dto.age}"></span></li>
+    <li>키: <span th:text="${dto.height}"></span> cm</li>
+    <li>몸무게: <span th:text="${dto.weight}"></span> kg</li>
+    <li>연봉: <span th:text="${dto.sal}"></span> 원</li>
+</ul>
+
+<a th:href="@{|/team/member/modify?id=${dto.id}|}">수정하기</a> |
+<a href="/team/members">목록으로</a>
+</body>
+</html>

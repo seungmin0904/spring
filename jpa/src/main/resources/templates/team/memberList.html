@@ -1,0 +1,50 @@
+<!-- templates/team/memberList.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+    
+<head>
+    <title>팀 멤버 목록</title>
+</head>
+<body>
+<h1 th:text="${teamName} != null ? ${teamName} + ' 멤버 목록' : '전체 멤버 목록'"></h1>
+
+<table border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>이름</th>
+        <th>팀 이름</th>
+        <th>계약기간</th>
+        <th>포지션</th>
+        <th>나이</th>
+        <th>연봉</th>
+        <th>수정</th>
+        <th>삭제</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="member : ${list}">
+        <td th:text="${member.id}"></td>
+        <td>
+            <a th:href="@{|/team/member/read?id=${member.id}|}" th:text="${member.name}"></a>
+        </td>
+        <td th:text="${member.teamName}"></td>
+        <td th:text="${member.position}"></td>
+        <td th:text="${member.age}"></td>
+        <td th:text="${member.sal}"></td>
+        <td>
+            <a th:href="@{|/team/member/modify?id=${member.id}|}">수정</a>
+        </td>
+        <td>
+            <form th:action="@{/team/member/delete}" method="post">
+                <input type="hidden" name="id" th:value="${member.id}" />
+                <button type="submit">삭제</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<a href="/team/member/register">+ 새 멤버 등록</a>
+</body>
+</html>

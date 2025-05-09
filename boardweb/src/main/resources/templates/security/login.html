@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>로그인</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+    }
+
+    .login-wrapper {
+      max-width: 420px;
+      margin: 80px auto;
+      padding: 40px 30px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-wrapper h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 50px;
+      padding: 0 15px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      transition: border 0.3s;
+    }
+
+    .form-input:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+
+    .login-button {
+      width: 100%;
+      height: 50px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .login-button:hover {
+      background: #0056b3;
+    }
+
+    .extra-links {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .social-login {
+      margin-top: 30px;
+    }
+
+    .social-btn {
+      width: 100%;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: opacity 0.2s;
+    }
+
+    .social-btn img {
+      height: 24px;
+      margin-right: 10px;
+    }
+
+    .btn-kakao {
+      background-color: #FEE500;
+      color: #000;
+    }
+
+    .btn-naver {
+      background-color: #03C75A;
+      color: #fff;
+    }
+
+    .btn-google {
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #ccc;
+    }
+
+    .social-btn:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <h2>로그인</h2>
+    <form action="/login" method="post">
+      <input type="text" class="form-input" name="username" placeholder="이메일" required>
+      <input type="password" class="form-input" name="password" placeholder="비밀번호" required>
+      <button type="submit" class="login-button">로그인</button>
+    </form>
+
+    <div class="extra-links">
+      계정이 없으신가요? <a href="/security/register">회원가입</a>
+    </div>
+
+    <div class="social-login">
+      <h4 style="text-align:center; margin-bottom: 15px;">소셜 로그인</h4>
+
+      <!-- 카카오 -->
+      <a href="/oauth2/authorization/kakao" class="social-btn btn-kakao">
+        <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_medium.png" alt="카카오">
+        Kakao 로그인
+      </a>
+
+      <!-- 네이버 -->
+      <a href="/oauth2/authorization/naver" class="social-btn btn-naver w-100">
+        <img src="">네이버로 로그인
+      </a>
+
+      <!-- 구글 -->
+      <a href="/oauth2/authorization/google" class="social-btn btn-google w-100">
+        <img src="https://cdn-icons-png.flaticon.com/512/281/281764.png">Google 로그인
+      </a>
+    </div>
+  </div>
+</body>
+</html>

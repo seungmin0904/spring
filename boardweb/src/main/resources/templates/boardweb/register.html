@@ -1,0 +1,58 @@
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+
+  <!-- 페이지 타이틀 -->
+  <th:block layout:fragment="title">
+    <title>게시글 등록</title>
+  </th:block>
+
+  <div layout:fragment="content">
+    <h3>새 게시글 등록</h3>
+
+    <!-- dto와 pageRequestDTO를 바인딩 -->
+    <form th:action="@{/boardweb/register}"
+          th:object="${dto}"
+          method="post">
+
+       <!-- 게시글 작성을 위한 email -->
+       <input type="hidden" th:field="*{email}" />
+    
+  <!-- 이름 (로그인 사용자 이름) -->
+  <input type="hidden" th:field="*{name}" />
+
+      <!-- 제목 -->
+      <div class="mb-3">
+        <label for="title" class="form-label">제목</label>
+        <input type="text"
+               class="form-control"
+               id="title"
+               th:field="*{title}"
+               placeholder="제목을 입력하세요" />
+          <div class="text-danger" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+      </div>
+
+      <!-- 내용 -->
+      <div class="mb-3">
+        <label for="content" class="form-label">내용</label>
+        <textarea class="form-control"
+                  id="content"
+                  th:field="*{content}"
+                  rows="5"
+                  placeholder="내용을 입력하세요"></textarea>
+          <div class="text-danger" th:if="${#fields.hasErrors('content')}" th:errors="*{content}"></div>      
+      </div>
+
+      <!-- 등록, 목록 버튼 -->
+      <button type="submit" class="btn btn-primary">등록</button>
+      <a th:href="@{/boardweb/list(
+                     page=${pageRequestDTO.page},
+                     size=${pageRequestDTO.size},
+                     type=${pageRequestDTO.type},
+                     keyword=${pageRequestDTO.keyword})}"
+         class="btn btn-secondary">목록</a>
+    </form>
+  </div>
+
+</html>

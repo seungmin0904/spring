@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" layout:decorate="~{layouts/layout}">
+<div layout:fragment="content">
+    <h1>게시판</h1>
+    <div class="mt-3">
+        <form th:action="@{/boardweb/list}" method="get" id="searchForm">
+            <input type="hidden" name="page" value="1" class="form-control">
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <select name="type" class="form-select">
+                        <option value="" th:selected="${pageRequestDTO.type == null}">검색 조건 선택</option>
+                        <option value="t" th:selected="${pageRequestDTO.type == 't'}">제목</option>
+                        <option value="c" th:selected="${pageRequestDTO.type == 'c'}">내용</option>
+                        <option value="w" th:selected="${pageRequestDTO.type == 'w'}">작성자</option>
+                        <option value="tc" th:selected="${pageRequestDTO.type == 'tc'}">제목 + 내용</option>
+                        <option value="tcw" th:selected="${pageRequestDTO.type == 'tcw'}">제목 + 내용 + 작성자</option>
+                    </select>
+                </div>
+                <input type="text" name="keyword" th:value="${pageRequestDTO.keyword}" class="form-control" placeholder="검색어를 입력하세요." required>
+                <button type="submit" class="btn btn-outline-secondary btn-search">Search</button>
+                <button type="button" class="btn btn-outline-secondary btn-clear">Clear</button>
+            </div>
+        </form>
+    </div>
+    <!--bno,title,create_date,name,replycnt-->
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Bno</th>
+                <th scope="col">Title</th>
+                <th scope="col">Create Date</th>
+                <th scope="col">Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Model에서 전달된 result를 사용하여 데이터 출력 -->
+            <tr th:each="item : ${result.dtoList}">
+                <th scope="row" th:text="${item.bno}"></th>
+                <td>
+                    <a th:href="@{/boardweb/read(
+                        bno=${item.bno},
+                        page=${result.pageRequestDTO.page},
+                        size=${result.pageRequestDTO.size},
+                        type=${result.pageRequestDTO.type},
+                        keyword=${result.pageRequestDTO.keyword})}"
+              th:text="${item.title}">
+            </a>
+            ---------[[${item.replyCount!=null?item.replyCount:0}]]</td>
+                <td th:text="${#temporals.format(item.crDateTime, 'yyyy-MM-dd')}"></td>
+                <td th:text="${item.name}"></td>
+            </tr>
+        </tbody>
+    </table>
+    <nav aria-label="Page navigation">
+      <ul class="pagination justify-content-center">
+        <li class="page-item" th:if="${result.prev}">
+           <a class="page-link"
+              th:href="@{/boardweb/list(
+                              page=${result.prevPage},
+                              size=${result.pageRequestDTO.size},
+                              type=${result.pageRequestDTO.type},
+                              keyword=${result.pageRequestDTO.keyword})}">Previous</a>
+             </li>
+             
+       <!-- classappend로 ' active' -->
+         <li class="page-item"
+             th:each="p : ${result.pageNumList}"
+              th:classappend="${p == result.current} ? ' active'">
+             <a class="page-link"
+                th:href="@{/boardweb/list(
+                              page=${p},
+                              size=${result.pageRequestDTO.size},
+                              type=${result.pageRequestDTO.type},
+                              keyword=${result.pageRequestDTO.keyword})}" th:text="${p}">1</a>
+            </li>
+            
+            <li class="page-item" th:if="${result.next}">
+               <a class="page-link"
+                  th:href="@{/boardweb/list(
+                             page=${result.nextPage},
+                             size=${result.pageRequestDTO.size},
+                             type=${result.pageRequestDTO.type},
+                             keyword=${result.pageRequestDTO.keyword})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+    <!-- 검색 초기화 스크립트 -->
+    <script>
+        document.querySelector('.btn-clear').addEventListener('click', function () {
+            document.querySelector('select[name="type"]').value = '';
+            document.querySelector('input[name="keyword"]').value = '';
+            document.querySelector('form#searchForm').submit(); // 초기화 후 폼 전송
+        });
+    </script>
+</div>
+</html>

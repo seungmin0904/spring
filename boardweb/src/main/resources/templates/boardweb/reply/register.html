@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+
+      <div layout:fragment="content">
+  <!-- 댓글 섹션 -->
+  <section class="mt-4">
+    <h4>댓글 (<span th:text="${dto.replyCount}">0</span>)</h4>
+
+    <!-- 새 댓글 등록 -->
+    <form th:action="@{/boardweb/reply/register}" method="post" class="mb-3">
+      <input type="hidden" name="bno" th:value="${dto.bno}" />
+      <input class="form-control mb-1" name="replyer" placeholder="작성자" />
+      <textarea class="form-control mb-1" name="text" rows="2" placeholder="댓글 내용을 입력"></textarea>
+      <button type="submit" class="btn btn-primary btn-sm">등록</button>
+    </form>
+
+    <!-- 댓글 렌더링 프래그먼트 -->
+    <th:block th:fragment="replyItem(reply,dto,pageReq)">
+      <th:block th:if="${reply != null}">
+        <li class="mb-2">
+          <div class="border rounded p-2">
+            <div class="text-danger mb-2">
+              댓글번호: <span th:text="${reply.rno}">?</span>,
+              자식 수: <span th:text="${#lists.size(reply.children)}">0</span>
+            </div>
+
+            <div class="d-flex justify-content-between text-muted mb-1">
+              <span><strong th:text="${reply.replyer}">작성자</strong></span>
+              <span class="text-end">
+                <span th:text="${#temporals.format(reply.createdDate, 'yyyy-MM-dd HH:mm')}">작성일</span>
+                <span th:if="${reply.moDateTime != null and reply.moDateTime != reply.createdDate}">
+                  (수정됨: <span th:text="${#temporals.format(reply.moDateTime,'yyyy-MM-dd HH:mm')}">수정일</span>)
+                </span>
+              </span>
+            </div>
+            
+            <th:block th:if="${reply.deleted != null and reply.deleted}">
+            <p class="text-muted fst-italic">사용자에 의해 삭제된 댓글입니다</p>
+            </th:block>
+            <th:block th:unless="${reply.deleted != null and reply.deleted}">
+            <p th:text="${reply.text}">댓글 내용</p>
+            </th:block>
+            <!-- 수정/삭제/답글 버튼 -->
+             
+            <div th:if="${!reply.deleted}">
+              <a th:href="@{/boardweb/reply/modify(rno=${reply.rno}, bno=${dto.bno}, page=${pageRequestDTO.page}, size=${pageRequestDTO.size}, type=${pageRequestDTO.type}, keyword=${pageRequestDTO.keyword})}"
+                 class="btn btn-sm btn-primary">수정</a>
+              <button type="button" class="btn btn-sm btn-danger"
+                      th:onclick="|document.getElementById('delForm'+${reply.rno}).submit()|">삭제</button>
+              <a href="#" class="btn btn-sm btn-info"
+                 th:onclick="|toggleForm('rf-'+${reply.rno});|">답글</a>
+            </div>
+
+            <!-- 삭제 폼 -->
+            <form th:action="@{/boardweb/reply/delete}" method="post"
+                  th:id="'delForm'+${reply.rno}" style="display:none;">
+              <input type="hidden" name="rno" th:value="${reply.rno}" />
+              <input type="hidden" name="bno" th:value="${dto.bno}" />
+            </form>
+
+            <!-- 답글 등록 폼 -->
+            <form th:action="@{/boardweb/reply/register}" method="post"
+                  th:id="'rf-'+${reply.rno}" style="display:none;" class="mt-2">
+              <input type="hidden" name="bno" th:value="${dto.bno}" />
+              <input type="hidden" name="parentRno" th:value="${reply.rno}" />
+              <input class="form-control mb-1" name="replyer" placeholder="답글 작성자" />
+              <textarea class="form-control mb-1" name="text" rows="2" placeholder="답글 내용을 입력"></textarea>
+              <button type="submit" class="btn btn-secondary btn-sm">등록</button>
+            </form>
+
+            <!-- 자식 댓글 재귀 출력 -->
+            <ul class="list-unstyled ms-4" th:if="${reply.children != null and !#lists.isEmpty(reply.children)}">
+              <th:block th:each="child : ${reply.children}">
+                <th:block th:if="${child != null}">
+                  <th:block th:replace="~{this :: replyItem(reply=${child}, dto=${dto}, pageReq=${pageReq})}"></th:block>
+                </th:block>
+              </th:block>
+            </ul>
+          </div>
+        </li>
+      </th:block>
+    </th:block>
+
+    <!-- 루트 댓글 출력 -->
+    <ul class="list-unstyled">
+      <th:block th:each="reply : ${dto.replies}">
+        <th:block th:if="${reply != null}">
+          <th:block th:replace="~{this :: replyItem(reply=${reply}, dto=${dto}, pageReq=${pageRequestDTO})}"></th:block>
+        </th:block>
+      </th:block>
+    </ul>
+
+    <!-- 답글 토글 JS -->
+    <script th:inline="javascript">
+      function toggleForm(id) {
+        const f = document.getElementById(id);
+        f.style.display = (f.style.display === 'none') ? 'block' : 'none';
+      }
+    </script>
+  </section>
+  </div>
+</html>

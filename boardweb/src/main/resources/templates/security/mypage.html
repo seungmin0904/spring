@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+  <meta charset="UTF-8">
+  <title>마이페이지</title>
+  <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+
+<body>
+  <div class="container mt-5">
+    <h2>마이페이지</h2>
+    <div class="alert alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert alert-info" th:if="${resendSuccess}" th:text="${resendSuccess}"></div>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <!--  인증 재전송은 별도 form으로 분리 -->
+    <form th:action="@{/security/resend-verification}" method="post"
+      th:if="${loginType == 'local' and !#authentication.principal.emailVerified}">
+      <button class="btn btn-warning btn-sm mb-3" type="submit">이메일 인증 다시 받기</button>
+    </form>
+
+    <!--  정보 수정 폼 -->
+    <form th:action="@{/security/mypage}" th:object="${memberDTO}" method="post" th:if="${loginType == 'local'}">
+      <!-- 이메일 (readonly) -->
+      <div class="mb-3">
+        <label for="username" class="form-label">이메일</label>
+        <input type="email" id="username" th:field="*{username}" class="form-control" readonly />
+      </div>
+
+      <!-- 이름 (수정 가능) -->
+      <div class="mb-3">
+        <label for="name" class="form-label">이름</label>
+        <input type="text" id="name" th:field="*{name}" class="form-control" />
+      </div>
+
+      <button type="submit" class="btn btn-primary">정보 수정</button>
+    </form>
+    <!--  소셜 로그인 사용자 출력 -->
+    <div th:if="${loginType == 'social'}">
+      <div class="mb-3">
+        <label class="form-label">이름</label>
+        <p th:text="${memberDTO.name}">이름</p>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">이메일</label>
+        <p th:text="${memberDTO.username}">이메일</p>
+      </div>
+      <div class="mb-3" th:if="${memberDTO.profileImage != null}">
+        <label class="form-label">프로필 이미지</label><br>
+        <img th:src="${memberDTO.profileImage}" alt="프로필 이미지" style="width: 100px; border-radius: 50%;">
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

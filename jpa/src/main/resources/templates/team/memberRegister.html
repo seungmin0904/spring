@@ -1,0 +1,23 @@
+<!-- templates/team/memberRegister.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>멤버 등록</title>
+</head>
+<body>
+<h1>새 멤버 등록</h1>
+
+<form action="/team/member/register" method="post">
+    이름: <input type="text" name="name"><br>
+    팀 이름: <input type="text" name="teamName"><br>
+    포지션: <input type="text" name="position"><br>
+    나이: <input type="number" name="age"><br>
+    키(cm): <input type="number" name="height"><br>
+    몸무게(kg): <input type="number" name="weight"><br>
+    연봉: <input type="number" name="sal"><br>
+    <button type="submit">등록</button>
+</form>
+
+<a href="/team/members">목록으로</a>
+</body>
+</html>

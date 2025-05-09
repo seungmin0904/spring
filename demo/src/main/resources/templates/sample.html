@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+    </style>
+</head>
+
+<body>
+    <h3>객체 값 출력</h3>
+
+    <h4 th:text="${name}"></h4>
+    <h4>[[${name}]]</h4>
+    <input type="text" name="" id="" th:value="${name}">
+    <h4 th:text="${dto}"></h4>
+    <ul>
+        <li>ID : <span th:text="${dto.id}"></span></li>
+        <li>first : <span th:text="${dto.first}"></span></li>
+        <li>last : <span th:text="${dto.last}"></span></li>
+        <li>regTime : <span th:text="${dto.regDateTime}"></span></li>
+    </ul>
+    <!-- 리스트 출력 -->
+    <ul>
+        <li th:each=" dto: ${list}" th:text="${dto}"></li>
+    </ul>
+    <!-- 리스트 테이블 출력 -->
+    <table>
+        <tr>
+            <th>아이디</th>
+            <th>first</th>
+            <th>last</th>
+            <th>regTime</th>
+        </tr>
+        <tr th:each=" dto : ${list}">
+            <td th:text="${dto.id}"></td>
+            <!-- first에 링크 걸기 -->
+            <td>
+                <a th:href="@{ex2(id=${dto.id})}" th:text="${dto.first}"></a>
+            </td>
+            <td th:text="${dto.last}"></td>
+            <!-- ${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')} 날짜 형식 원하는대로 지정 -->
+            <td th:text="${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')}"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <th>아이디</th>
+            <th>first</th>
+            <th>last</th>
+            <th>regTime</th>
+            <th>index</th>
+            <th>count</th>
+            <th>size</th>
+            <th>odd/even</th>
+        </tr>
+        <!-- each를 쓸때 state 를 이용해 추가 정보 추출  -->
+        <tr th:each=" dto,state : ${list}">
+            <td th:text="${dto.id}"></td>
+            <td th:text="${dto.first}"></td>
+            <td th:text="${dto.last}"></td>
+            <!-- ${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')} 날짜 형식 원하는대로 지정 -->
+            <td th:text="${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')}"></td>
+            <!-- 인덱스 번호  -->
+            <td th:text="${state.index}"></td>
+            <!-- 카운트 번호 -->
+            <td th:text="${state.count}"></td>
+            <!-- 값 사이즈  -->
+            <td th:text="${state.size}"></td>
+            <!-- 홀수or짝수 true/false -->
+            <td th:text="${state.odd} + '/' + ${state.even}"></td>
+        </tr>
+    </table>
+    <!-- th:if ~ th:unless => if~else 와 같은 개념 -->
+    <table>
+        <tr>
+            <th>아이디</th>
+            <th>first</th>
+            <th>last</th>
+            <th>regTime</th>
+        </tr>
+        <tr th:each=" dto : ${list}" th:if="${dto.id % 5 == 0}">
+            <td th:text="${dto.id}"></td>
+            <td th:text="${dto.first}"></td>
+            <td th:text="${dto.last}"></td>
+            <!-- ${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')} 날짜 형식 원하는대로 지정 -->
+            <td th:text="${#temporals.format(dto.regDateTime, 'yyyy-MM-dd')}"></td>
+        </tr>
+    </table>
+
+    <ul>
+        <li th:each=" dto : ${list}">
+            <span th:if="${dto.id % 5 == 0}" th:text="${'======='+dto.id}"></span>
+            <span th:unless="${dto.id % 5 == 0}" th:text="${dto.id}"></span>
+        </li>
+    </ul>
+    <h3>삼항 연산자로 변경해보기</h3>
+    <ul>
+        <li th:each=" dto : ${list}">
+            <span th:text="${dto.id % 5 == 0}?${'--------'+dto.id % 5 == 0}:${dto.id}"></span>
+        </li>
+    </ul>
+
+    <h3>swich-case 로 변경해보기</h3>
+    <ul>
+        <li th:each=" dto,state : ${list}" th:switch="${state.even}">
+            <span th:case="true" th:text="${dto.first}"></span>
+            <span th:case="false" th:text="${dto.last}"></span>
+        </li>
+    </ul>
+    <h3>웹 페이지 링크</h3>
+    <ul>
+        <!-- 배포 : 실제 서버에 프로그램을 올리는 작업 
+         http://localhost:8080/ 로컬
+         http://도메인주소/app/member/login 
+         동일한 경로 보장 <a th:href="@{}">
+            th:href , href 둘다 경로는 똑같이 표현하지만 파라메터를 보내는 방법이 달라짐
+            href : /member/login?id=hong
+            th:href : /member/login(id='hong')
+                      /ex1?param1=data1&param2=10
+         -->
+        <li><a th:href="@{/calc}">calc</a></li>
+        <li><a th:href="@{/ex1(param1='data1',param2=10)}">Ex1</a></li>
+    </ul>
+    <h3>thymeleaf 유틸리티 객체</h3>
+    <ul>
+        <li th:text="${price}"></li>
+        <li th:text="${#numbers.formatInteger(price,3,'COMMA')}"></li>
+        <li th:text="${#lists.size(options)}"></li>
+        <li th:text="${#lists.contains(options, 'AAAA')}"></li>
+        <li th:text="${#dates.format(now, 'yyyy-MM-dd')}"></li>
+        <li th:text="${title}"></li>
+        <li th:text="${#strings.replace(title, 's','<b>s</b>')}"></li>
+    </ul>
+    <!-- 리스트 서버에 전송 -->
+    <form method="post" action="/submitList">
+        <div th:each="dto, stat : ${list}">
+            <input type="hidden" th:name="|list[${stat.index}].id|" th:value="${dto.id}" />
+            <input type="text" th:name="|list[__${stat.index}__].first|" th:value="${dto.first}" />
+            <input type="text" th:name="|list[__${stat.index}__].last|" th:value="${dto.last}" />
+            <input type="hidden" th:name="|list[${stat.index}].regDateTime|" th:value="${dto.regDateTime}" />
+            <br />
+        </div>
+        <button type="submit">리스트 전송</button>
+    </form>
+    <!-- 스크립트로도 불러올 수 있음 -->
+    <script>
+        const name = "[[${ name }]]";
+    </script>
+</body>
+
+</html>

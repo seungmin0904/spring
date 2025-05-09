@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" layout:decorate="~{layouts/layout}">
+<div layout:fragment="content" class="row g-5">
+    <!-- 페이지마다 다른 본문 작성 -->
+    <div class="col-md-8">
+        <h1>Read</h1>
+<form action="" method="post">
+    <div class="form-group mb-2">
+        <label for="">번호</label>
+        <input type="text" name="mno" id="mno" class="form-control" th:value="${dto.mno}" readonly/>
+    </div>
+    <div class="form-group mb-2">
+        <label for="">내용</label>
+        <textarea name="memoText" id="memoText" rows="10" class="form-control" readonly>[[${dto.memoText}]]</textarea>
+    </div>
+    <div class="form-group mb-2">
+        <label for="">작성일시</label>
+        <input 
+        type="text" 
+        name="createdDate" 
+        id="createdDate" 
+        class="form-control" 
+        th:value="${dto.createdDate}" 
+        readonly>
+    </div>
+    <div class="form-group">
+        <a class="btn btn-primary" th:href="@{/memo/list}">목록</a>
+        <a class="btn btn-success" th:href="@{/memo/update(mno=${dto.mno})}">수정</a>
+    </div>
+</form>
+    </div>
+</div>
+</html>

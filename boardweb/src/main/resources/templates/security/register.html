@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>회원가입</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .form_wrapper {
+      max-width: 420px;
+      margin: 80px auto;
+      background: #fff;
+      padding: 40px 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .form_wrapper h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .form_item {
+      margin-bottom: 20px;
+    }
+
+    .form_item label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      font-size: 15px;
+    }
+
+    .form_item input {
+      width: 100%;
+      height: 50px;
+      padding: 0 15px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      transition: border 0.3s;
+    }
+
+    .form_item input:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+
+    .form_item button {
+      margin-top: 8px;
+      height: 40px;
+      padding: 0 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .form_item button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .form_status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #dc3545;
+    }
+
+    .form_status.success {
+      color: #28a745;
+    }
+
+    .submit_btn {
+      width: 100%;
+      height: 50px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .submit_btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .form_status {
+  margin-top: 12px;
+  padding: 12px 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.status_bubble {
+  margin-top: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  animation: fadeIn 0.3s ease;
+}
+
+.status_bubble.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status_bubble .status-icon {
+  font-size: 16px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+  </style>
+</head>
+<body>
+  <div class="form_wrapper">
+    <h2>회원가입</h2>
+    <form id="registerForm" method="post" action="/security/register">
+      <div class="form_item">
+        <label for="username">이메일</label>
+        <input type="email" id="username" name="username" required placeholder="example@example.com" />
+        <button type="button" id="sendVerifyBtn">이메일 인증</button>
+      
+        <!-- 아래쪽 메시지 -->
+        <div id="emailStatus" class="status_bubble">
+          <span class="status-icon">❌</span>
+          <span class="status-text">이메일 인증 필요</span>
+        </div>
+      </div>
+
+      <div class="form_item">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" name="password" required placeholder="영문, 숫자, 특수문자 포함 12자 이상" />
+      </div>
+
+      <div class="form_item">
+        <label for="name">이름</label>
+        <input type="text" id="name" name="name" required placeholder="이름 입력" />
+      </div>
+
+      <button type="submit" id="submitBtn" class="submit_btn" disabled>회원가입</button>
+    </form>
+  </div>
+
+  <!-- 이메일 인증 상태 체크 -->
+<script>
+  const input = document.getElementById("username");
+  const emailStatus = document.getElementById("emailStatus");
+  const submitBtn = document.getElementById("submitBtn");
+
+  const checkVerified = () => {
+    const username = input.value.trim(); // 공백 제거
+    if (!username) return;
+
+    fetch('/security/check-verified?username=' + encodeURIComponent(username))
+      .then(res => res.json())
+      .then(data => {
+        if (data.verified) {
+          emailStatus.innerText = '✅ 이메일 인증 완료';
+          emailStatus.classList.add('success');
+          submitBtn.disabled = false;
+        } else {
+          emailStatus.innerText = '❌ 이메일 인증 필요';
+          emailStatus.classList.remove('success');
+          submitBtn.disabled = true;
+        }
+      });
+  };
+
+  const interval = setInterval(checkVerified, 3000); // 주기적으로 확인
+  input.addEventListener('input', checkVerified);    // 입력이 바뀌면 즉시 확인
+</script>
+  <script>
+    //  이메일 인증 버튼 기능 구현 (POST 방식)
+    document.getElementById('sendVerifyBtn').addEventListener('click', function () {
+      const username = document.getElementById('username').value;
+  
+      if (!username) {
+        alert('이메일을 입력해주세요.');
+        return;
+      }
+  
+      fetch('/security/request-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'username=' + encodeURIComponent(username)
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('이메일 인증 링크가 발송되었습니다.');
+        } else {
+          alert('인증 메일 발송에 실패했습니다.');
+        }
+      })
+      .catch(error => {
+        console.error('에러 발생:', error);
+        alert('인증 요청 중 오류가 발생했습니다.');
+      });
+    });
+  </script>
+</body>
+</html>

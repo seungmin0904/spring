@@ -1,0 +1,24 @@
+<!-- templates/team/memberModify.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>멤버 수정</title>
+</head>
+<body>
+<h1 th:text="'멤버 수정 - ' + ${dto.name}"></h1>
+
+<form action="/team/member/modify" method="post">
+    <input type="hidden" name="id" th:value="${dto.id}">
+    이름: <input type="text" name="name" th:value="${dto.name}"><br>
+    팀 이름: <input type="text" name="teamName" th:value="${dto.teamName}"><br>
+    포지션: <input type="text" name="position" th:value="${dto.position}"><br>
+    나이: <input type="number" name="age" th:value="${dto.age}"><br>
+    키(cm): <input type="number" name="height" th:value="${dto.height}"><br>
+    몸무게(kg): <input type="number" name="weight" th:value="${dto.weight}"><br>
+    연봉: <input type="number" name="sal" th:value="${dto.sal}"><br>
+    <button type="submit">수정</button>
+</form>
+
+<a href="/team/members">목록으로</a>
+</body>
+</html>

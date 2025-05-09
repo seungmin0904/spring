@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>이메일 인증 결과</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+      font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+    }
+
+    .verify-container {
+      max-width: 480px;
+      margin: 100px auto;
+      background: white;
+      border-radius: 16px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease;
+    }
+
+    .verify-icon {
+      font-size: 50px;
+      margin-bottom: 20px;
+    }
+
+    .verify-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .verify-message {
+      font-size: 15px;
+      color: #555;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .btn-custom {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      text-decoration: none;
+      color: white;
+    }
+
+    .btn-green {
+      background-color: #28a745;
+    }
+
+    .btn-green:hover {
+      background-color: #218838;
+    }
+
+    .btn-red {
+      background-color: #dc3545;
+    }
+
+    .btn-red:hover {
+      background-color: #c82333;
+    }
+
+    .success {
+      color: #28a745;
+    }
+
+    .fail {
+      color: #dc3545;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="verify-container">
+    
+    <!-- ✅ 인증 성공 -->
+    <div th:if="${verified}">
+      <div class="verify-icon success">✅</div>
+      <div class="verify-title success">이메일 인증 완료!</div>
+      <div class="verify-message">
+        인증이 성공적으로 완료되었습니다.<br>
+        이 탭을 닫고 회원가입 페이지로 돌아가 주세요.
+      </div>
+    </div>
+
+    <!-- ❌ 인증 실패 -->
+    <div th:unless="${verified}">
+      <div class="verify-icon fail">❌</div>
+      <div class="verify-title fail">유효하지 않거나 만료된 링크입니다</div>
+      <div class="verify-message">
+        인증 링크가 만료되었거나 잘못되었습니다.<br>
+        회원가입 페이지에서 다시 이메일 인증을 요청해 주세요.
+      </div>
+      <a href="/security/register" class="btn-custom btn-red">회원가입으로 이동</a>
+    </div>
+
+  </div>
+</body>
+</html>

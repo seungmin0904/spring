@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" layout:decorate="~{layouts/layout}">
+<div layout:fragment="content" class="row g-5">
+    <!-- 페이지마다 다른 본문 작성 -->
+    <div>
+        <h1>List</h1>
+        <table class="table">
+            <tr>
+                <th>번호</th>
+                <th>내용</th>
+                <th>작성일</th>
+            </tr>
+            <tr th:each="dto : ${list}">
+                <td th:text="${dto.mno}"></td>
+                <td><a th:href="@{/memo/read(mno=${dto.mno})}" th:text="${dto.memoText}"></a></td>
+                <td th:text="${#temporals.format(dto.createdDate,'yyyy-MM-dd')}"></td>
+            </tr>
+        </table>
+
+        <!-- 페이징 -->
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <!-- 이전 버튼 -->
+        <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+            <a class="page-link" th:href="@{/memo/list(page=${page.number - 1})}">이전</a>
+        </li>
+
+        <!-- 페이지 번호 -->
+        <li class="page-item"
+            th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
+            th:classappend="${i == page.number} ? 'active'">
+            <a class="page-link" th:href="@{/memo/list(page=${i})}" th:text="${i + 1}"></a>
+        </li>
+
+        <!-- 다음 버튼 -->
+        <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+            <a class="page-link" th:href="@{/memo/list(page=${page.number + 1})}">다음</a>
+        </li>
+    </ul>
+</nav>
+
+    </div>
+</div>
+<!-- 페이지마다 유동적인 영역 지정 -->
+<th:block layout:fragment="script">
+    <script>
+        const msg = "[[${msg}]]";
+        if (msg) {
+            alert("등록되었습니다.");
+        } 
+    </script>
+</th:block>
+</html>

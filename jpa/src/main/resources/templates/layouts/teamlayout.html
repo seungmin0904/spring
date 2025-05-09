@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <title>Team Management</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        header, footer { background-color: #222; color: white; padding: 1rem; text-align: center; }
+        main { padding: 2rem; }
+        .container { max-width: 1000px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        input[type="text"], input[type="number"], select {
+            width: 100%; padding: 8px; box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Team Management System</h1>
+</header>
+
+<main>
+    <div class="container" layout:fragment="content"></div>
+</main>
+
+<footer>
+    <p>&copy; 2025 Your Company</p>
+</footer>
+</body>
+</html>

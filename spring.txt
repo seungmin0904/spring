@@ -1,0 +1,262 @@
+서버단 작성
+1) spring framework : 웹 개발 할때 주로 사용 / 빈번한 설정 작업 요구
+2) spring boot : spring framework의 간편화 버전
+
+프로젝트 생성
+1. 빌드 툴 설정
+build : 프로젝트 생성, 라이브러리 설정, 코드작업, 컴파일, 테스트, 패키지 작성, 배포
+1) gradle : text 기반 , 후발주자(maven개선)
+2) maven : xml 기반
+
+2. spring boot version 선택 : 3.4.4 spring initialize
+4. 패키지명 : com.example.demo (자유지정) ㅁㄴㅇ.ㅁㄴㅇ.ㅁㄴㅇ
+5. 패키징타입 : jar(java압축파일), war(java web 압축파일-jsp)
+6. java 버전 선택 : 부트버전에 따라 선택이 달라질 수 있음 
+7. 필요 라이브 러리 선택 :
+    spring web , dev tools, thymeleaf, lombok , spring data jpa, oracle driver, validation, 
+    따로추가 thymeleaf dialect
+
+    화면(front) 단 작성 : html + css + javascript + java
+    1) jsp 활용 : *.jsp
+        html + java 동시 작성 가능
+        spring boot 에서 사용하기 위해서 사전 설정이 필요함
+
+    2) 템플릿 엔진 활용 : *.html
+        thymeleaf, mustache, groovy, freemaker, velocity
+       
+
+    스프링의 주요 개념
+    1) IoC(Inversion of Control) : 메소드나 객체의 호출 작업을 개발자가 결정하는 것이 아니라 외부(Spring Container)에서 결정(제어의 역전)
+
+        컨테이너는 어느 객체를 생성 할 것인지 알아야 함 => 어노테이션으로 알려주기
+        - 컨테이너가 생성한 객체 : been 
+        - 싱글톤 방식(객체는 하나만 생성)으로 객체 생성 
+        - @Controller, @Service, @Component
+
+      -- Injection(주입)
+      - @Controller, @Service, @Component, 을 통해서 생성 된 객체를 언제, 어디에 사용 할 것인지를 알려주는 개념 
+      - @Autowired 를 필요한 객체에 작성(컨테이너가 관리하는 객체를 주입해주세요)
+
+       @Autowired
+       private BoardRepository boardRepository; 
+
+
+    2) 경로 임의로 생성
+        http://localhost:8080/ ==> Controller 파일의 메소드와 매핑
+        
+        uri 설계
+        ex) 게시판 개발 
+        게시글 작성 : /board/create
+        게시글 목록 : /board/list
+        게시글 조회 : /board/read
+        게시글 수정 : /board/update  
+
+
+        @RequestMapping("/board")
+        public class BoardController{
+         @GetMapping("/create")
+        public String method(){
+            return "info";
+          }
+        }
+
+
+         @GetMapping("/update")
+        public void method(){
+            
+        }
+        -String
+        http://localhost:8080/board/create 브라우저 요청 => 컨트롤러 응답 => templates 찾기(templates / return 값 찾기)
+        => templates/info.html 작성
+        
+        -void
+        http://localhost:8080/board/update 브라우저 요청 => 컨트롤러 응답 => templates 찾기(templates / board/update)
+        => templates/board/update.html 작성
+
+    3) 내장 서버: Tomcat(설치 후 사용 - 스프링 부트를 사용한다면 내장되어 있음)
+     http://localhost:8080 : Tomcat 기본 경로 
+    브라우저를 통해 http, https 프로토콜에 응답하는 서버 : SW웹서버(Apache, NginX)
+    WAS(Web Application Server) : 웹서버 + 자바해석 => Tomcat
+    
+    4) 오류 발생 : 오류페이지 caused by 찾기
+       400 : (type=Bad Request) 사용자 입력값 오류
+       404 : 컨트롤러 경로확인
+       405 : 컨트롤러 경로 + 매핑방식 확인 (type=Method Not Allowed, status=405) html action과 관련있음
+            
+
+    5) 사용자 입력값 가져오기 
+        
+
+         1 - 변수 이용
+                
+            postLogin() 괄호 안에 입력값을 불러올 변수명은 html form의 요소의 이름(name)과 
+            그 요소와 맞는 타입을 넣어줌
+                
+            @PostMapping("/login")
+            public void postLogin(String userid, String password) { 
+            log.info("로그인 요청 {},{}", userid, password);
+
+            }
+
+         2 - 커맨드 DTO 폼을 활용해서 관리 
+
+             변수명은 html form의 요소의 이름(name)과 일치해야함
+             templates 페이지까지 입력값이 유지됨
+
+             @PostMapping("/login")
+             public void postLogin(LoginDTO loginDTO) {
+             log.info("로그인 요청 {},{}", loginDTO.getUserid(), loginDTO.getPassword());
+
+             }
+         3 - HttpServletRequest : 사용자의 정보 및 서버의 정보 추출 스프링을 사용 안하면 
+            쓰는 방법
+            -------------------------------------------------------------------------------
+            <ul id="result">
+            <!-- DTO 폼 활용 시 사용자 입력값 가져와서 웹에 보여주는 방법
+             command 객체명 : 첫문자만 소문자로 바꿔서  -->
+            <li>아이디: [[${loginDTO?.userid}]]</li> = ?는 없을수도 있다는 걸 미리 알려주는 용도
+            <li>비밀번호: [[${loginDTO?.password}]]</li>
+            </ul>
+
+            <!-- model 활용 사용자 입력값 화면에 보여주는 방법 ${입력값변수}-->
+            <div id="result" th:text="${result}"></div>
+            -------------------------------------------------------------------------------
+            // HttpServletRequest : 사용자의 정보 및 서버의 정보 추출 스프링을 사용 안하면 
+            쓰는 방법
+            
+            public void postLogin(HttpServletRequest request) {
+            String userid = request.getParameter("userid");
+            String password = request.getParameter("password");
+            String remote = request.getRemoteAddr();
+            String local = request.getLocalAddr();
+            log.info("로그인 요청 {},{}", userid, password);
+            log.info("클라이언트 정보 {},{}", remote, local);
+            }
+
+     6) @ModelAttribute
+        - 별칭
+        - model.addAttribute("num1", num1); == @ModelAttribute("num1") : templates 페이지에서 값을 유지하고 싶다면
+
+        redirect:/ : 다시 주소경로를 요청해서 이동함(다른경로)
+        
+        redirect:/ 로 움직이면서 값을 유지하고 싶다면
+        rttr.addAttribute("name", name); // th:text="${param.name}"
+        rttr.addFlashAttribute("name", name); // th:text="${name}"
+
+
+     7) RedirectAttributes : 컨트롤러에서 움직이는 방식이 redirect 일때만 사용
+        redirect로 움직이면서 특정값을 보내고 싶을때 사용
+        -----------------------------------------------------------------------------------
+        rttr.addAttribute("userid", memberDTO.getUserid());
+        rttr.addAttribute("userid","10"); ?userid=10 => 탬플릿 ${param.userid}
+        rttr.addFlashAttribute("password", "12"); : session 객체에 담는것과 같은 방식 => ${password}
+        return "redirect:/member/login";
+        -----------------------------------------------------------------------------------
+
+     8) 데이터 유지하기
+      -login.html 입력값 => 컨트롤러 => logout.html 까지 입력값을 유지 
+        - forward 방식 : @ModelAttribute , Model , 커맨드 객체(DTO) (내부이동 , 같은요청 안 속성)
+        - redirect 방식 : RedirectAttributes 이용 : (1회성 사용, 새로운 요청 속성)
+
+      -login.html 입력값 => 컨트롤러 => 모든 페이지에서 입력값을 유지 
+        - 세션 : 값을 서버쪽에 저장함(객체 형태로 담는 것 가능)
+            로그인 정보, 장바구니, 사용자 상태 등 지속적으로 필요한 정보에 적합
+         HttpSession 을 이용해 저장 => 필요 없는 경우 제거 or 현재 세션이 유지 되고있는 브라우저를 닫으면 종료됨
+        - 쿠키 : 값을 클라이언트 브라우저로 전송 후 저장함
+
+      -login.html 입력값 => 컨트롤러 => 다른 페이지에서 입력값이 소멸
+        - 컨트롤러에서 변수로 값을 받아내는 경우      
+      
+      경로 설정
+
+      http://localhost:8080/ 고정
+
+      href 경로 설정 시 현재 경로(주소줄 경로)
+     예) 현재경로 http://localhost:8080/sample => 움직일경로 http://localhost:8080/ex1
+
+      @{ex1(param1='data1',param2=10)} : /미사용 현재 경로에서 맨 마지막 경로 대체 주소 
+      @{/ex1(param1='data1',param2=10)} : /사용 도메인주소(:8080/) 바로 다음부터 경로설정
+
+      데이터 베이스 작업 => 프레임워크
+      1. MyBatis
+      2. JPA : 객체 == 테이블
+        JPA 기술을 구현한 Hibernate 구현체가 존재 
+
+        - 데이터베이스 초기화 전략
+        Spring.jpa.Hibernate.ddl-auto= 5가지 종류
+        1) create : 기존 테이블 삭제 후 테이블 생성
+        2) create-drop : 기존 테이블 삭제 후 테이블 생성, 종료 시점에 테이블 삭제
+        3) update : 변경된 부분만 적용
+        4) validate : 엔티티와 테이블 정상 매핑 확인 (스테이징, 운영환경)
+        5) none : 사용하지 않음 (스테이징, 운영환경)
+
+      Entity 명이 기본적으로 테이블 명으로 사용됨
+      @Table(name = "studenttbl") : Entity 명이 아닌 지정 된 이름으로 테이블 생성
+    
+    -------------------------------------------------------------------------------
+
+    create sequence studenttbl_seq start with 1 increment by 50
+    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
+
+    -------------------------------------------------------------------------------
+
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+      - id number(19,0) generated by default as identity
+
+    -------------------------------------------------------------------------------
+
+    시퀀스 쓰고싶을때 : start with 1 increment by 1
+    -----------------------------------------------------------------------------------------------
+    @SequenceGenerator(name = "student_seq_gen", sequenceName = "student_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "student_seq_gen")
+    -----------------------------------------------------------------------------------------------
+   날짜 어노테이션
+   org.hibernate 제공
+   @CreationTimestamp : 데이터 삽입 시 현재 시스템 날짜 시간 삽입
+   @UpdateTimestamp : 데이터 삽입 + 수정 시 현재 시스템 날짜 시간 삽입 
+
+   org.springframework.data 제공
+    @CreatedDate
+    @LastModifiedDate
+
+    * 설정 작업이 필요함
+    main이 있는 클래스에 @EnableJpaAuditing 
+    Entity 클래스에 @EntityListeners(value = AuditingEntityListener.class) 부착
+    --------------------------------------------------------------------------------------------------
+    Repository + Entity
+    1) save(): insert , update
+    2) findById() : where 절이 있는 select
+    3) findAll() : select 전체 조회   
+    4) deleteById() : / delete() : 삭제 deleteById() 
+
+
+
+    🔁 관계 흐름 요약 (예: 목록 조회)
+    사용자가 /memo/list 접속
+
+    MemoController가 요청을 받음 
+
+    MemoService.getListPage() 호출
+
+    MemoRepository.findAll(pageable)로 DB에서 데이터 가져옴
+
+    가져온 Memo → MemoDTO로 변환
+
+    Controller가 Model에 담아서 View로 전달
+
+    Thymeleaf HTML이 DTO를 사용해 화면 출력
+
+
+
+    ✅ 한 눈에 보기 요약
+
+    단계	담당 클래스	          역할
+     1	 MemoController	  : 클라이언트 요청 받기
+     2	 MemoService	    : 기능 정의 (인터페이스)
+     3	 MemoServiceImpl	: 실제 로직 처리
+     4	 MemoRepository	  : DB 접근
+     5	 Thymeleaf	      : 화면 출력
+
+  - modelmapper : dto -> entity, entity -> dto 자동으로 처리
+    @RootConfig.java 작성

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="result">
+        <span th:text="${calcDTO?.num1}"></span>
+        <span th:text="${calcDTO?.op}"></span>
+        <span th:text="${calcDTO?.num2}"></span>
+        =
+        <span th:text="${calcDTO?.result}"></span>
+    </div>
+</body>
+
+</html>

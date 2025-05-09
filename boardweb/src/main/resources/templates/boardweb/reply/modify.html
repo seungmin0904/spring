@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+
+  <th:block layout:fragment="title">
+    <title>댓글 수정</title>
+  </th:block>
+
+  <div layout:fragment="content">
+    <h3>댓글 수정 / 삭제</h3>
+
+    <!-- 수정 폼 -->
+    <form th:action="@{/boardweb/reply/modify}"
+          th:object="${dto}"
+          method="post">
+      <!-- (1) 필수 히든 필드: 게시글, 댓글, 부모댓글 번호 -->
+      <input type="hidden" th:field="*{bno}" />
+      <input type="hidden" th:field="*{rno}" />
+      <input type="hidden" th:field="*{parentRno}" />
+
+      <!-- (2) 작성자 (수정 불가) -->
+      <div class="mb-3">
+        <label class="form-label">작성자</label>
+        <input type="text"
+               class="form-control"
+               th:field="*{replyer}"
+               readonly />
+      </div>
+
+      <!-- (3) 내용 -->
+      <div class="mb-3">
+        <label class="form-label">내용</label>
+        <textarea class="form-control"
+                  th:field="*{text}"
+                  rows="3"></textarea>
+      </div>
+
+      <!-- (4) 버튼 그룹 -->
+      <button type="submit" class="btn btn-primary">수정</button>
+      <!-- 삭제는 JS로 숨은 폼 submit -->
+      <button type="button"
+              class="btn btn-danger"
+              onclick="document.getElementById('deleteForm').submit()">
+        삭제
+      </button>
+      <a th:href="@{/boardweb/read(bno=${dto.bno})}"
+         class="btn btn-secondary">취소</a>
+    </form>
+
+    <!-- 삭제용 히든 폼 -->
+    <form th:action="@{/boardweb/reply/delete}"
+          method="post"
+          id="deleteForm"
+          style="display:none">
+      <input type="hidden" name="rno" th:value="${dto.rno}" />
+      <input type="hidden" name="bno" th:value="${dto.bno}" />
+    </form>
+  </div>
+</html>

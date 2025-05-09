@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout}">
+<th:block layout:fragment="title">
+  <title>게시글 수정</title>
+</th:block>
+<div layout:fragment="content">
+  <h3>게시글 수정</h3>
+
+  <!-- ① 수정용 폼 (POST /boardweb/modify) -->
+  <form th:action="@{/boardweb/modify(
+                    page=${pageRequestDTO.page},
+                    size=${pageRequestDTO.size},
+                    type=${pageRequestDTO.type},
+                    keyword=${pageRequestDTO.keyword}
+                  )}"
+        th:object="${dto}"
+        method="post">
+    <!-- bno 히든 -->
+    <input type="hidden" th:field="*{bno}" />
+
+    <div class="mb-3">
+      <label class="form-label">Title</label>
+      <input type="text"
+             class="form-control"
+             th:field="*{title}" />
+    </div>
+
+    <!-- 본문 영역 (넓게, 여백 포함) -->
+<div class="mb-3 border rounded p-4" style="min-height: 300px;">
+  <label class="form-label"></label>
+  <textarea class="form-control auto-resize border-0"
+            th:field="*{content}"
+            placeholder="내용을 입력하세요"
+            style="resize: none; overflow: hidden; min-height: 300px; white-space: pre-wrap;"></textarea>
+</div>
+
+    <!-- 버튼 그룹 -->
+    <button type="submit" class="btn btn-primary">수정</button>
+    <button type="button" class="btn btn-danger">삭제</button>
+    <a th:href="@{/boardweb/list(
+                   page=${pageRequestDTO.page},
+                   size=${pageRequestDTO.size},
+                   type=${pageRequestDTO.type},
+                   keyword=${pageRequestDTO.keyword}
+                 )}"
+       class="btn btn-success">목록</a>
+  </form>
+
+  <!-- ② 삭제용 히든 폼 -->
+  <form th:action="@{/boardweb/delete}"
+        method="post"
+        id="actionForm">
+    <input type="hidden" name="bno" th:value="${dto.bno}" />
+    <input type="hidden" name="page" th:value="${pageRequestDTO.page}" />
+    <input type="hidden" name="size" th:value="${pageRequestDTO.size}" />
+    <input type="hidden" name="type" th:value="${pageRequestDTO.type}" />
+    <input type="hidden" name="keyword" th:value="${pageRequestDTO.keyword}" />
+  </form>
+</div>
+
+<!-- ③ 삭제 버튼 JS 처리 -->
+<th:block layout:fragment="script">
+  <script th:src="@{/js/modify.js}"></script>
+  <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+      const areas = document.querySelectorAll('.auto-resize');
+      areas.forEach(area => {
+        area.style.height = 'auto';
+        area.style.height = area.scrollHeight + 'px';
+        area.addEventListener('input', function () {
+          this.style.height = 'auto';
+          this.style.height = this.scrollHeight + 'px';
+        });
+      });
+    });
+  </script>
+</th:block>
+</html>

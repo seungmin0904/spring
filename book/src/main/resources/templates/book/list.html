@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" layout:decorate="~{layouts/layout}">
+<th:block layout:fragment="css"></th:block>
+<th:block layout:fragment="title">
+    <title>도서목록</title>
+</th:block>
+<div layout:fragment="content">
+    <!--본문-->
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">code</th>
+                <th scope="col">Title</th>
+                <th scope="col">Author</th>
+                <th scope="col">CreatedDate</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="book : ${result.dtoList}">
+                <th scope="row" th:text="${book.code}"></th>
+                <td><a th:href="@{/book/read(code=${book.code},page=${pageRequestDTO.Page},size=${pageRequestDTO.size},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}"
+                        th:text="${book.title}"></a></td>
+                <td th:text="${book.author}"></td>
+                <td th:text="${#temporals.format(book.createdDate, 'yyyy-MM-dd')}"></td>
+            </tr>
+        </tbody>
+    </table>
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            <li th:class="page-item" th:if="${result.prev}">
+                <a class="page-link"
+                    th:href="@{list(page=${result.prevPage},size=${result.pageRequestDTO.size},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}">Previous</a>
+            </li>
+
+            <li th:class="'page-item ' + ${result.current == page?'active':''}" th:each="page:${result.pageNumList}">
+                <a class="page-link"
+                    th:href="@{list(page=${page},size=${result.pageRequestDTO.size},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}">[[${page}]]</a>
+            </li>
+            <li class="page-item" th:if="${result.next}">
+                <a class="page-link"
+                    th:href="@{list(page=${result.nextPage},size=${result.pageRequestDTO.size},type=${pageRequestDTO.type},keyword=${pageRequestDTO.keyword})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+<th:block layout:fragment="script"></th:block>
+
+</html>

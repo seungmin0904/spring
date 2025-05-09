@@ -1,0 +1,69 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.generatedSources.outputDirectory": "src/main/generated",
+    "java.compile.nullAnalysis.mode": "disabled",
+    "java.project.sourcePaths": [
+        "src/main/java",
+        "target/generated-sources/annotations"
+      ]
+}
+
+settings.json 에 복붙
+
+@query 어노테이션 사용(jpaquery)
+@Query("select b from Board b where b.writer = ?1")
+ List<Board> findByWriter(String writer);
+ - 복잡한 구조에서 가독성 떨어짐 메소드명이 길어짐
+ - 간단한 구조에서 빠르게 개발할때 사용하기 용이함
+ 파라메터 설정 
+ - ?1
+ - :변수명
+
+QueryDSL 이용 - 다른 라이브 러리 도움 받기
+(1) QuerydslPredicateExevutor
+- 간단한 작업에 사용편리
+- 조인 불가 
+- 복잡한 실무환경에서는 한계가 명확함
+
+(2) QuerydslRepositorySupport 클래스
+- 확장성 제공 
+- 조인 가능
+
+
+
+
+
+
+
+
+ - QueryDSL 의존성 추가 
+
+ 	<dependency>
+    <groupId>com.querydsl</groupId>
+    <artifactId>querydsl-jpa</artifactId>
+    <version>5.1.0</version>
+	<classifier>jakarta</classifier>
+</dependency>
+<dependency>
+    <groupId>com.querydsl</groupId>
+    <artifactId>querydsl-apt</artifactId>
+    <version>5.1.0</version>
+	<classifier>jakarta</classifier>
+</dependency>
+
+	<plugin>
+  <groupId>com.mysema.maven</groupId>
+  <artifactId>apt-maven-plugin</artifactId>
+  <version>1.1.3</version>
+  <executions>
+     <execution>
+        <goals>
+          <goal>process</goal>
+        </goals>
+        <configuration>
+          <outputDirectory>target/generated-sources/annotations</outputDirectory>
+          <processor>com.querydsl.apt.jpa.JPAAnnotationProcessor</processor>
+        </configuration>
+     </execution>
+  </executions>
+</plugin>
