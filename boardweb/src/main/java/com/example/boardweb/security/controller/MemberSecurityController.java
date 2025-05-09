@@ -127,7 +127,7 @@ public class MemberSecurityController {
         boolean result = securityService.verifyEmailToken(token);
 
         if (result) {
-            // ✅ info 메시지를 인증 완료로 세팅
+            // info 메시지를 인증 완료로 세팅
             rttr.addFlashAttribute("info", "이메일 인증이 완료되었습니다.");
             return "redirect:/security/register?username=" + securityService.getEmailFromToken(token);
         } else {
@@ -162,4 +162,44 @@ public class MemberSecurityController {
 
     }
 
+    // 비밀번호 찾기 처리 컨트롤러
+
+    // 이메일 입력, 인증 전송 처리
+    @GetMapping("/forgot-password")
+    public String showForgotPasswordForm() {
+        return "security/forgot-password"; // 이메일 입력 폼
+    }
+
+    @PostMapping("/forgot-password")
+    public String handleForgotPassword(@RequestParam String email, RedirectAttributes rttr) {
+        try {
+            securityService.sendResetPasswordLink(email);
+            rttr.addFlashAttribute("message", "비밀번호 재설정 링크를 이메일로 보냈습니다.");
+        } catch (Exception e) {
+            rttr.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/security/forgot-password";
+    }
+
+    // 인증 완료 후 비밀번호 재설정 처리
+
+    @GetMapping("/reset-password")
+    public String showResetPasswordPage(@RequestParam("token") String token, Model model) {
+        model.addAttribute("token", token);
+        return "security/reset-password";
+    }
+
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam("token") String token,
+            @RequestParam("newPassword") String newPassword,
+            RedirectAttributes rttr) {
+        try {
+            securityService.resetPassword(token, newPassword);
+            rttr.addFlashAttribute("message", "비밀번호가 변경되었습니다. 로그인하세요.");
+            return "redirect:/security/login";
+        } catch (Exception e) {
+            rttr.addFlashAttribute("error", e.getMessage());
+            return "redirect:/security/forgot-password";
+        }
+    }
 }

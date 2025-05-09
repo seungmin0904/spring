@@ -17,8 +17,10 @@ import com.example.boardweb.security.dto.MemberSecurityDTO;
 import com.example.boardweb.security.entity.EmailVerificationToken;
 import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.entity.MemberRole;
+import com.example.boardweb.security.entity.PasswordResetToken;
 import com.example.boardweb.security.repository.EmailVerificationTokenRepository;
 import com.example.boardweb.security.repository.MemberRepository;
+import com.example.boardweb.security.repository.PasswordResetTokenRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,11 +37,13 @@ public class SecurityService {
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
     private final MemberWebRepository memberWebRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     // 회원가입 처리
     @Transactional
     public void register(MemberSecurityDTO dto) {
         // 이메일 중복 체크
+
         if (memberRepository.existsByUsername(dto.getUsername())) {
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
         }
@@ -71,6 +75,7 @@ public class SecurityService {
 
         // 사용한 토큰은 삭제 (선택 사항)
         tokenRepository.findByUsername(dto.getUsername()).ifPresent(tokenRepository::delete);
+
     }
 
     // 트랜잭션 밖에서 수행되도록 분리
@@ -118,10 +123,16 @@ public class SecurityService {
     public void sendInitialVerification(String username) {
         // 기존 토큰 제거
         tokenRepository.findByUsername(username).ifPresent(tokenRepository::delete);
-
+        tokenRepository.flush();
         // 새 토큰 발급
         EmailVerificationToken token = EmailVerificationToken.create(username);
-        tokenRepository.save(token);
+        try {
+            tokenRepository.save(token);
+
+            log.info(" 이메일 인증 토큰 저장 완료: {}", token.getToken());
+        } catch (Exception e) {
+            log.error(" 이메일 인증 토큰 저장 실패", e);
+        }
 
         String link = "http://localhost:8080/security/verify-info?token=" + token.getToken();
         emailService.sendTestEmail(username, "[BoardWeb] 이메일 인증 요청", "링크 클릭:\n" + link);
@@ -222,5 +233,42 @@ public class SecurityService {
         String loginName = getCurrentName();
 
         return writerEmailOrName.equals(loginEmail) || writerEmailOrName.equals(loginName);
+    }
+
+    // password 찾기 처리
+    public void sendResetPasswordLink(String email) {
+        // 이메일 존재 확인
+        if (!memberRepository.existsByUsername(email)) {
+            throw new IllegalArgumentException("존재하지 않는 이메일입니다.");
+        }
+
+        // 기존 토큰 제거
+        passwordResetTokenRepository.findByUsername(email)
+                .ifPresent(passwordResetTokenRepository::delete);
+
+        // 새 토큰 생성 및 저장
+        PasswordResetToken token = PasswordResetToken.create(email);
+        passwordResetTokenRepository.save(token);
+
+        String resetLink = "http://localhost:8080/security/reset-password?token=" + token.getToken();
+        emailService.sendTestEmail(email, "[BoardWeb] 비밀번호 재설정 요청", "아래 링크를 클릭하세요:\n" + resetLink);
+    }
+
+    public boolean resetPassword(String token, String newPassword) {
+        var resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰입니다."));
+
+        if (resetToken.isExpired()) {
+            throw new IllegalStateException("토큰이 만료되었습니다.");
+        }
+
+        Member member = memberRepository.findById(resetToken.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보 없음"));
+
+        member.setPassword(passwordEncoder.encode(newPassword));
+        memberRepository.save(member);
+
+        passwordResetTokenRepository.delete(resetToken);
+        return true;
     }
 }

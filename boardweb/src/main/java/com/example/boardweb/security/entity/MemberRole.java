@@ -18,7 +18,8 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Entity
-@Table(name="member_roles", uniqueConstraints = {@UniqueConstraint(columnNames = {"member_username", "roleName"})}) 
+@Table(name = "member_roles", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "member_username", "roleName" }) })
 @Getter
 @Setter
 @ToString(exclude = "member")
@@ -27,15 +28,15 @@ import lombok.ToString;
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class MemberRole {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
-    
+
     private String roleName;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "member_username")
+    @JoinColumn(name = "member_username", nullable = false)
     private Member member;
 }

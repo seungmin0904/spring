@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <title>로그인</title>
@@ -115,10 +116,12 @@
     }
   </style>
 </head>
+
 <body>
   <div class="login-wrapper">
     <h2>로그인</h2>
-    <form action="/login" method="post">
+    <form th:action="@{/login}" method="post">
+      <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
       <input type="text" class="form-input" name="username" placeholder="이메일" required>
       <input type="password" class="form-input" name="password" placeholder="비밀번호" required>
       <button type="submit" class="login-button">로그인</button>
@@ -126,6 +129,9 @@
 
     <div class="extra-links">
       계정이 없으신가요? <a href="/security/register">회원가입</a>
+    </div>
+    <div class="extra-links">
+      <a href="/security/forgot-password">비밀번호 찾기</a>
     </div>
 
     <div class="social-login">
@@ -149,4 +155,5 @@
     </div>
   </div>
 </body>
+
 </html>
