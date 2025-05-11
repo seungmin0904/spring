@@ -8,7 +8,8 @@
         <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!">Overview</a>
         <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!">Events</a>
         <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!">Profile</a>
-        <a class="list-group-item list-group-item-action list-group-item-light p-3" href="#!">Status</a>
+      <a th:if="${isAdmin}" class="list-group-item list-group-item-action list-group-item-light p-3" 
+      th:href="@{/admin/dashboard}">관리자 페이지</a>
     </div>
 </div>
 

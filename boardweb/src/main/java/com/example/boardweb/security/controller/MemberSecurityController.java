@@ -20,6 +20,8 @@ import com.example.boardweb.security.dto.MemberSecurityDTO;
 import com.example.boardweb.security.service.EmailService;
 import com.example.boardweb.security.service.SecurityService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -56,7 +58,7 @@ public class MemberSecurityController {
 
     @PostMapping("/register")
     public String processRegister(@ModelAttribute MemberSecurityDTO dto, BindingResult bindingResult, Model model,
-            RedirectAttributes rttr) {
+            RedirectAttributes rttr,HttpServletRequest request,HttpServletResponse response) {
         log.info("회원가입 정보: {}", dto);
         if (bindingResult.hasErrors()) {
             log.warn(" BindingResult 에러 발생: {}", bindingResult);
@@ -65,9 +67,9 @@ public class MemberSecurityController {
         }
 
         try {
-            securityService.register(dto); // 비즈니스 로직 처리 (예: 중복 이메일 등)
+            securityService.register(dto,request,response); // ㅉ파라미터 수행하는 호출부 
             rttr.addFlashAttribute("success", "회원가입이 완료되었습니다.");
-            return "redirect:/security/login";
+            return "redirect:/boardweb/list"; // 자동 로그인 이후 경로 설정
         } catch (IllegalStateException e) {
             log.error(" 회원가입 중 에러 발생: {}", e.getMessage(), e); // 전체 예외 스택까지 출력
             model.addAttribute("memberDTO", dto);
@@ -202,4 +204,10 @@ public class MemberSecurityController {
             return "redirect:/security/forgot-password";
         }
     }
+
+    @GetMapping("/need-verification")
+    public String needVerificationPage() {
+    return "security/need-verification";
+
+   }
 }

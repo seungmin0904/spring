@@ -1,5 +1,6 @@
 package com.example.boardweb.board.controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -27,6 +28,9 @@ import com.example.boardweb.board.service.BoardWebService;
 import com.example.boardweb.oauth.dto.OAuthUserDTO;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
 import com.example.boardweb.security.service.SecurityService;
+import com.example.boardweb.security.service.SuspensionService;
+import com.example.boardweb.security.service.WarningService;
+import com.example.boardweb.security.util.SecurityUtil;
 
 import jakarta.validation.Valid;
 
@@ -38,7 +42,8 @@ public class BoardWebController {
 
     private final BoardWebService boardWebService;
     private final SecurityService securityService;
-
+    private final WarningService warningService;
+    private final SuspensionService suspensionService;
     // 리스트
     @GetMapping("/list")
     public String list(
@@ -75,16 +80,49 @@ public class BoardWebController {
         return "boardweb/register";
     }
 
-    // ▶ 등록 처리
+    // 등록 처리
     @PostMapping("/register")
     public String register(
             @Valid @ModelAttribute("dto") BoardWebDTO dto, BindingResult bindingResult,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
+                log.info(" 게시글 등록 메서드 진입");  
+
+        // 계정 정지 상태 검사
+         if (securityService.isSuspended()) {
+            throw new AccessDeniedException("계정이 정지되어 글을 작성할 수 없습니다.");
+        }
+
+        // 금지어 감지 후 경고 메시지 전달 warn에 담아 뷰에서 출력
+        String username = SecurityUtil.getCurrentUsername();
+        long count = warningService.checkAndWarn(dto.getContent(), username);
+
+        if (count >= 1) {
+            rttr.addFlashAttribute("warn", "⚠️ 금지어가 감지되어 경고 1회가 부여되었습니다. 현재 누적: " + count + "회");
+        }
+
+        if (count == 3) {
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            securityService.suspendMember(username, until);
+            suspensionService.recordAutoSuspension(
+                securityService.getCurrentMember(), LocalDateTime.now(), until, false);
+            rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
+        }
+
+        if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
+            securityService.suspendMember(username, null);
+            suspensionService.recordAutoSuspension(
+                securityService.getCurrentMember(), LocalDateTime.now(), LocalDateTime.MAX, true);
+            rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
+        }
+
+
+         // 유효성 검사 
         if (bindingResult.hasErrors()) {
             return "boardweb/register";
         }
 
+        // 게시글 등록처리 
         log.info("[CREATE] {}", dto);
         Long bno = boardWebService.create(dto);
         rttr.addFlashAttribute("msg", "등록되었습니다. bno=" + bno);
@@ -132,6 +170,33 @@ public class BoardWebController {
             @ModelAttribute("dto") BoardWebDTO dto,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
+
+        // 현재 사용자 정지 여부 확인
+        if (securityService.isSuspended()) {
+        throw new AccessDeniedException("계정이 정지되어 게시글을 수정할 수 없습니다.");
+       
+       }
+
+        String username = SecurityUtil.getCurrentUsername();
+        long count = warningService.checkAndWarn(dto.getContent(), username);
+
+        if (count >= 1) {
+            rttr.addFlashAttribute("warn", "⚠️ 금지어가 감지되어 경고 1회가 부여되었습니다. 현재 누적: " + count + "회");
+        }
+
+        if (count == 3) {
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            securityService.suspendMember(username, until);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until, false);
+            rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
+        }
+
+        if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
+            securityService.suspendMember(username, null);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), LocalDateTime.MAX, true);
+            rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
+        }
+
         boardWebService.modify(dto);
         rttr.addFlashAttribute("msg", "수정되었습니다.");
         return "redirect:/boardweb/list"

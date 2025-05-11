@@ -1,27 +1,36 @@
 package com.example.boardweb.security.service;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 
-import com.example.boardweb.board.repository.MemberWebRepository;
 import com.example.boardweb.oauth.dto.OAuthUserDTO;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
+import com.example.boardweb.security.dto.SuspensionHistoryDTO;
 import com.example.boardweb.security.entity.EmailVerificationToken;
 import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.entity.MemberRole;
 import com.example.boardweb.security.entity.PasswordResetToken;
+import com.example.boardweb.security.entity.SuspensionHistory;
 import com.example.boardweb.security.repository.EmailVerificationTokenRepository;
 import com.example.boardweb.security.repository.MemberRepository;
 import com.example.boardweb.security.repository.PasswordResetTokenRepository;
+import com.example.boardweb.security.util.SecurityUtil;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +45,34 @@ public class SecurityService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
-    private final MemberWebRepository memberWebRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final WarningService warningService;
+    private final SuspensionService suspensionService;
+
+    // 테스트용 관리자 계정 생성
+    @PostConstruct
+    public void createAdmin() {
+    if (!memberRepository.existsByUsername("admin@example.com")) {
+        Member admin = Member.builder()
+            .username("admin@example.com")
+            .password(passwordEncoder.encode("Admin!1234"))
+            .name("관리자")
+            .emailVerified(true)
+            .build();
+
+        MemberRole role = MemberRole.builder()
+            .roleName("ADMIN") // 반드시 ADMIN
+            .member(admin)
+            .build();
+
+        admin.setRoles(Set.of(role));
+        memberRepository.save(admin);
+      }
+   }
 
     // 회원가입 처리
     @Transactional
-    public void register(MemberSecurityDTO dto) {
+    public void register(MemberSecurityDTO dto, HttpServletRequest request, HttpServletResponse response) {
         // 이메일 중복 체크
 
         if (memberRepository.existsByUsername(dto.getUsername())) {
@@ -62,7 +93,7 @@ public class SecurityService {
                 .username(dto.getUsername())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .name(dto.getName())
-                .emailVerified(true) // ✅ 인증 완료 상태로 저장
+                .emailVerified(true) // 인증 완료 상태로 저장
                 .build();
 
         MemberRole role = MemberRole.builder()
@@ -75,6 +106,27 @@ public class SecurityService {
 
         // 사용한 토큰은 삭제 (선택 사항)
         tokenRepository.findByUsername(dto.getUsername()).ifPresent(tokenRepository::delete);
+
+        // 회원 가입 완료되면 자동 로그인 처리 컨트롤러에서 이동페이지 경로 설정 
+        MemberSecurityDTO securityDTO = MemberSecurityDTO.builder()
+        .username(member.getUsername())
+        .password(member.getPassword()) // 인코딩된 비밀번호
+        .name(member.getName())
+        .authorities(member.getRoles().stream()
+        .map(r -> new SimpleGrantedAuthority("ROLE_" + r.getRoleName()))
+        .collect(Collectors.toList()))
+        .emailVerified(true)
+        .build();
+
+       // 1. 인증 토큰 생성
+       UsernamePasswordAuthenticationToken authToken =
+       new UsernamePasswordAuthenticationToken(securityDTO, securityDTO.getPassword(), securityDTO.getAuthorities());
+       // 2. 빈 SecurityContext 생성 및 토큰 설정
+       SecurityContext context = SecurityContextHolder.createEmptyContext();
+       context.setAuthentication(authToken);
+       // 3. 세션에 SecurityContext 저장
+       HttpSessionSecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
+       contextRepository.saveContext(context, request, response);
 
     }
 
@@ -163,12 +215,6 @@ public class SecurityService {
         member.setName(dto.getName());
         memberRepository.save(member);
 
-        memberWebRepository.findById(dto.getUsername()) // username == email 구조라면
-                .ifPresent(memberWeb -> {
-                    memberWeb.setName(dto.getName());
-                    memberWebRepository.save(memberWeb);
-                });
-
         // SecurityContext 갱신
         MemberSecurityDTO updatedDTO = MemberSecurityDTO.builder()
                 .username(member.getUsername())
@@ -178,6 +224,8 @@ public class SecurityService {
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                         .collect(Collectors.toList()))
                 .emailVerified(member.isEmailVerified())
+                .suspended(member.isSuspended()) // 정지 관련 필드
+                .suspendedUntil(member.getSuspendedUntil())
                 .build();
 
         UsernamePasswordAuthenticationToken newAuth = new UsernamePasswordAuthenticationToken(updatedDTO,
@@ -222,6 +270,12 @@ public class SecurityService {
         }
 
         return null;
+    }
+
+    public Member getCurrentMember() {
+    String username = getCurrentUsername();
+    return memberRepository.findById(username)
+            .orElseThrow(() -> new IllegalArgumentException("사용자 정보 없음"));
     }
 
     // 공통 소유자 검증 (이메일 또는 이름이 일치하면 true)
@@ -271,4 +325,72 @@ public class SecurityService {
         passwordResetTokenRepository.delete(resetToken);
         return true;
     }
+
+    // 계정 정지 처리 
+    public void suspendMember(String username, LocalDateTime until) {
+    Member member = memberRepository.findById(username)
+        .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+    member.setSuspended(true);
+    member.setSuspendedUntil(until); // until이 null이면 무기한 정지로 간주
+    memberRepository.save(member);
+   }
+
+
+    public void liftSuspension(String username,boolean isManual) {
+    Member member = memberRepository.findById(username)
+        .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+    member.setSuspended(false);
+    member.setSuspendedUntil(null);
+    memberRepository.save(member);
+
+    LocalDateTime now = LocalDateTime.now();
+    if (isManual) {
+        // liftSuspension(username, true) 관리자 수동 해제
+        warningService.clearWarningsAndRecordManualLift(member);
+    } else {
+        // liftSuspension(username, false) 기간 만료 자동 해제(기간 만료 감지 로직에서 호출)
+        suspensionService.recordAutoLift(member, now, now); 
+    }
+    
+    // 현재 로그인 사용자가 정지 해제 대상과 일치하면 SecurityContext 갱신시도
+    try {
+        SecurityContext context = SecurityContextHolder.getContext();
+        if (context != null && context.getAuthentication() != null) {
+    Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if (principal instanceof MemberSecurityDTO currentUser &&
+        currentUser.getUsername().equals(username)) {
+
+        // 최신 상태 갱신
+        MemberSecurityDTO updatedDTO = SecurityUtil.toDTO(member);
+        UsernamePasswordAuthenticationToken newAuth = new UsernamePasswordAuthenticationToken(
+            updatedDTO, updatedDTO.getPassword(), updatedDTO.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(newAuth);
+      }
+    }
+        } catch (Exception e) {
+        // 아무 사용자도 로그인하지 않은 상황에서는 무시
+        log.warn("[정지 해제] SecurityContext 갱신 생략 (비로그인 상태): {}", e.getMessage());
+     }
+  }
+
+
+  public boolean isSuspended() {
+    Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+    if (principal instanceof MemberSecurityDTO dto) {
+        // 최신 상태 조회
+        return memberRepository.findById(dto.getUsername())
+                .map(member -> {
+                    if (!member.isSuspended()) return false;
+                    if (member.getSuspendedUntil() == null) return true;
+                    return member.getSuspendedUntil().isAfter(LocalDateTime.now());
+                })
+                .orElse(false);
+    }
+
+    return false;
+  }
+
 }

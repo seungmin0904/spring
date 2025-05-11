@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>관리자 대시보드</title>
+</head>
+<body>
+  <h2>관리자 대시보드</h2>
+  <p><strong>현재 로그인: </strong><span th:text="${username}"></span></p>
+
+  <!-- 알림 메시지 -->
+  <div th:if="${result}" style="color: green;" th:text="${result}"></div>
+  <div th:if="${error}" style="color: red;" th:text="${error}"></div>
+
+  <!-- 검색 기능 -->
+  <form method="get" th:action="@{/admin/dashboard}">
+    <input type="text" name="keyword" placeholder="아이디 또는 이름 검색" />
+    <button type="submit">검색</button>
+  </form>
+
+  <br>
+
+  <table border="1">
+    <thead>
+      <tr>
+        <th>아이디</th>
+        <th>이름</th>
+        <th>정지 상태</th>
+        <th>정지 해제일</th>
+        <th>정지 유형</th>
+        <th>기간 조치</th>
+        <th>직접 입력</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="member : ${members}">
+        <td th:text="${member.username}"></td>
+        <td th:text="${member.name}"></td>
+        <td th:text="${member.suspended} ? '정지됨' : '정상'"></td>
+
+        <!-- 정지 해제일 표시 및 만료 여부 체크 -->
+        <td>
+          <span th:if="${member.suspendedUntil != null}">
+            <span th:text="${#temporals.format(member.suspendedUntil, 'yyyy-MM-dd HH:mm')}"></span>
+           <span th:if="${member.suspendedUntil != null and member.suspendedUntil.isBefore(T(java.time.LocalDateTime).now())}" style="color:red;">
+  (기간 만료)
+</span>
+          </span>
+          <span th:unless="${member.suspendedUntil != null}">없음 또는 무기한</span>
+        </td>
+
+        <!-- 정지 유형 -->
+    <td th:if="${member.suspended}">
+      <span th:text="${autoSuspensionMap[member.username] ? '자동 정지' : '수동 정지'}"></span>
+    </td>
+    <td th:unless="${member.suspended}">-</td>
+
+        <!-- 기간 조치 버튼 -->
+        <td>
+          <form th:action="@{/admin/suspend}" method="post">
+            <input type="hidden" name="username" th:value="${member.username}" />
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit" name="days" value="3">+3일</button>
+            <button type="submit" name="days" value="7">+7일</button>
+            <button type="submit" name="days" value="-1">무기한</button>
+            <button type="submit" name="days" value="0">해제</button>
+          </form>
+        </td>
+
+        <!-- 정지일 직접 지정 -->
+        <td>
+          <form th:action="@{/admin/suspend-custom}" method="post">
+            <input type="hidden" name="username" th:value="${member.username}" />
+            <input type="datetime-local" name="until" required />
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit">적용</button>
+          </form>
+        </td>
+
+        <td>
+          <a th:href="@{/admin/suspensions/{username}(username=${member.username})}">보기</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <a href="/admin/banned-words">금지어 설정</a>
+  <a href="/admin/suspensions">이력 확인</a>
+</body>
+</html>

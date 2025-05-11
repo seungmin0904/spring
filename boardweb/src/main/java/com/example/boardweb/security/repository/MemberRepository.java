@@ -1,5 +1,6 @@
 package com.example.boardweb.security.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,9 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     boolean existsByUsername(String username); //  ID 중복 체크
 
     @Query("SELECT DISTINCT m FROM Member m LEFT JOIN FETCH m.roles WHERE m.username = :username")
-    List<Member> findWithRolesByUsername(@Param("username") String username);
+    Optional<Member> findWithRolesByUsername(@Param("username") String username);
+
+    // 정지 해제 자동감지 쿼리
+    List<Member> findAllBySuspendedTrueAndSuspendedUntilBefore(LocalDateTime now);
 
 }

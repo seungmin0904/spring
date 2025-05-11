@@ -19,10 +19,10 @@ import com.example.boardweb.board.dto.PageRequestDTO;
 import com.example.boardweb.board.dto.PageResultDTO;
 import com.example.boardweb.board.dto.ReplyWebDTO;
 import com.example.boardweb.board.entity.BoardWeb;
-import com.example.boardweb.board.entity.MemberWeb;
 import com.example.boardweb.board.repository.BoardWebRepository;
-import com.example.boardweb.board.repository.MemberWebRepository;
 import com.example.boardweb.board.repository.ReplyWebRepository;
+import com.example.boardweb.security.entity.Member;
+import com.example.boardweb.security.repository.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -32,7 +32,7 @@ import lombok.extern.log4j.Log4j2;
 @Service
 public class BoardWebService {
     private final BoardWebRepository boardWebRepository;
-    private final MemberWebRepository memberWebRepository;
+    private final MemberRepository memberRepository;
     private final ReplyWebRepository replyWebRepository;
 
     public PageResultDTO<BoardWebDTO> getList(PageRequestDTO pageRequestDTO) {
@@ -42,7 +42,7 @@ public class BoardWebService {
         Page<Object[]> page = boardWebRepository.list(pageRequestDTO, pageable);
         // Function<T, R> 인터페이스를 사용하여 람다 표현식으로 변환
         Function<Object[], BoardWebDTO> fn = (en -> entityToDto((BoardWeb) en[0],
-                (MemberWeb) en[1],
+                (Member) en[1],
                 (Long) en[2]));
 
         List<BoardWebDTO> dtoList = page.getContent().stream()
@@ -62,7 +62,7 @@ public class BoardWebService {
         // 1) 게시글, 회원 정보 조회
         BoardWeb boardWeb = boardWebRepository.findById(bno)
                 .orElseThrow(() -> new IllegalArgumentException("게시글 없음: " + bno));
-        MemberWeb member = boardWeb.getMemberWeb();
+        Member member = boardWeb.getMember();
 
         // 2) 댓글 개수 조회
         Long replyCount = replyWebRepository.countByBoardWeb(boardWeb);
@@ -117,29 +117,18 @@ public class BoardWebService {
 
     public Long create(BoardWebDTO dto) {
         // 작성자(MemberWeb) 조회
-        MemberWeb member = memberWebRepository.findById(dto.getEmail())
-                .orElseGet(() -> {
-                    // 분리된 테이블에 자동 생성
-                    log.warn("회원이 없어 자동 생성: {}", dto.getEmail());
-                    MemberWeb newMember = MemberWeb.builder()
-                            .email(dto.getEmail())
-                            .password("SOCIAL") // 더미 추후 encoding 사용
-                            .name(dto.getName() != null ? dto.getName() : "소셜회원") // 혹은 기본값
-                            .build();
-                    return memberWebRepository.save(newMember);
-                });
+        Member member = memberRepository.findById(dto.getEmail())
+               .orElseThrow(() -> new IllegalArgumentException("회원 없음: " + dto.getEmail()));
+                    BoardWeb boardWeb = BoardWeb.builder()
+                            .title(dto.getTitle())
+                     .content(dto.getContent())
+                     .member(member) // 🔁 setMemberWeb → setMember
+                     .build();
+                     BoardWeb saved = boardWebRepository.save(boardWeb);
+                     return saved.getBno();
+                }
 
-        // 게시글 생성
-        BoardWeb boardWeb = BoardWeb.builder()
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .memberWeb(member)
-                .build();
-
-        // 저장
-        BoardWeb saved = boardWebRepository.save(boardWeb);
-        return saved.getBno();
-    }
+    
 
     @Transactional
     public void modify(BoardWebDTO dto) {
@@ -165,12 +154,12 @@ public class BoardWebService {
     }
 
     // 기존 entity → DTO 변환 헬퍼
-    private BoardWebDTO entityToDto(BoardWeb boardWeb, MemberWeb member, Long replyCount) {
+    private BoardWebDTO entityToDto(BoardWeb boardWeb, Member member, Long replyCount) {
         return BoardWebDTO.builder()
                 .bno(boardWeb.getBno())
                 .title(boardWeb.getTitle())
                 .content(boardWeb.getContent())
-                .email(member.getEmail())
+                .email(member.getUsername())
                 .name(member.getName())
                 .replyCount(replyCount)
                 .crDateTime(boardWeb.getCreatedDate())

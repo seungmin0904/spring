@@ -12,8 +12,8 @@ import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport
 import com.example.boardweb.board.dto.PageRequestDTO;
 import com.example.boardweb.board.entity.BoardWeb;
 import com.example.boardweb.board.entity.QBoardWeb;
-import com.example.boardweb.board.entity.QMemberWeb;
 import com.example.boardweb.board.entity.QReplyWeb;
+import com.example.boardweb.security.entity.QMember;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
@@ -36,12 +36,12 @@ public class SearchBoardRepositoryImpl extends QuerydslRepositorySupport impleme
         log.info("list() called");
 
         QBoardWeb boardWeb = QBoardWeb.boardWeb;
-        QMemberWeb memberWeb = QMemberWeb.memberWeb;
+        QMember member = QMember.member;
         QReplyWeb replyWeb = QReplyWeb.replyWeb;
         log.info(">>> Repository 검색조건 type={}, keyword={}", requestDTO.getType(), requestDTO.getKeyword());
         // association join: member
         JPQLQuery<BoardWeb> query = from(boardWeb)
-        .leftJoin(boardWeb.memberWeb, memberWeb);
+        .leftJoin(boardWeb.member, member);
 
         // ② 검색 조건
     String type = requestDTO.getType();
@@ -60,7 +60,7 @@ public class SearchBoardRepositoryImpl extends QuerydslRepositorySupport impleme
             // 부분 일치하면 검색 허용 
             // builder.or(memberWeb.name.containsIgnoreCase(keyword));
             // 완전 일치해야 검색 허용
-            builder.or(memberWeb.name.eq(keyword));
+            builder.or(member.name.eq(keyword));
         }
 
         query.where(builder);
@@ -74,7 +74,7 @@ public class SearchBoardRepositoryImpl extends QuerydslRepositorySupport impleme
 
         // select 절: boardWeb, memberWeb, 그리고 서브쿼리(countSub)만
         JPQLQuery<Tuple> tuple = query
-        .select(boardWeb, memberWeb, countSub);
+        .select(boardWeb, member, countSub);
 
 
         // for 문을 사용하여 정렬 조건 추가
@@ -92,7 +92,7 @@ public class SearchBoardRepositoryImpl extends QuerydslRepositorySupport impleme
                     break;
                 case "email":
                     // member email 정렬
-                    tuple.orderBy(new OrderSpecifier<>(direction, memberWeb.email));
+                    tuple.orderBy(new OrderSpecifier<>(direction, member.username));
                     break;
                 case "replyCount":
                     // 댓글 개수(countSub) 정렬

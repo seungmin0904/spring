@@ -17,11 +17,13 @@
     <!--  인증 재전송은 별도 form으로 분리 -->
     <form th:action="@{/security/resend-verification}" method="post"
       th:if="${loginType == 'local' and !#authentication.principal.emailVerified}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
       <button class="btn btn-warning btn-sm mb-3" type="submit">이메일 인증 다시 받기</button>
     </form>
 
     <!--  정보 수정 폼 -->
     <form th:action="@{/security/mypage}" th:object="${memberDTO}" method="post" th:if="${loginType == 'local'}">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
       <!-- 이메일 (readonly) -->
       <div class="mb-3">
         <label for="username" class="form-label">이메일</label>

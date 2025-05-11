@@ -54,15 +54,22 @@ public class CustomUserDetailsService implements UserDetailsService {
         .map(EmailVerificationToken::isVerified)
         .orElse(false);
 
+       System.out.println("▶ DTO 생성 시 suspended: " + member.isSuspended());
+            System.out.println("▶ DTO 생성 시 suspendedUntil: " + member.getSuspendedUntil());
 
-        return new MemberSecurityDTO(
-        member.getUsername(),
-        member.getPassword(),
-        member.getName(),
-        member.getRoles().stream()
-              .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
-              .collect(Collectors.toList()),
-              member.isEmailVerified()
-      );
+      return MemberSecurityDTO.builder()
+            .username(member.getUsername())
+            .password(member.getPassword())
+            .name(member.getName())
+            .authorities(member.getRoles().stream()
+            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+            .collect(Collectors.toList()))
+            .emailVerified(member.isEmailVerified())
+            .suspended(member.isSuspended())
+            .suspendedUntil(member.getSuspendedUntil())
+            .build();
+
+         
    }
+   
 }

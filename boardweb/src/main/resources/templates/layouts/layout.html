@@ -10,6 +10,7 @@ xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <link rel="icon" type="image/x-icon" th:href="@{/assets/favicon.ico}" />
     <!-- Core theme CSS (includes Bootstrap)-->
     <link th:href="@{/css/styles.css}" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <th:block layout:fragment="css"></th:block>
     <th:block layout:frgment="title"></th:block>
     <style>
@@ -60,11 +61,25 @@ xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
             </div>
         </div>
     </div>
+
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Core theme JS-->
     <script th:src="@{/js/modify.js}"></script>
+
     <th:block layout:fragment="script"></th:block>
+
+<script th:if="${warn}" th:inline="javascript">
+  Swal.fire({
+  toast: true,
+  position: 'bottom-end',
+  icon: 'warning',
+  title: /*[[${warn}]]*/ '',
+  showConfirmButton: false,
+  timer: 3000,
+  timerProgressBar: true
+});
+</script>
 </body>
 
 </html>

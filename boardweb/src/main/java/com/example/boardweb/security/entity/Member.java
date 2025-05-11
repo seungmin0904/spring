@@ -1,10 +1,12 @@
 package com.example.boardweb.security.entity;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -39,6 +41,12 @@ public class Member {
     private String name;
 
     private boolean emailVerified; // 이메일 인증여부 필드
+
+    @Column(nullable = false, name = "SUSPENDED")
+    private boolean suspended; // 정지 여부 관리자 권한
+
+    @Column(nullable = false, name = "SUSPENDED_UNTIL")
+    private LocalDateTime suspendedUntil; // 정지 해제일 관리자 권한
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

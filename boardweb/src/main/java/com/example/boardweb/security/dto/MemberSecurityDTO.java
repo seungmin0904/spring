@@ -1,5 +1,6 @@
 package com.example.boardweb.security.dto;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,6 +36,15 @@ public class MemberSecurityDTO implements UserDetails{
     private List<GrantedAuthority> authorities;
 
     private boolean emailVerified; // 이메일 인증 여부
+
+    private boolean suspended;
+    
+    private LocalDateTime suspendedUntil;
+
+
+
+
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

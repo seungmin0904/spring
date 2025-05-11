@@ -1,5 +1,8 @@
 package com.example.boardweb.board.controller;
 
+import java.time.LocalDateTime;
+
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +18,10 @@ import com.example.boardweb.board.dto.ReplyRequestDTO;
 import com.example.boardweb.board.dto.ReplyWebDTO;
 import com.example.boardweb.board.service.ReplyWebService;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
+import com.example.boardweb.security.service.SecurityService;
+import com.example.boardweb.security.service.SuspensionService;
+import com.example.boardweb.security.service.WarningService;
+import com.example.boardweb.security.util.SecurityUtil;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +33,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequiredArgsConstructor
 @Controller
 public class ReplyController {
-    // 댓글 처리 컨트롤러
+
+    private final SecurityService securityService;
     private final ReplyWebService replyWebService;
+    private final WarningService warningService;
+    private final SuspensionService suspensionService;
+    // 댓글 처리 컨트롤러
 
     @GetMapping("/modify")
     public String getModifyForm(@RequestParam Long rno, @RequestParam Long bno, Model model) {
@@ -59,12 +70,36 @@ public class ReplyController {
     public String register(@Valid @ModelAttribute("dto") ReplyRequestDTO dto, BindingResult bindingResult,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
+                
+                log.info("[REPLY CREATE] {}", dto);
 
-        log.info("[REPLY CREATE] {}", dto);
+        // 계정 정지 상태 검사
+        if (securityService.isSuspended()) {
+            throw new AccessDeniedException("계정이 정지되어 댓글을 작성할 수 없습니다.");
+        }
+
+        String username = SecurityUtil.getCurrentUsername();
+        long count = warningService.checkAndWarn(dto.getText(), username);
+
+        if (count >= 1) {
+            rttr.addFlashAttribute("warn", "⚠️ 금지어가 감지되어 경고 1회가 부여되었습니다. 현재 누적: " + count + "회");
+        }
+
+        if (count == 3) {
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            securityService.suspendMember(username, until);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until, false);
+            rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
+        }
+
+        if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
+            securityService.suspendMember(username, null);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), LocalDateTime.MAX, true);
+            rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
+        }
         // 서버 측 입력값 검증 조건 미 충족 시 에러 플래시 메세지와 함께
         // read 페이지로 redirect
         if (bindingResult.hasErrors()) {
-
             rttr.addFlashAttribute("error", "댓글 내용을 입력해주세요.");
 
             // 페이지 정보도 함께 리다이렉트
@@ -78,11 +113,11 @@ public class ReplyController {
         // 조건 통과 후 정상 처리 시 생성 후 read로 redirect
         replyWebService.create(dto);
 
-        return "redirect:/boardweb/read?bno=" + dto.getBno() +
-                "&page=" + pageRequestDTO.getPage() +
-                "&size=" + pageRequestDTO.getSize() +
-                "&type=" + pageRequestDTO.getType() +
-                "&keyword=" + pageRequestDTO.getKeyword();
+        return "redirect:/boardweb/read?bno=" + dto.getBno() 
+               + "&page=" + pageRequestDTO.getPage() 
+               + "&size=" + pageRequestDTO.getSize() 
+               + "&type=" + pageRequestDTO.getType() 
+               + "&keyword=" + pageRequestDTO.getKeyword();
     }
 
     /** 댓글/답글 수정 **/
@@ -91,8 +126,34 @@ public class ReplyController {
             ReplyRequestDTO dto,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
+        
+                log.info("[REPLY MODIFY] {}", dto);
+        
+        if (securityService.isSuspended()) {
+             throw new AccessDeniedException("계정이 정지되어 댓글을 수정할 수 없습니다.");
+        
+        }
 
-        log.info("[REPLY MODIFY] {}", dto);
+        String username = SecurityUtil.getCurrentUsername();
+        long count = warningService.checkAndWarn(dto.getText(), username);
+
+        if (count >= 1) {
+            rttr.addFlashAttribute("warn", "⚠️ 금지어가 감지되어 경고 1회가 부여되었습니다. 현재 누적: " + count + "회");
+        }
+
+        if (count == 3) {
+            LocalDateTime until = LocalDateTime.now().plusDays(7);
+            securityService.suspendMember(username, until);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until, false);
+            rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
+        }
+
+        if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
+            securityService.suspendMember(username, null);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), LocalDateTime.MAX, true);
+            rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
+        }
+
         replyWebService.modify(dto);
 
         return "redirect:/boardweb/read?bno=" + dto.getBno() +

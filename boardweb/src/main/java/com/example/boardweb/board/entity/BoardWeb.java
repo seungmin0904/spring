@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
+import com.example.boardweb.security.entity.Member;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -44,7 +46,7 @@ public class BoardWeb extends BaseEntity {
     private String content;
     @JoinColumn(name = "member_id")
     @ManyToOne(fetch = FetchType.LAZY)
-    private MemberWeb memberWeb;
+    private Member member;
 
     //게시글에 달려있는 댓글 정보 조회
     @Builder.Default
