@@ -1,90 +1,129 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <title>정지 이력</title>
     <style>
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background-color: #f2f2f2; cursor: pointer; }
-        .container { max-width: 900px; margin: auto; padding: 40px; }
-        h2 { text-align: center; }
-        form { display: inline; }
-        .pagination { text-align: center; margin-top: 20px; }
-        .pagination a { margin: 0 5px; text-decoration: none; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 40px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            display: inline;
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            margin: 0 5px;
+            text-decoration: none;
+        }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <h2 th:if="${member != null}" th:text="'[' + ${member.username} + '] 정지 이력 조회'"></h2>
-    <h2 th:unless="${member != null}">전체 사용자 정지 이력</h2>
+    <div class="container">
+        <h2 th:if="${member != null}" th:text="'[' + ${member.username} + '] 정지 이력 조회'"></h2>
+        <h2 th:unless="${member != null}">전체 사용자 정지 이력</h2>
 
-    <!-- 검색 폼 (username이 있을 때만) -->
-    <form th:if="${member != null}" method="get" th:action="@{/admin/suspensions/{username}(username=${member.username})}">
-        <input type="text" name="keyword" th:value="${keyword}" placeholder="사유 또는 날짜 검색"/>
-        <button type="submit">검색</button>
-    </form>
+        <!-- 검색 폼 (username이 있을 때만) -->
+        <form th:if="${member != null}" method="get"
+            th:action="@{/admin/suspensions/{username}(username=${member.username})}">
+            <input type="text" name="keyword" th:value="${keyword}" placeholder="사유 또는 날짜 검색" />
+            <button type="submit">검색</button>
+        </form>
 
-    <table>
-        <thead>
-        <tr>
-            <th>정지번호</th>
-            <th>유저아이디</th>
-            <th>시작일시</th>
-            <th>종료일시</th>
-            <th>해제일시</th>
-            <th>수동해제</th>
-            <th>영구정지</th>
-            <th>삭제</th>
-            <th th:if="${member != null}">삭제</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="history : ${histories}">
-            <td th:text="${history.id}"></td>
-            <td th:text="${history.username}"></td> 
-            <td th:text="${#temporals.format(history.startTime, 'yyyy-MM-dd HH:mm')}"></td>
-            <!-- 종료일시 -->
-            <td>
-              <span th:if="${history.permanent}">영구</span>
-              <span th:unless="${history.permanent}" th:text="${#temporals.format(history.endTime, 'yyyy-MM-dd HH:mm')}"></span>
-            </td>
+        <table>
+            <thead>
+                <tr>
+                    <th>정지번호</th>
+                    <th>유저아이디</th>
+                    <th>시작일시</th>
+                    <th>종료일시</th>
+                    <th>해제일시</th>
+                    <th>수동해제</th>
+                    <th>영구정지</th>
 
-           <!-- 해제일시 -->
-            <td>
-              <span th:if="${history.active}">정지기록있음</span>
-              <span th:unless="${history.active}">
-              <span th:if="${history.liftedAt != null}" th:text="${#temporals.format(history.liftedAt, 'yyyy-MM-dd HH:mm')}"></span>
-              <span th:unless="${history.liftedAt != null}">정지기록없음</span>
-              </span>
-           </td>
+                    <th th:if="${member != null}">삭제</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="history : ${histories}">
+                    <td th:text="${history.id}"></td>
+                    <td th:text="${history.username}"></td>
+                    <td th:text="${#temporals.format(history.startTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <!-- 종료일시 -->
+                    <td>
+                        <span th:if="${history.permanent}">영구</span>
+                        <span th:unless="${history.permanent}"
+                            th:text="${#temporals.format(history.endTime, 'yyyy-MM-dd HH:mm')}"></span>
+                    </td>
 
-            <td th:text="${history.manuallyLifted} ? '✅' : '❌'"></td>
-            <td th:text="${history.permanent} ? '✅' : '❌'"></td>
+                    <!-- 해제일시 -->
+                    <td>
+                        <span th:if="${history.active}">정지기록있음</span>
+                        <span th:unless="${history.active}">
+                            <span th:if="${history.liftedAt != null}"
+                                th:text="${#temporals.format(history.liftedAt, 'yyyy-MM-dd HH:mm')}"></span>
+                            <span th:unless="${history.liftedAt != null}">정지기록없음</span>
+                        </span>
+                    </td>
 
-             <!-- <td th:if="${member != null}"> --> <!--개별 사용자 조회일때만 삭제버튼 보이게하기-->
-            <td>
-                <form method="post" th:action="@{/admin/suspensions/delete/{id}(id=${history.id})}">
-                    <input type="hidden" name="username"  
-                    th:value="${member != null} ? ${member.username} : ${history.username}"/>
-                    <!--위의 개별 사용자 조회 조건이 없을경우 username 사용으로 전체 이력조회 파싱-->
-                    <button type="submit">삭제</button>
-                </form>
-            </td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(histories)}">
-            <td colspan="6">정지 이력이 없습니다.</td>
-        </tr>
-        </tbody>
-    </table>
+                    <td th:text="${history.manuallyLifted} ? '✅' : '❌'"></td>
+                    <td th:text="${history.permanent} ? '✅' : '❌'"></td>
 
-    <!-- 페이지네이션 (username이 있을 때만) -->
-    <div class="pagination" th:if="${member != null}">
-        <a th:each="i : ${#numbers.sequence(1, totalPages)}"
-           th:href="@{/admin/suspensions/{username}(username=${member.username}, page=${i}, keyword=${keyword}, sort=${sort})}"
-           th:text="${i}" th:classappend="${i == currentPage} ? 'current' : ''"></a>
+                    <!-- <td th:if="${member != null}"> --> <!--개별 사용자 조회일때만 삭제버튼 보이게하기-->
+                    <td>
+                        <form method="post" th:action="@{/admin/suspensions/delete/{id}(id=${history.id})}">
+                            <input type="hidden" name="username"
+                                th:value="${member != null} ? ${member.username} : ${history.username}" />
+                            <!--위의 개별 사용자 조회 조건이 없을경우 username 사용으로 전체 이력조회 파싱-->
+                            <button type="submit">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(histories)}">
+                    <td colspan="6">정지 이력이 없습니다.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 페이지네이션 (username이 있을 때만) -->
+        <div class="pagination" th:if="${member != null}">
+            <a th:each="i : ${#numbers.sequence(1, totalPages)}"
+                th:href="@{/admin/suspensions/{username}(username=${member.username}, page=${i}, keyword=${keyword}, sort=${sort})}"
+                th:text="${i}" th:classappend="${i == currentPage} ? 'current' : ''"></a>
+        </div>
     </div>
-</div>
-  <a href="/admin/dashboard">← 관리자 대시보드</a>
+    <a href="/admin/dashboard">← 관리자 대시보드</a>
 </body>
+
 </html>

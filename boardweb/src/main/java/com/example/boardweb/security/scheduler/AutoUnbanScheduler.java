@@ -17,13 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 public class AutoUnbanScheduler {
-    
-     private final MemberRepository memberRepository;
-     private final SecurityService securityService;
 
-     
-     // 매 30분마다 정지 해제 시점이 지난 사용자들을 해제 처리
-    @Scheduled(fixedDelay = 1000 * 60 * 30) 
+    private final MemberRepository memberRepository;
+    private final SecurityService securityService;
+
+    // 매 30분마다 정지 해제 시점이 지난 사용자들을 해제 처리
+    @Scheduled(fixedDelay = 1000 * 60 * 30)
     // @Scheduled(fixedDelay = 5000)
     public void checkAndLiftExpiredSuspensions() {
         List<Member> expiredList = memberRepository
@@ -36,7 +35,5 @@ public class AutoUnbanScheduler {
             securityService.liftSuspension(member.getUsername(), false);
         }
     }
-
-
 
 }

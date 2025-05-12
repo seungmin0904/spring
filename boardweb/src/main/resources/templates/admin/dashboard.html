@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
   <meta charset="UTF-8">
   <title>관리자 대시보드</title>
 </head>
+
 <body>
   <h2>관리자 대시보드</h2>
   <p><strong>현재 로그인: </strong><span th:text="${username}"></span></p>
@@ -42,18 +44,20 @@
         <td>
           <span th:if="${member.suspendedUntil != null}">
             <span th:text="${#temporals.format(member.suspendedUntil, 'yyyy-MM-dd HH:mm')}"></span>
-           <span th:if="${member.suspendedUntil != null and member.suspendedUntil.isBefore(T(java.time.LocalDateTime).now())}" style="color:red;">
-  (기간 만료)
-</span>
+            <span
+              th:if="${member.suspendedUntil != null and member.suspendedUntil.isBefore(T(java.time.LocalDateTime).now())}"
+              style="color:red;">
+              (기간 만료)
+            </span>
           </span>
           <span th:unless="${member.suspendedUntil != null}">없음 또는 무기한</span>
         </td>
 
         <!-- 정지 유형 -->
-    <td th:if="${member.suspended}">
-      <span th:text="${autoSuspensionMap[member.username] ? '자동 정지' : '수동 정지'}"></span>
-    </td>
-    <td th:unless="${member.suspended}">-</td>
+        <td th:if="${member.suspended}">
+          <span th:text="${autoSuspensionMap[member.username] ? '자동 정지' : '수동 정지'}"></span>
+        </td>
+        <td th:unless="${member.suspended}">-</td>
 
         <!-- 기간 조치 버튼 -->
         <td>
@@ -86,4 +90,5 @@
   <a href="/admin/banned-words">금지어 설정</a>
   <a href="/admin/suspensions">이력 확인</a>
 </body>
+
 </html>

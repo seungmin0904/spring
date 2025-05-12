@@ -15,11 +15,8 @@ import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.repository.MemberRepository;
 
 public class SecurityUtil {
-    
 
-
-
-     public static Object getCurrentPrincipal() {
+    public static Object getCurrentPrincipal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return (auth != null) ? auth.getPrincipal() : null;
     }
@@ -35,24 +32,24 @@ public class SecurityUtil {
 
     // 최신 상태 반영용 (정지 여부 검증 포함)
     public static MemberSecurityDTO getCurrentMember(MemberRepository memberRepository) {
-    Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-    if (principal instanceof MemberSecurityDTO user) {
-        Member updated = memberRepository.findWithRolesByUsername(user.getUsername())
-            .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
+        if (principal instanceof MemberSecurityDTO user) {
+            Member updated = memberRepository.findWithRolesByUsername(user.getUsername())
+                    .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
 
-        // 정지 해제 시 DB 갱신
-        if (updated.isSuspended() && updated.getSuspendedUntil() != null &&
-            updated.getSuspendedUntil().isBefore(LocalDateTime.now())) {
-            updated.setSuspended(false);
-            updated.setSuspendedUntil(null);
-            memberRepository.save(updated);
+            // 정지 해제 시 DB 갱신
+            if (updated.isSuspended() && updated.getSuspendedUntil() != null &&
+                    updated.getSuspendedUntil().isBefore(LocalDateTime.now())) {
+                updated.setSuspended(false);
+                updated.setSuspendedUntil(null);
+                memberRepository.save(updated);
+            }
+
+            return toDTO(updated); // 최신 DTO로 반환
         }
-
-        return toDTO(updated); // 최신 DTO로 반환
+        return null;
     }
-    return null;
-}
 
     public static OAuthUserDTO getCurrentOAuthUser() {
         Object principal = getCurrentPrincipal();
@@ -61,91 +58,104 @@ public class SecurityUtil {
         }
         return null;
     }
-    // 호환용 
+
+    // 호환용
     public static String getCurrentUsername() {
         MemberSecurityDTO user = getCurrentMember();
-        if (user != null) return user.getUsername();
+        if (user != null)
+            return user.getUsername();
 
         OAuthUserDTO social = getCurrentOAuthUser();
-        if (social != null) return social.getUsername();
+        if (social != null)
+            return social.getUsername();
 
         return null;
     }
+
     // 정지 갱신용
     public static String getCurrentUsername(MemberRepository memberRepository) {
-    MemberSecurityDTO user = getCurrentMember(memberRepository);
-    if (user != null) return user.getUsername();
-
-    OAuthUserDTO social = getCurrentOAuthUser();
-    if (social != null) return social.getUsername();
-
-    return null;
-}
-    // 호환용 
-    public static String getCurrentName() {
-        MemberSecurityDTO user = getCurrentMember();
-        if (user != null) return user.getName();
+        MemberSecurityDTO user = getCurrentMember(memberRepository);
+        if (user != null)
+            return user.getUsername();
 
         OAuthUserDTO social = getCurrentOAuthUser();
-        if (social != null) return social.getName();
+        if (social != null)
+            return social.getUsername();
 
         return null;
     }
-    // 정지 갱신용 
+
+    // 호환용
+    public static String getCurrentName() {
+        MemberSecurityDTO user = getCurrentMember();
+        if (user != null)
+            return user.getName();
+
+        OAuthUserDTO social = getCurrentOAuthUser();
+        if (social != null)
+            return social.getName();
+
+        return null;
+    }
+
+    // 정지 갱신용
     public static String getCurrentName(MemberRepository memberRepository) {
-    MemberSecurityDTO user = getCurrentMember(memberRepository);
-    if (user != null) return user.getName();
+        MemberSecurityDTO user = getCurrentMember(memberRepository);
+        if (user != null)
+            return user.getName();
 
-    OAuthUserDTO social = getCurrentOAuthUser();
-    if (social != null) return social.getName();
+        OAuthUserDTO social = getCurrentOAuthUser();
+        if (social != null)
+            return social.getName();
 
-    return null;
-   }
+        return null;
+    }
 
     public static boolean isOwner(String writerEmailOrName) {
-        if (writerEmailOrName == null) return false;
+        if (writerEmailOrName == null)
+            return false;
 
         String loginEmail = getCurrentUsername();
         String loginName = getCurrentName();
 
         return writerEmailOrName.equals(loginEmail) || writerEmailOrName.equals(loginName);
-  }
-
-  public static boolean isSuspended(MemberRepository memberRepository) {
-    Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-    if (principal instanceof MemberSecurityDTO memberDTO) {
-        System.out.println("▶ [DEBUG] isSuspended() called");
-        System.out.println("▶ [DEBUG] memberDTO.username = " + memberDTO.getUsername());
-        System.out.println("▶ [DEBUG] suspended = " + memberDTO.isSuspended());
-        System.out.println("▶ [DEBUG] suspendedUntil = " + memberDTO.getSuspendedUntil());
-        if (memberDTO.isSuspended()) {
-            if (memberDTO.getSuspendedUntil() == null) {
-                return true; // 무기한 정지
-            }
-            // 날짜가 아직 남아있으면 정지 유지
-            return memberDTO.getSuspendedUntil().isAfter(LocalDateTime.now());
-        }
     }
 
-    return false;
-}
+    public static boolean isSuspended(MemberRepository memberRepository) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-     // Member → MemberSecurityDTO 변환 메서드(헬퍼메서드)
+        if (principal instanceof MemberSecurityDTO memberDTO) {
+            System.out.println("▶ [DEBUG] isSuspended() called");
+            System.out.println("▶ [DEBUG] memberDTO.username = " + memberDTO.getUsername());
+            System.out.println("▶ [DEBUG] suspended = " + memberDTO.isSuspended());
+            System.out.println("▶ [DEBUG] suspendedUntil = " + memberDTO.getSuspendedUntil());
+            if (memberDTO.isSuspended()) {
+                if (memberDTO.getSuspendedUntil() == null) {
+                    return true; // 무기한 정지
+                }
+                // 날짜가 아직 남아있으면 정지 유지
+                return memberDTO.getSuspendedUntil().isAfter(LocalDateTime.now());
+            }
+        }
+
+        return false;
+    }
+
+    // Member → MemberSecurityDTO 변환 메서드(헬퍼메서드)
     public static MemberSecurityDTO toDTO(Member member) {
         List<GrantedAuthority> authorities = member.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
-            .map(r -> (GrantedAuthority) r)
-            .collect(Collectors.toList());
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+                .map(r -> (GrantedAuthority) r)
+                .collect(Collectors.toList());
 
         return MemberSecurityDTO.builder()
-            .username(member.getUsername())
-            .password(member.getPassword())
-            .name(member.getName())
-            .authorities(authorities)
-            .emailVerified(member.isEmailVerified())
-            .suspended(member.isSuspended())
-            .suspendedUntil(member.getSuspendedUntil())
-            .build();
+                .username(member.getUsername())
+                .password(member.getPassword())
+                .name(member.getName())
+                .authorities(authorities)
+                .emailVerified(member.isEmailVerified())
+                .suspended(member.isSuspended())
+                .suspendedUntil(member.getSuspendedUntil())
+                .build();
     }
 }

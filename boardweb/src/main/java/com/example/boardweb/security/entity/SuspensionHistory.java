@@ -37,7 +37,7 @@ public class SuspensionHistory {
     @Column(nullable = false)
     private LocalDateTime startTime;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime endTime;
 
     @Column(nullable = false)

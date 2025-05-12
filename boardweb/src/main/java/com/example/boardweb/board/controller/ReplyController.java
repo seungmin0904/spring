@@ -70,8 +70,8 @@ public class ReplyController {
     public String register(@Valid @ModelAttribute("dto") ReplyRequestDTO dto, BindingResult bindingResult,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
-                
-                log.info("[REPLY CREATE] {}", dto);
+
+        log.info("[REPLY CREATE] {}", dto);
 
         // 계정 정지 상태 검사
         if (securityService.isSuspended()) {
@@ -88,13 +88,15 @@ public class ReplyController {
         if (count == 3) {
             LocalDateTime until = LocalDateTime.now().plusDays(7);
             securityService.suspendMember(username, until);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until, false);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until,
+                    false);
             rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
         }
 
         if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
             securityService.suspendMember(username, null);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), LocalDateTime.MAX, true);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(),
+                    LocalDateTime.MAX, true);
             rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
         }
         // 서버 측 입력값 검증 조건 미 충족 시 에러 플래시 메세지와 함께
@@ -113,11 +115,11 @@ public class ReplyController {
         // 조건 통과 후 정상 처리 시 생성 후 read로 redirect
         replyWebService.create(dto);
 
-        return "redirect:/boardweb/read?bno=" + dto.getBno() 
-               + "&page=" + pageRequestDTO.getPage() 
-               + "&size=" + pageRequestDTO.getSize() 
-               + "&type=" + pageRequestDTO.getType() 
-               + "&keyword=" + pageRequestDTO.getKeyword();
+        return "redirect:/boardweb/read?bno=" + dto.getBno()
+                + "&page=" + pageRequestDTO.getPage()
+                + "&size=" + pageRequestDTO.getSize()
+                + "&type=" + pageRequestDTO.getType()
+                + "&keyword=" + pageRequestDTO.getKeyword();
     }
 
     /** 댓글/답글 수정 **/
@@ -126,12 +128,12 @@ public class ReplyController {
             ReplyRequestDTO dto,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
-        
-                log.info("[REPLY MODIFY] {}", dto);
-        
+
+        log.info("[REPLY MODIFY] {}", dto);
+
         if (securityService.isSuspended()) {
-             throw new AccessDeniedException("계정이 정지되어 댓글을 수정할 수 없습니다.");
-        
+            throw new AccessDeniedException("계정이 정지되어 댓글을 수정할 수 없습니다.");
+
         }
 
         String username = SecurityUtil.getCurrentUsername();
@@ -144,13 +146,15 @@ public class ReplyController {
         if (count == 3) {
             LocalDateTime until = LocalDateTime.now().plusDays(7);
             securityService.suspendMember(username, until);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until, false);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until,
+                    false);
             rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
         }
 
         if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
             securityService.suspendMember(username, null);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), LocalDateTime.MAX, true);
+            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(),
+                    LocalDateTime.MAX, true);
             rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
         }
 

@@ -7,23 +7,27 @@ import com.example.boardweb.security.entity.SuspensionHistory;
 
 public class SuspensionFactory {
 
-      public static SuspensionHistory createAuto(Member member, LocalDateTime start, LocalDateTime end, boolean permanent) {
-        return SuspensionHistory.builder()
-                .member(member)
-                .startTime(start)
-                .endTime(end)
-                .manuallyLifted(false)
-                .permanent(permanent)
-                .build();
+  public static SuspensionHistory createAuto(Member member, LocalDateTime start, LocalDateTime end, boolean permanent) {
+    return SuspensionHistory.builder()
+        .member(member)
+        .startTime(start != null ? start : LocalDateTime.now())
+        .endTime(permanent ? null : end)
+        .manuallyLifted(false)
+        .permanent(permanent)
+        .build();
+  }
+
+  public static SuspensionHistory createManual(Member member, LocalDateTime start, LocalDateTime end) {
+    if (end == null) {
+      throw new IllegalArgumentException("수동 정지 시 endTime은 필수입니다.");
     }
 
-    public static SuspensionHistory createManual(Member member, LocalDateTime start, LocalDateTime end) {
-        return SuspensionHistory.builder()
-                .member(member)
-                .startTime(start)
-                .endTime(end)
-                .manuallyLifted(true)
-                .permanent(false)
-                .build();
-    }
+    return SuspensionHistory.builder()
+        .member(member)
+        .startTime(start != null ? start : LocalDateTime.now())
+        .endTime(end)
+        .manuallyLifted(true)
+        .permanent(false)
+        .build();
+  }
 }

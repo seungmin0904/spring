@@ -11,8 +11,8 @@ import org.springframework.data.repository.query.Param;
 import com.example.boardweb.security.entity.Member;
 
 public interface MemberRepository extends JpaRepository<Member, String> {
-    
-    boolean existsByUsername(String username); //  ID 중복 체크
+
+    boolean existsByUsername(String username); // ID 중복 체크
 
     @Query("SELECT DISTINCT m FROM Member m LEFT JOIN FETCH m.roles WHERE m.username = :username")
     Optional<Member> findWithRolesByUsername(@Param("username") String username);

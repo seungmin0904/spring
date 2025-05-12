@@ -24,52 +24,50 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final MemberRepository memberRepository;
-    private final EmailVerificationTokenRepository tokenRepository;
+      private final MemberRepository memberRepository;
+      private final EmailVerificationTokenRepository tokenRepository;
 
+      @PersistenceContext
+      private EntityManager em;
 
-    @PersistenceContext
-    private EntityManager em;
+      @Transactional
+      @Override
+      public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
-    @Transactional
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException{
-        
-          //  여기서 Hibernate 결과를 직접 출력해봄
-        //   var testList = em.createQuery("SELECT m FROM Member m WHERE m.username = :username", Member.class)
-        //   .setParameter("username", username)
-        //   .getResultList();
+            // 여기서 Hibernate 결과를 직접 출력해봄
+            // var testList = em.createQuery("SELECT m FROM Member m WHERE m.username =
+            // :username", Member.class)
+            // .setParameter("username", username)
+            // .getResultList();
 
-        //   System.out.println(" Hibernate 조회 결과 수 = " + testList.size());
-        //   testList.forEach(m -> System.out.println(" Member: " + m.getUsername() + ", Roles = " + m.getRoles().size()));
+            // System.out.println(" Hibernate 조회 결과 수 = " + testList.size());
+            // testList.forEach(m -> System.out.println(" Member: " + m.getUsername() + ",
+            // Roles = " + m.getRoles().size()));
 
+            Member member = memberRepository.findWithRolesByUsername(username)
+                        .stream()
+                        .findFirst()
+                        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다" + username));
 
+            boolean verified = tokenRepository.findByUsername(username)
+                        .map(EmailVerificationToken::isVerified)
+                        .orElse(false);
 
-        Member member = memberRepository.findWithRolesByUsername(username)
-        .stream()
-        .findFirst()
-        .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다" + username));
-
-        boolean verified = tokenRepository.findByUsername(username)
-        .map(EmailVerificationToken::isVerified)
-        .orElse(false);
-
-       System.out.println("▶ DTO 생성 시 suspended: " + member.isSuspended());
+            System.out.println("▶ DTO 생성 시 suspended: " + member.isSuspended());
             System.out.println("▶ DTO 생성 시 suspendedUntil: " + member.getSuspendedUntil());
 
-      return MemberSecurityDTO.builder()
-            .username(member.getUsername())
-            .password(member.getPassword())
-            .name(member.getName())
-            .authorities(member.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
-            .collect(Collectors.toList()))
-            .emailVerified(member.isEmailVerified())
-            .suspended(member.isSuspended())
-            .suspendedUntil(member.getSuspendedUntil())
-            .build();
+            return MemberSecurityDTO.builder()
+                        .username(member.getUsername())
+                        .password(member.getPassword())
+                        .name(member.getName())
+                        .authorities(member.getRoles().stream()
+                                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getRoleName()))
+                                    .collect(Collectors.toList()))
+                        .emailVerified(member.isEmailVerified())
+                        .suspended(member.isSuspended())
+                        .suspendedUntil(member.getSuspendedUntil())
+                        .build();
 
-         
-   }
-   
+      }
+
 }

@@ -28,10 +28,10 @@ import lombok.ToString;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = "roles")
-@Table(name ="users")
+@Table(name = "users")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Member {
-    
+
     @Id
     @EqualsAndHashCode.Include
     private String username;

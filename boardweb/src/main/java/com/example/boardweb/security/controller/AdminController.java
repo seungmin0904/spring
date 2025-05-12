@@ -35,31 +35,30 @@ public class AdminController {
     private final SessionRegistry sessionRegistry;
     private final WarningService warningService;
 
-
     // 정지 기간 직접입력 컨트롤러
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/suspend-custom")
     public String suspendCustom(
-        @RequestParam("username") String username,
-        @RequestParam("until") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime until
-) {
-    Member member = adminMemberService.getMembers(username);
+            @RequestParam("username") String username,
+            @RequestParam("until") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime until) {
+        Member member = adminMemberService.getMembers(username);
 
-    securityService.suspendMember(username, until);
-    suspensionService.recordAutoSuspension(member, LocalDateTime.now(), until, false); // 기간 정지로 기록
+        securityService.suspendMember(username, until);
+        suspensionService.recordAutoSuspension(member, LocalDateTime.now(), until, false); // 기간 정지로 기록
 
-    // 세션 강제 종료
-    HttpSession session = sessionRegistry.getSession(username);
-    if (session != null) {
-        try {
-            session.invalidate();
-        } catch (IllegalStateException ignored) {}
-        sessionRegistry.removeSession(username);
+        // 세션 강제 종료
+        HttpSession session = sessionRegistry.getSession(username);
+        if (session != null) {
+            try {
+                session.invalidate();
+            } catch (IllegalStateException ignored) {
+            }
+            sessionRegistry.removeSession(username);
+        }
+
+        return "redirect:/admin/dashboard";
     }
 
-    return "redirect:/admin/dashboard";
-}
- 
     // 관리자 대시보드: 회원 목록 + 정지 상태 확인
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/dashboard")
@@ -69,11 +68,10 @@ public class AdminController {
         List<Member> members = adminMemberService.getAllMembers();
         model.addAttribute("members", members);
 
-        
-    // 자동 정지 여부 판단 맵 생성
-    Map<String, Boolean> autoSuspensionMap = warningService.getAutoSuspensionMap(members);
+        // 자동 정지 여부 판단 맵 생성
+        Map<String, Boolean> autoSuspensionMap = warningService.getAutoSuspensionMap(members);
 
-    model.addAttribute("autoSuspensionMap", autoSuspensionMap);
+        model.addAttribute("autoSuspensionMap", autoSuspensionMap);
 
         return "admin/dashboard";
     }
@@ -95,7 +93,7 @@ public class AdminController {
             suspensionService.recordAutoSuspension(member, LocalDateTime.now(), until, until == null);
         }
 
-       // 세션이 존재할 경우만 처리 (예외 방지)
+        // 세션이 존재할 경우만 처리 (예외 방지)
         HttpSession session = sessionRegistry.getSession(username);
         if (session != null) {
             try {
@@ -109,7 +107,7 @@ public class AdminController {
         return "redirect:/admin/dashboard";
     }
 
-    // 공통 레이아웃(템플릿) 에서 항상 isAdmin이 필요할 경우 번거로운 model.addAttribute("isAdmin") 삽입 대신 
+    // 공통 레이아웃(템플릿) 에서 항상 isAdmin이 필요할 경우 번거로운 model.addAttribute("isAdmin") 삽입 대신
     // @ControllerAdvice 사용으로 전역적으로 등록함
 
     // @ControllerAdvice
@@ -117,9 +115,9 @@ public class AdminController {
 
     // @ModelAttribute("isAdmin")
     // public boolean addIsAdmin() {
-    //     return SecurityUtil.getCurrentMember() != null &&
-    //         SecurityUtil.getCurrentMember().getAuthorities().stream()
-    //             .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-    //      }
+    // return SecurityUtil.getCurrentMember() != null &&
+    // SecurityUtil.getCurrentMember().getAuthorities().stream()
+    // .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+    // }
     // }
 }
