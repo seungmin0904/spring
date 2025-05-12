@@ -30,28 +30,24 @@ import lombok.extern.slf4j.Slf4j;
 public class AdminSuspensionController {
     
     private final SuspensionService suspensionService;
-    private final MemberRepository memberRepository;
 
 
     // @PathVariable 경로에서 특정 리소스 식별자를 명시하고 싶을 때 사용 (RESTful 원칙)
     // 사용자별 정지 이력 조회
-    @GetMapping("/{username}") // GET /admin/suspensions/{username} -> 조회용
+    @GetMapping() // GET /admin/suspensions/{username} -> 조회용
     public String viewSuspensionHistory(
-        @PathVariable("username") String username,
         @RequestParam(value = "page", defaultValue = "1") int page,
         @RequestParam(value = "keyword", required = false) String keyword,
         @RequestParam(value = "sort", defaultValue = "startTime") String sort,        
         Model model) {
 
-        Member member = memberRepository.findById(username)
-                .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+       
 
-        Pageable pageable = PageRequest.of(page - 1, 10, Sort.by(Sort.Direction.DESC, sort));
-        Page<SuspensionHistory> result = suspensionService.searchHistories(member, keyword, pageable);
+        Pageable pageable = PageRequest.of(page - 1, 10, Sort.by(Sort.Direction.DESC, "startTime"));
+        Page<SuspensionHistory> result = suspensionService.searchAllHistories(keyword, pageable);
 
          List<SuspensionHistoryDTO> dtoList = suspensionService.toDTOList(result.getContent());
 
-        model.addAttribute("member", member);
         model.addAttribute("histories", dtoList);
         model.addAttribute("totalPages", result.getTotalPages());
         model.addAttribute("currentPage", page);
@@ -65,16 +61,10 @@ public class AdminSuspensionController {
     @PostMapping("/delete/{id}") 
     // POST /admin/suspensions/delete/{id} + username 파라미터
     // 조회 후 삭제한 뒤 파라미터를 유저 페이지로 리디렉션 - 조회, 삭제 후 삭제 값을 페이지로 가져감
-    public String deleteHistory(@PathVariable("id") Long id, @RequestParam("username") String username) {
+    public String deleteHistory(@PathVariable("id") Long id,String username) {
         suspensionService.deleteHistory(id);
-        return "redirect:/admin/suspensions/" + username;
+        return "redirect:/admin/suspensions";
     }
 
-    @GetMapping
-    public String listAllHistories(Model model) {
-    List<SuspensionHistory> all = suspensionService.findAll();
-    List<SuspensionHistoryDTO> dtoList = suspensionService.toDTOList(all);
-    model.addAttribute("histories", dtoList);
-    return "admin/suspension-history";
-}
+    
 }

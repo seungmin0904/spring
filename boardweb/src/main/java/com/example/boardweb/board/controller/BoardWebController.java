@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -68,6 +69,8 @@ public class BoardWebController {
         // (테스트 용도로 하드코딩, 추후 스프링 시큐리티 사용 시 principal.getName() 으로 대체)
         // dto.setEmail("user1@gmail.com");
         // 로그인 사용자 정보 분기
+                
+
         if (principal instanceof MemberSecurityDTO user) {
             dto.setEmail(user.getUsername());
             dto.setName(user.getName());
@@ -155,10 +158,10 @@ public class BoardWebController {
         BoardWebDTO dto = boardWebService.read(bno);
 
         // 작성자 검증 (이메일 기준)
-        if (!securityService.isOwner(dto.getName())) {
-            throw new AccessDeniedException("작성자만 접근할 수 있습니다.");
+        // if (!securityService.isOwner(dto.getEmail())) {
+        //     throw new AccessDeniedException("작성자만 접근할 수 있습니다.");
 
-        }
+        // }
         model.addAttribute("dto", dto);
         model.addAttribute("pageRequestDTO", pageRequestDTO);
         return "boardweb/modify";
@@ -207,8 +210,8 @@ public class BoardWebController {
                 + "&type=" + pageRequestDTO.getType()
                 + "&keyword=" + pageRequestDTO.getKeyword();
     }
-
     // ▶ 삭제 처리 (Delete)
+    
     @PostMapping("/delete")
     public String delete(
             @RequestParam("bno") Long bno,

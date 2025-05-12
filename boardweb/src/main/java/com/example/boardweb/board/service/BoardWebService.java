@@ -114,7 +114,7 @@ public class BoardWebService {
         dto.setReplies(roots.stream().filter(Objects::nonNull).collect(Collectors.toList()));
         return dto;
     }
-
+    
     public Long create(BoardWebDTO dto) {
         // 작성자(MemberWeb) 조회
         Member member = memberRepository.findById(dto.getEmail())

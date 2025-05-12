@@ -9,11 +9,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.boardweb.security.dto.SuspensionHistoryDTO;
 import com.example.boardweb.security.entity.Member;
+import com.example.boardweb.security.entity.SuspensionHistory;
 import com.example.boardweb.security.service.AdminMemberService;
 import com.example.boardweb.security.service.SecurityService;
 import com.example.boardweb.security.service.SuspensionService;
@@ -70,8 +73,10 @@ public class AdminController {
 
         // 자동 정지 여부 판단 맵 생성
         Map<String, Boolean> autoSuspensionMap = warningService.getAutoSuspensionMap(members);
-
         model.addAttribute("autoSuspensionMap", autoSuspensionMap);
+        
+        Map<String, Long> activeHistoryIdMap = suspensionService.getActiveHistoryIdMap(members);
+        model.addAttribute("activeHistoryIdMap", activeHistoryIdMap);
 
         return "admin/dashboard";
     }
@@ -85,7 +90,6 @@ public class AdminController {
     ) {
         Member member = adminMemberService.getMembers(username);
         if (days == 0) {
-            securityService.liftSuspension(username, true);
         } else {
             LocalDateTime until = (days == -1) ? null : LocalDateTime.now().plusDays(days);
             securityService.suspendMember(username, until);
@@ -105,6 +109,30 @@ public class AdminController {
         }
 
         return "redirect:/admin/dashboard";
+    }
+
+    @PostMapping("/suspensions/lift/manual/{id}")
+    public String manualLift(@PathVariable("id") Long id) {
+        suspensionService.liftSuspensionById(id, true);
+        return "redirect:/admin/suspensions";
+    }
+
+    @GetMapping("/suspensions/active")
+    public String viewActiveSuspensions(Model model) {
+    List<SuspensionHistoryDTO> list = suspensionService.getActiveHistories();
+    model.addAttribute("histories", list);
+    model.addAttribute("pageTitle", "현재 정지중인 사용자 이력");
+    return "admin/suspension-list";
+
+    }
+
+    @GetMapping("/suspensions/lifted")
+    public String viewLiftedSuspensions(Model model) {
+    List<SuspensionHistoryDTO> list = suspensionService.getLiftedHistories();
+    model.addAttribute("histories", list);
+    model.addAttribute("pageTitle", "해제된 사용자 이력");
+    return "admin/suspension-list";
+
     }
 
     // 공통 레이아웃(템플릿) 에서 항상 isAdmin이 필요할 경우 번거로운 model.addAttribute("isAdmin") 삽입 대신

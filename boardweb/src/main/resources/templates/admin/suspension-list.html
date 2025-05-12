@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">정지 이력</title>
+</head>
+<body>
+    <h2 th:text="${pageTitle}"></h2>
+      <!-- 조건 분기 -->
+    <p th:if="${not #lists.isEmpty(histories) and histories[0].liftedAt == null}">
+         현재 정지중인 사용자입니다.
+    </p>
+    <p th:if="${not #lists.isEmpty(histories) and histories[0].liftedAt != null}">
+         정지가 해제된 사용자 이력입니다.
+    </p>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>유저</th>
+                <th>시작일</th>
+                <th>종료일</th>
+                <th>해제일</th>
+                <th>수동해제</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="h : ${histories}">
+                <td th:text="${h.id}"></td>
+                <td th:text="${h.username}"></td>
+                <td th:text="${#temporals.format(h.startTime, 'yyyy-MM-dd HH:mm')}"></td>
+                <td th:text="${h.endTime != null ? #temporals.format(h.endTime, 'yyyy-MM-dd HH:mm') : '무기한'}"></td>
+                <td th:text="${h.liftedAt != null ? #temporals.format(h.liftedAt, 'yyyy-MM-dd HH:mm') : '-'}"></td>
+                <td th:text="${h.manuallyLifted} ? '✅' : '❌'"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(histories)}">
+                <td colspan="6">조회된 이력이 없습니다.</td>
+            </tr>
+        </tbody>
+    </table>
+    <a href="/admin/dashboard">← 대시보드</a>
+</body>
+</html>

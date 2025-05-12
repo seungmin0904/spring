@@ -16,6 +16,7 @@ import com.example.boardweb.security.handler.CustomAuthenticationSuccessHandler;
 
 import lombok.RequiredArgsConstructor;
 
+
 @RequiredArgsConstructor
 @EnableWebSecurity
 @Configuration
@@ -67,7 +68,7 @@ public class SecurityConfig {
                                 // 관리자페이지에 허용되지 않은 사람 접근 시 접근거부 페이지로 이동
                                 .exceptionHandling(exception -> exception
                                                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                                                        response.sendRedirect("/suspended");
+                                                        response.sendRedirect("/suspended?reason=accessDenied");
                                                 }))
                                 .addFilterBefore(suspensionCheckFilter, UsernamePasswordAuthenticationFilter.class);
                 // 이후 CustomOAuth2UserService, successHandler 등 연결 가능

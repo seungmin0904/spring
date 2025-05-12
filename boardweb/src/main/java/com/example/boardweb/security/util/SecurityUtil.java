@@ -16,6 +16,12 @@ import com.example.boardweb.security.repository.MemberRepository;
 
 public class SecurityUtil {
 
+        private static MemberRepository memberRepository;
+
+        public static void setMemberRepository(MemberRepository repo) {
+            memberRepository = repo;
+        }
+
     public static Object getCurrentPrincipal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return (auth != null) ? auth.getPrincipal() : null;
@@ -59,15 +65,22 @@ public class SecurityUtil {
         return null;
     }
 
-    // 호환용
+    // 아이디 검증
     public static String getCurrentUsername() {
-        MemberSecurityDTO user = getCurrentMember();
-        if (user != null)
-            return user.getUsername();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal().equals("anonymousUser")) {
+            return null;
+        }
 
-        OAuthUserDTO social = getCurrentOAuthUser();
-        if (social != null)
-            return social.getUsername();
+        Object principal = auth.getPrincipal();
+
+        if (principal instanceof MemberSecurityDTO user) {
+            return user.getUsername(); // 일반 로그인
+        }
+
+        if (principal instanceof OAuthUserDTO social) {
+            return social.getUsername(); // 소셜 로그인
+        }
 
         return null;
     }
