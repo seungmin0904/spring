@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import com.example.boardweb.board.entity.BoardWeb;
 import com.example.boardweb.board.entity.ReplyWeb;
 import com.example.boardweb.board.repository.BoardWebRepository;
 import com.example.boardweb.board.repository.ReplyWebRepository;
+import com.example.boardweb.security.util.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +25,29 @@ import lombok.RequiredArgsConstructor;
 public class ReplyWebService {
     private final ReplyWebRepository replyRepo;
     private final BoardWebRepository boardRepo;
+
+           // ✅ 댓글 전체 조회 (게시글 번호 기준)
+    public List<ReplyWebDTO> getReplies(Long bno) {
+        
+        
+        BoardWeb board = boardRepo.findById(bno)
+        .orElseThrow(() -> new IllegalArgumentException("게시글 없음: " + bno));
+        List<ReplyWeb> entities = replyRepo.findByBoardWebOrderByCreatedDateAsc(board);
+
+        return entities.stream()
+            .map(reply -> ReplyWebDTO.builder()
+                .rno(reply.getRno())
+                .bno(reply.getBoardWeb().getBno())
+                .text(reply.getText())
+                .replyer(reply.getReplyer())
+                .username(reply.getUsername()) // ← View에서 로그인 사용자와 비교용
+                .createdDate(reply.getCreatedDate())
+                .deleted(reply.isDeleted())
+                .moDateTime(reply.getUpdatedDate())
+                .parentRno(reply.getParent() != null ? reply.getParent().getRno() : null)
+                .build())
+            .collect(Collectors.toList());
+    }
 
     
      /** 댓글/답글 등록 **/
@@ -36,10 +61,14 @@ public class ReplyWebService {
              parent = replyRepo.findById(dto.getParentRno())
                  .orElseThrow(() -> new IllegalArgumentException("부모댓글 없음: " + dto.getParentRno()));
          }
+
+        String currentUsername = SecurityUtil.getCurrentUsername();
+        String currentName = SecurityUtil.getCurrentName();
  
          ReplyWeb reply = ReplyWeb.builder()
              .boardWeb(board)
-             .replyer(dto.getReplyer())
+             .replyer(currentName)
+             .username(currentUsername)
              .text(dto.getText())
              .parent(parent)
              .build();
@@ -52,8 +81,12 @@ public class ReplyWebService {
      public void modify(ReplyRequestDTO dto) {
          ReplyWeb reply = replyRepo.findById(dto.getRno())
              .orElseThrow(() -> new IllegalArgumentException("댓글 없음: " + dto.getRno()));
+
+              String currentUsername = SecurityUtil.getCurrentUsername();
+              if (!reply.getUsername().equals(currentUsername)) {
+                throw new AccessDeniedException("작성자만 수정할 수 있습니다.");
+          }
          reply.setText(dto.getText());
-         reply.setReplyer(dto.getReplyer());
          // 변경 감지로 트랜잭션 커밋 시 자동 반영
      }
  
@@ -62,6 +95,11 @@ public class ReplyWebService {
      public void delete(Long rno) {
          ReplyWeb reply = replyRepo.findById(rno)
              .orElseThrow(() -> new IllegalArgumentException("댓글 없음: " + rno));
+
+             String currentUsername = SecurityUtil.getCurrentUsername();
+             if (!reply.getUsername().equals(currentUsername)) {
+                 throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");
+         }
          reply.setDeleted(true);
      }
      
@@ -74,6 +112,7 @@ public class ReplyWebService {
                 .rno(reply.getRno())
                 .text(reply.getText())
                 .replyer(reply.getReplyer())
+                .username(reply.getUsername())
                 .createdDate(reply.getCreatedDate())
                 .deleted(reply.isDeleted())
                 .moDateTime(reply.getUpdatedDate())

@@ -43,6 +43,9 @@ public class ReplyWeb extends BaseEntity {
     @Column(nullable = false)
     private String replyer;
 
+    @Column(nullable = false)
+    private String username; // 로그인 이메일 (작성자 식별,권한검증,db저장용)
+
     // 댓글 삭제 여부를 나타내는 필드
     // 기본값은 false로 설정하여 댓글이 삭제되지 않은 상태로 시작
     // 댓글이 삭제되면 deleted 필드를 true로 설정하여 논리적 삭제를 구현

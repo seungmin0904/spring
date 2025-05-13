@@ -24,6 +24,7 @@ public class ReplyWebDTO {
   private Long rno;
   private Long bno; // 게시글 번호
   private String replyer;
+  private String username; // 이메일 (식별자) 출력,Thymeleaf 조건 처리 및 username == 로그인 사용자 비교용
   private String text;
   private LocalDateTime createdDate;
   private Boolean deleted;
