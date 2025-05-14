@@ -13,11 +13,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.boardweb.board.dto.BoardRequestDTO;
 import com.example.boardweb.board.dto.BoardWebDTO;
 import com.example.boardweb.board.dto.PageRequestDTO;
 import com.example.boardweb.board.dto.PageResultDTO;
 import com.example.boardweb.board.dto.ReplyWebDTO;
 import com.example.boardweb.board.entity.BoardWeb;
+import com.example.boardweb.board.mapper.BoardWebMapper;
 import com.example.boardweb.board.repository.BoardWebRepository;
 import com.example.boardweb.board.repository.ReplyWebRepository;
 import com.example.boardweb.security.entity.Member;
@@ -114,15 +116,18 @@ public class BoardWebService {
         return dto;
     }
 
-    public Long create(BoardWebDTO dto) {
-        // 작성자(MemberWeb) 조회
-        Member member = memberRepository.findById(dto.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("회원 없음: " + dto.getEmail()));
-        BoardWeb boardWeb = BoardWeb.builder()
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .member(member) // 🔁 setMemberWeb → setMember
-                .build();
+    public Long create(BoardRequestDTO dto) {
+        // 로그인 사용자 검증 없이도 요청에 username 포함되어 있어야 함
+        String username = dto.getUsername();
+
+        // Member 조회 (username = 이메일)
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음: " + username));
+
+        // Mapper 이용하여 Entity 생성
+        BoardWeb boardWeb = BoardWebMapper.toEntity(dto, member);
+
+        // 저장
         BoardWeb saved = boardWebRepository.save(boardWeb);
         return saved.getBno();
     }

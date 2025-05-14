@@ -12,6 +12,8 @@ import com.example.boardweb.security.entity.Member;
 
 public interface MemberRepository extends JpaRepository<Member, String> {
 
+    Optional<Member> findByUsername(String username);
+
     boolean existsByUsername(String username); // ID 중복 체크
 
     @Query("SELECT DISTINCT m FROM Member m LEFT JOIN FETCH m.roles WHERE m.username = :username")
