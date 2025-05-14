@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.example.boardweb.board.dto.BoardRequestDTO;
 import com.example.boardweb.board.dto.BoardWebDTO;
 import com.example.boardweb.board.dto.PageRequestDTO;
 import com.example.boardweb.board.dto.PageResultDTO;
@@ -89,7 +88,7 @@ public class BoardWebController {
     // 등록 처리
     @PostMapping("/register")
     public String register(
-            @Valid @ModelAttribute("dto") BoardRequestDTO dto, BindingResult bindingResult,
+            @Valid @ModelAttribute("dto") BoardWebDTO dto, BindingResult bindingResult,
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
         log.info(" 게시글 등록 메서드 진입");
