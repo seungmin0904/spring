@@ -26,6 +26,7 @@ import com.example.boardweb.board.dto.BoardWebDTO;
 import com.example.boardweb.board.dto.PageRequestDTO;
 import com.example.boardweb.board.dto.PageResultDTO;
 import com.example.boardweb.board.service.BoardWebService;
+import com.example.boardweb.board.service.ReplyWebService;
 import com.example.boardweb.oauth.dto.OAuthUserDTO;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
 import com.example.boardweb.security.service.SecurityService;
@@ -45,6 +46,7 @@ public class BoardWebController {
     private final SecurityService securityService;
     private final WarningService warningService;
     private final SuspensionService suspensionService;
+    private final ReplyWebService replyWebService;
 
     // 리스트
     @GetMapping("/list")
@@ -69,7 +71,6 @@ public class BoardWebController {
         // (테스트 용도로 하드코딩, 추후 스프링 시큐리티 사용 시 principal.getName() 으로 대체)
         // dto.setEmail("user1@gmail.com");
         // 로그인 사용자 정보 분기
-                
 
         if (principal instanceof MemberSecurityDTO user) {
             dto.setEmail(user.getUsername());
@@ -144,6 +145,7 @@ public class BoardWebController {
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             Model model) {
         BoardWebDTO dto = boardWebService.read(bno);
+        dto.setReplies(replyWebService.getReplies(bno));
         model.addAttribute("dto", dto);
         model.addAttribute("pageRequestDTO", pageRequestDTO);
         return "boardweb/read";
@@ -159,7 +161,7 @@ public class BoardWebController {
 
         // 작성자 검증 (이메일 기준)
         // if (!securityService.isOwner(dto.getEmail())) {
-        //     throw new AccessDeniedException("작성자만 접근할 수 있습니다.");
+        // throw new AccessDeniedException("작성자만 접근할 수 있습니다.");
 
         // }
         model.addAttribute("dto", dto);
@@ -211,7 +213,7 @@ public class BoardWebController {
                 + "&keyword=" + pageRequestDTO.getKeyword();
     }
     // ▶ 삭제 처리 (Delete)
-    
+
     @PostMapping("/delete")
     public String delete(
             @RequestParam("bno") Long bno,

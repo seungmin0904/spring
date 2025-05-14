@@ -8,7 +8,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -114,21 +113,19 @@ public class BoardWebService {
         dto.setReplies(roots.stream().filter(Objects::nonNull).collect(Collectors.toList()));
         return dto;
     }
-    
+
     public Long create(BoardWebDTO dto) {
         // 작성자(MemberWeb) 조회
         Member member = memberRepository.findById(dto.getEmail())
-               .orElseThrow(() -> new IllegalArgumentException("회원 없음: " + dto.getEmail()));
-                    BoardWeb boardWeb = BoardWeb.builder()
-                            .title(dto.getTitle())
-                     .content(dto.getContent())
-                     .member(member) // 🔁 setMemberWeb → setMember
-                     .build();
-                     BoardWeb saved = boardWebRepository.save(boardWeb);
-                     return saved.getBno();
-                }
-
-    
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음: " + dto.getEmail()));
+        BoardWeb boardWeb = BoardWeb.builder()
+                .title(dto.getTitle())
+                .content(dto.getContent())
+                .member(member) // 🔁 setMemberWeb → setMember
+                .build();
+        BoardWeb saved = boardWebRepository.save(boardWeb);
+        return saved.getBno();
+    }
 
     @Transactional
     public void modify(BoardWebDTO dto) {

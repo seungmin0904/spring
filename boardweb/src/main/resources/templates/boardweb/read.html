@@ -31,7 +31,8 @@
   </div>
 
   <!-- 버튼 그룹 (오른쪽 정렬) -->
-  <div class="mb-4 text-end" th:if="${#authorization.expression('isAuthenticated()') and dto.email == #authentication.principal.username}">
+  <div class="mb-4 text-end"
+    th:if="${#authorization.expression('isAuthenticated()') and dto.email == #authentication.principal.username}">
     <a th:href="@{/boardweb/modify(bno=${dto.bno}, page=${pageRequestDTO.page}, size=${pageRequestDTO.size}, type=${pageRequestDTO.type}, keyword=${pageRequestDTO.keyword})}"
       class="btn btn-primary me-2">수정</a>
 
@@ -50,7 +51,7 @@
     <div th:if="${#authorization.expression('isAuthenticated()')}">
       <form th:action="@{/boardweb/reply/register}" method="post" class="mb-3" onsubmit="return validateReply()">
         <input type="hidden" name="bno" th:value="${dto.bno}" />
-        <input id="replyer" class="form-control mb-1" name="replyer" th:value="${#authentication.principal?.name != null ? #authentication.principal.name
+        <input type="hidden" name="replyer" th:value="${#authentication.principal?.name != null ? #authentication.principal.name
                  : (#authentication.principal?.email != null ? #authentication.principal.email 
                  : #authentication.principal)}" readonly />
         <textarea class="form-control mb-1" name="text" rows="2" placeholder="댓글 입력"></textarea>
@@ -84,26 +85,30 @@
               <p th:text="${reply.text}">댓글 내용</p>
             </th:block>
 
-             <!-- ✅ 디버깅용 출력: 실제 비교되는 값 확인 -->
-  <p class="text-muted small">
-    [디버그] reply.replyer: <span th:text="${reply.replyer}"></span>,
-    현재 사용자: <span th:text="${#authentication.principal.username}"></span>
-  </p>
+            <!--디버깅용 출력: 실제 비교되는 값 확인 -->
+            <div class="text-muted small">
+              reply.username = "<span th:text="${reply.username}"></span>"<br />
+              principal.username = "<span th:text="${#authentication.principal.username}"></span>"<br />
+              비교 결과:
+              <span th:text="${reply.username == #authentication.principal.username ? '일치' : '불일치'}"></span>
+            </div>
             <!-- 수정/삭제/답글 버튼 -->
             <!-- 로그인 상태 + 댓글 작성자인 경우: 수정 / 삭제 / 답글 -->
-<div th:if="${#authorization.expression('isAuthenticated()') and !reply.deleted and reply.replyer == #authentication.principal.username}">
-  <a th:href="@{/boardweb/reply/modify(rno=${reply.rno}, bno=${dto.bno}, page=${pageRequestDTO.page}, size=${pageRequestDTO.size}, type=${pageRequestDTO.type}, keyword=${pageRequestDTO.keyword})}"
-     class="btn btn-sm btn-primary">수정</a>
-  <button type="button" class="btn btn-sm btn-danger"
-     th:onclick="|document.getElementById('delForm'+${reply.rno}).submit()|">삭제</button>
-  <a href="#" class="btn btn-sm btn-info" th:onclick="|toggleForm('rf-'+${reply.rno});|">답글</a>
-</div>
+            <div
+              th:if="${#authorization.expression('isAuthenticated()') and !reply.deleted and reply.username == #authentication.principal.username}">
+              <a th:href="@{/boardweb/reply/modify(rno=${reply.rno}, bno=${dto.bno}, page=${pageRequestDTO.page}, size=${pageRequestDTO.size}, type=${pageRequestDTO.type}, keyword=${pageRequestDTO.keyword})}"
+                class="btn btn-sm btn-primary">수정</a>
+              <button type="button" class="btn btn-sm btn-danger"
+                th:onclick="|document.getElementById('delForm'+${reply.rno}).submit()|">삭제</button>
+              <a href="#" class="btn btn-sm btn-info" th:onclick="|toggleForm('rf-'+${reply.rno});|">답글</a>
+            </div>
 
-<!-- 로그인 상태 + 댓글 작성자가 아닌 경우: 답글만 -->
-<div th:if="${#authorization.expression('isAuthenticated()') and !reply.deleted and reply.replyer != #authentication.principal.username}">
-  <a href="#" class="btn btn-sm btn-info" th:onclick="|toggleForm('rf-'+${reply.rno});|">답글</a>
-</div>
-            
+            <!-- 로그인 상태 + 댓글 작성자가 아닌 경우: 답글만 -->
+            <div
+              th:if="${#authorization.expression('isAuthenticated()') and !reply.deleted and reply.username != #authentication.principal.username}">
+              <a href="#" class="btn btn-sm btn-info" th:onclick="|toggleForm('rf-'+${reply.rno});|">답글</a>
+            </div>
+
             <!-- 삭제 폼 -->
             <form th:action="@{/boardweb/reply/delete}" method="post" th:id="'delForm'+${reply.rno}"
               style="display:none;">
@@ -116,7 +121,10 @@
               class="mt-2">
               <input type="hidden" name="bno" th:value="${dto.bno}" />
               <input type="hidden" name="parentRno" th:value="${reply.rno}" />
-              <input class="form-control mb-1" name="replyer" placeholder="답글 작성자" />
+              <input type="hidden" name="replyer" th:value="${#authentication.principal?.name != null ? #authentication.principal.name
+                       : (#authentication.principal?.email != null ? #authentication.principal.email 
+                       : #authentication.principal)}" />
+
               <textarea class="form-control mb-1" name="text" rows="2" placeholder="답글 내용을 입력"></textarea>
               <button type="submit" class="btn btn-secondary btn-sm">등록</button>
             </form>

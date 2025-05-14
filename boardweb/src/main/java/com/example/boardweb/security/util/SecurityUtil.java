@@ -16,11 +16,11 @@ import com.example.boardweb.security.repository.MemberRepository;
 
 public class SecurityUtil {
 
-        private static MemberRepository memberRepository;
+    private static MemberRepository memberRepository;
 
-        public static void setMemberRepository(MemberRepository repo) {
-            memberRepository = repo;
-        }
+    public static void setMemberRepository(MemberRepository repo) {
+        memberRepository = repo;
+    }
 
     public static Object getCurrentPrincipal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -75,14 +75,14 @@ public class SecurityUtil {
         Object principal = auth.getPrincipal();
 
         if (principal instanceof MemberSecurityDTO user) {
-            return user.getUsername(); // 일반 로그인
+            return user.getUsername() != null ? user.getUsername() : ""; // 일반 로그인
         }
 
         if (principal instanceof OAuthUserDTO social) {
-            return social.getUsername(); // 소셜 로그인
+            return social.getUsername() != null ? social.getUsername() : ""; // 소셜 로그인
         }
 
-        return null;
+        return "";
     }
 
     // 정지 갱신용
@@ -101,14 +101,14 @@ public class SecurityUtil {
     // 호환용
     public static String getCurrentName() {
         MemberSecurityDTO user = getCurrentMember();
-        if (user != null)
+        if (user != null && user.getName() != null)
             return user.getName();
 
         OAuthUserDTO social = getCurrentOAuthUser();
-        if (social != null)
+        if (social != null && social.getName() != null)
             return social.getName();
 
-        return null;
+        return "";
     }
 
     // 정지 갱신용

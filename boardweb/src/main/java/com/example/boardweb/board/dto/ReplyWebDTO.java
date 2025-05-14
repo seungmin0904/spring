@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +13,9 @@ import lombok.Setter;
 import lombok.ToString;
 
 @Builder
-@Data
+@Setter
+@Getter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 
@@ -30,5 +31,6 @@ public class ReplyWebDTO {
   private Boolean deleted;
   private LocalDateTime moDateTime;
 
+  @Builder.Default
   private List<ReplyWebDTO> children = new ArrayList<>(); // 대댓글 리스트
 }

@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class WarningService {
-    
+
     private final WarningLogRepository warningLogRepository;
     private final MemberRepository memberRepository;
     private final BannedWordRepository bannedWordRepository;
@@ -33,19 +33,19 @@ public class WarningService {
     // 게시글/댓글 내용을 검사해서 금지어가 있으면 경고 + 정지
     @Transactional
     public long checkAndWarn(String content, String username) {
-    Member member = memberRepository.findById(username)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
+        Member member = memberRepository.findById(username)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
 
-            
-    // DB에서 금지어 모두 가져오기
-    List<String> bannedWords = bannedWordRepository.findAll()
-            .stream()
-            .map(BannedWord::getWord)
-            .toList();
+        // DB에서 금지어 모두 가져오기
+        List<String> bannedWords = bannedWordRepository.findAll()
+                .stream()
+                .map(BannedWord::getWord)
+                .toList();
 
-    boolean warned = bannedWords.stream().anyMatch(content::contains);
+        boolean warned = bannedWords.stream().anyMatch(content::contains);
 
-    if (!warned) return warningLogRepository.countByMember(member);
+        if (!warned)
+            return warningLogRepository.countByMember(member);
         // 1. 경고 1회 부여
         WarningLog log = WarningLog.builder()
                 .member(member)
@@ -54,13 +54,12 @@ public class WarningService {
                 .build();
         warningLogRepository.save(log);
 
-
         return warningLogRepository.countByMember(member);
-      
-  }
 
-  // 회원 리스트 받아서 자동 정지 여부 판단 맵 생성 컨트롤러 적용 
-  public Map<String, Boolean> getAutoSuspensionMap(List<Member> members) {
+    }
+
+    // 회원 리스트 받아서 자동 정지 여부 판단 맵 생성 컨트롤러 적용
+    public Map<String, Boolean> getAutoSuspensionMap(List<Member> members) {
         Map<String, Boolean> map = new HashMap<>();
 
         for (Member member : members) {
@@ -71,7 +70,7 @@ public class WarningService {
         return map;
     }
 
-     // 수동 해제 시 경고 초기화 및 이력 기록
+    // 수동 해제 시 경고 초기화 및 이력 기록
     @Transactional
     public void clearWarningsAndRecordManualLift(Member member) {
         warningLogRepository.findByMember(member).forEach(warningLogRepository::delete);
@@ -86,5 +85,5 @@ public class WarningService {
 
         clearWarningsAndRecordManualLift(member);
     }
-    
-  }
+
+}

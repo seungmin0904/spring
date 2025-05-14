@@ -1,7 +1,5 @@
 package com.example.boardweb.board.controller;
 
-import java.time.LocalDateTime;
-
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -18,9 +16,8 @@ import com.example.boardweb.board.dto.ReplyRequestDTO;
 import com.example.boardweb.board.dto.ReplyWebDTO;
 import com.example.boardweb.board.service.ReplyWebService;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
+import com.example.boardweb.security.handler.WarningHandler;
 import com.example.boardweb.security.service.SecurityService;
-import com.example.boardweb.security.service.SuspensionService;
-import com.example.boardweb.security.service.WarningService;
 import com.example.boardweb.security.util.SecurityUtil;
 
 import jakarta.validation.Valid;
@@ -36,8 +33,7 @@ public class ReplyController {
 
     private final SecurityService securityService;
     private final ReplyWebService replyWebService;
-    private final WarningService warningService;
-    private final SuspensionService suspensionService;
+    private final WarningHandler warningHandler;
     // 댓글 처리 컨트롤러
 
     @GetMapping("/modify")
@@ -60,6 +56,7 @@ public class ReplyController {
         dto.setBno(bno);
         dto.setParentRno(parentRno);
         dto.setReplyer(authUser.getName()); // 자동으로 작성자 세팅
+        dto.setUsername(authUser.getUsername());
 
         model.addAttribute("dto", dto);
         return "boardweb/reply/register";
@@ -71,55 +68,31 @@ public class ReplyController {
             @ModelAttribute("pageRequestDTO") PageRequestDTO pageRequestDTO,
             RedirectAttributes rttr) {
 
-        log.info("[REPLY CREATE] {}", dto);
-
         // 계정 정지 상태 검사
         if (securityService.isSuspended()) {
             throw new AccessDeniedException("계정이 정지되어 댓글을 작성할 수 없습니다.");
         }
 
         String username = SecurityUtil.getCurrentUsername();
-        long count = warningService.checkAndWarn(dto.getText(), username);
-
-        if (count >= 1) {
-            rttr.addFlashAttribute("warn", "⚠️ 금지어가 감지되어 경고 1회가 부여되었습니다. 현재 누적: " + count + "회");
-        }
-
-        if (count == 3) {
-            LocalDateTime until = LocalDateTime.now().plusDays(7);
-            securityService.suspendMember(username, until);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until,
-                    false);
-            rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
-        }
-
-        if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
-            securityService.suspendMember(username, null);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(),
-                    LocalDateTime.MAX, true);
-            rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
-        }
+        String replyer = SecurityUtil.getCurrentName();
+        dto.setUsername(username);
+        dto.setReplyer(replyer);
+        log.info("[REPLY CREATE] {}", dto);
+        log.info("🟡 댓글 등록 시 username = '{}'", username);
+        warningHandler.processContentWarning(dto.getText(), username, rttr);
         // 서버 측 입력값 검증 조건 미 충족 시 에러 플래시 메세지와 함께
         // read 페이지로 redirect
         if (bindingResult.hasErrors()) {
             rttr.addFlashAttribute("error", "댓글 내용을 입력해주세요.");
 
             // 페이지 정보도 함께 리다이렉트
-            return "redirect:/boardweb/read?bno=" + dto.getBno()
-                    + "&page=" + pageRequestDTO.getPage()
-                    + "&size=" + pageRequestDTO.getSize()
-                    + "&type=" + pageRequestDTO.getType()
-                    + "&keyword=" + pageRequestDTO.getKeyword();
+            return redirectToRead(dto.getBno(), pageRequestDTO);
         }
 
         // 조건 통과 후 정상 처리 시 생성 후 read로 redirect
         replyWebService.create(dto);
 
-        return "redirect:/boardweb/read?bno=" + dto.getBno()
-                + "&page=" + pageRequestDTO.getPage()
-                + "&size=" + pageRequestDTO.getSize()
-                + "&type=" + pageRequestDTO.getType()
-                + "&keyword=" + pageRequestDTO.getKeyword();
+        return redirectToRead(dto.getBno(), pageRequestDTO);
     }
 
     /** 댓글/답글 수정 **/
@@ -135,36 +108,15 @@ public class ReplyController {
             throw new AccessDeniedException("계정이 정지되어 댓글을 수정할 수 없습니다.");
 
         }
-
-        String username = SecurityUtil.getCurrentUsername();
-        long count = warningService.checkAndWarn(dto.getText(), username);
-
-        if (count >= 1) {
-            rttr.addFlashAttribute("warn", "⚠️ 금지어가 감지되어 경고 1회가 부여되었습니다. 현재 누적: " + count + "회");
+        ReplyWebDTO original = replyWebService.readOne(dto.getRno());
+        if (!original.getUsername().equals(SecurityUtil.getCurrentUsername())) {
+            throw new AccessDeniedException("수정 권한이 없습니다.");
         }
 
-        if (count == 3) {
-            LocalDateTime until = LocalDateTime.now().plusDays(7);
-            securityService.suspendMember(username, until);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(), until,
-                    false);
-            rttr.addFlashAttribute("warn", "⚠️ 누적 경고 3회로 7일 정지되었습니다.");
-        }
-
-        if (count >= 5 && suspensionService.hasRecentSuspension(securityService.getCurrentMember())) {
-            securityService.suspendMember(username, null);
-            suspensionService.recordAutoSuspension(securityService.getCurrentMember(), LocalDateTime.now(),
-                    LocalDateTime.MAX, true);
-            rttr.addFlashAttribute("warn", "🚫 누적 경고 5회 이상으로 영구정지 처리되었습니다.");
-        }
-
+        warningHandler.processContentWarning(dto.getText(), original.getUsername(), rttr);
         replyWebService.modify(dto);
 
-        return "redirect:/boardweb/read?bno=" + dto.getBno() +
-                "&page=" + pageRequestDTO.getPage() +
-                "&size=" + pageRequestDTO.getSize() +
-                "&type=" + pageRequestDTO.getType() +
-                "&keyword=" + pageRequestDTO.getKeyword();
+        return redirectToRead(dto.getBno(), pageRequestDTO);
     }
 
     /** 댓글/답글 삭제 **/
@@ -176,8 +128,19 @@ public class ReplyController {
             RedirectAttributes rttr) {
 
         log.info("[REPLY DELETE] rno={}", rno);
+
+        ReplyWebDTO original = replyWebService.readOne(rno);
+        if (!original.getUsername().equals(SecurityUtil.getCurrentUsername())) {
+            throw new AccessDeniedException("삭제 권한이 없습니다.");
+        }
+
         replyWebService.delete(rno);
 
+        return redirectToRead(bno, pageRequestDTO);
+    }
+
+    // redirct 헬퍼
+    private String redirectToRead(Long bno, PageRequestDTO pageRequestDTO) {
         return "redirect:/boardweb/read?bno=" + bno +
                 "&page=" + pageRequestDTO.getPage() +
                 "&size=" + pageRequestDTO.getSize() +
