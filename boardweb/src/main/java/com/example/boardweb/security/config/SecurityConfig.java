@@ -30,6 +30,7 @@ public class SecurityConfig {
                 return new BCryptPasswordEncoder();
         }
 
+        
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -52,7 +53,6 @@ public class SecurityConfig {
                                                 .loginPage("/security/login")
                                                 .loginProcessingUrl("/login") // 커스텀 로그인 페이지 URL
                                                 .successHandler(customAuthenticationSuccessHandler) // 로그인 성공 시 이동할 페이지
-                                                                                                    // 핸들러에서 처리
                                                 .failureUrl("/security/login?error=true")// 로그인 실패 시 이동할 페이지
                                                 .permitAll())
                                 .logout(logout -> logout
@@ -76,4 +76,5 @@ public class SecurityConfig {
                 return http.build();
 
         }
+
 }

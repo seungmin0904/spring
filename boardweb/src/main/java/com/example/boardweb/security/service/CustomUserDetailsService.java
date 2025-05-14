@@ -2,6 +2,9 @@ package com.example.boardweb.security.service;
 
 import java.util.stream.Collectors;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,7 +53,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                         .stream()
                         .findFirst()
                         .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다" + username));
-
+      
             boolean verified = tokenRepository.findByUsername(username)
                         .map(EmailVerificationToken::isVerified)
                         .orElse(false);

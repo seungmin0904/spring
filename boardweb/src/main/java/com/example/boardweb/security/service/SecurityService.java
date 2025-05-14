@@ -392,5 +392,4 @@ public class SecurityService {
 
         return false;
     }
-
 }
