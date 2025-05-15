@@ -22,4 +22,12 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     // 정지 해제 자동감지 쿼리
     List<Member> findAllBySuspendedTrueAndSuspendedUntilBefore(LocalDateTime now);
 
+    // 철회 검증 식
+    boolean existsByUsernameAndWithdrawalRequestedAtIsNotNull(String username);
+
+    // 스케쥴러 메서드
+    List<Member> findByWithdrawalRequestedAtBefore(LocalDateTime limit);
+
+    // 탈퇴 신청자 로그
+    List<Member> findByWithdrawalRequestedAtIsNotNullOrderByWithdrawalRequestedAtAsc();
 }

@@ -19,7 +19,9 @@ import com.example.boardweb.oauth.dto.OAuthUserDTO;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
 import com.example.boardweb.security.service.EmailService;
 import com.example.boardweb.security.service.SecurityService;
+import com.example.boardweb.security.util.SecurityUtil;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +60,7 @@ public class MemberSecurityController {
 
     @PostMapping("/register")
     public String processRegister(@ModelAttribute MemberSecurityDTO dto, BindingResult bindingResult, Model model,
-            RedirectAttributes rttr,HttpServletRequest request,HttpServletResponse response) {
+            RedirectAttributes rttr, HttpServletRequest request, HttpServletResponse response) {
         log.info("회원가입 정보: {}", dto);
         if (bindingResult.hasErrors()) {
             log.warn(" BindingResult 에러 발생: {}", bindingResult);
@@ -67,7 +69,7 @@ public class MemberSecurityController {
         }
 
         try {
-            securityService.register(dto,request,response); // ㅉ파라미터 수행하는 호출부 
+            securityService.register(dto, request, response); // ㅉ파라미터 수행하는 호출부
             rttr.addFlashAttribute("success", "회원가입이 완료되었습니다.");
             return "redirect:/boardweb/list"; // 자동 로그인 이후 경로 설정
         } catch (IllegalStateException e) {
@@ -207,7 +209,64 @@ public class MemberSecurityController {
 
     @GetMapping("/need-verification")
     public String needVerificationPage() {
-    return "security/need-verification";
+        return "security/need-verification";
 
-   }
+    }
+
+    @PostMapping("/member/withdraw")
+    public String withdraw(HttpServletRequest request, RedirectAttributes rttr) {
+        String username = SecurityUtil.getCurrentUsername();
+        if (username == null) {
+            rttr.addFlashAttribute("msg", "로그인이 필요한 작업입니다.");
+            return "redirect:/login";
+        }
+        securityService.requestWithdrawal(username);
+
+        // 로그아웃 처리
+        try {
+            request.logout();
+        } catch (ServletException e) {
+            e.printStackTrace(); // 필요 시 로깅
+        }
+
+        rttr.addFlashAttribute("msg", "탈퇴 신청이 완료되었습니다. 30일 후 계정이 삭제됩니다.");
+        return "redirect:/login"; // 로그인 페이지로 이동
+    }
+
+    // 🔧 MemberSecurityController.java 내부
+    @GetMapping("/withdraw-cancel")
+    public String showWithdrawCancelPage(Model model) {
+        model.addAttribute("msg", "회원님은 탈퇴 신청 상태입니다. 탈퇴를 철회하려면 아래 버튼을 눌러주세요.");
+        return "security/withdraw-cancel"; // 템플릿 존재해야 함
+    }
+
+    @PostMapping("/withdraw-cancel")
+    public String cancelWithdrawal(HttpServletRequest request, RedirectAttributes rttr) {
+        String username = SecurityUtil.getCurrentUsername();
+        if (username == null) {
+            rttr.addFlashAttribute("msg", "로그인이 필요한 작업입니다.");
+            return "redirect:/login";
+        }
+
+        // 철회 전에 탈퇴 신청 상태인지 확인
+        if (!securityService.isWithdrawRequested(username)) {
+            rttr.addFlashAttribute("msg", "현재 탈퇴 신청 상태가 아닙니다.");
+            return "redirect:/boardweb/list";
+        }
+
+        securityService.cancelWithdrawal(username);
+        rttr.addFlashAttribute("msg", "탈퇴 신청이 철회되었습니다.");
+        return "redirect:/boardweb/list";
+    }
+
+    @GetMapping("/withdraw-info")
+    public String withdrawalInfoPage(Model model) {
+        String username = SecurityUtil.getCurrentUsername();
+        if (username == null || !securityService.isWithdrawRequested(username)) {
+            return "redirect:/boardweb/list"; // 비정상 접근 방지
+        }
+
+        model.addAttribute("msg", "회원님은 탈퇴를 신청하신 상태입니다. 철회하려면 아래 버튼을 눌러주세요.");
+        return "security/withdraw-info";
+    }
 }

@@ -48,7 +48,16 @@ public class Member {
     @Column(nullable = false, name = "SUSPENDED_UNTIL")
     private LocalDateTime suspendedUntil; // 정지 해제일 관리자 권한
 
+    @Column(name = "withdrawal_requested_at")
+    private LocalDateTime withdrawalRequestedAt;
+
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private Set<MemberRole> roles = new HashSet<>();
+
+    // 위값 메서드로 반환
+    public Set<MemberRole> getRoles() {
+        return this.roles;
+    }
+
 }

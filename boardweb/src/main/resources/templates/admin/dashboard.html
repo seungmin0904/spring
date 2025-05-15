@@ -60,22 +60,22 @@
         <td th:unless="${member.suspended}">-</td>
 
         <!-- 기간 조치 버튼 -->
-      <td>
-        <form th:action="@{/admin/suspend}" method="post" style="display:inline;">
+        <td>
+          <form th:action="@{/admin/suspend}" method="post" style="display:inline;">
             <input type="hidden" name="username" th:value="${member.username}" />
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
             <button type="submit" name="days" value="3">+3일</button>
             <button type="submit" name="days" value="7">+7일</button>
             <button type="submit" name="days" value="-1">무기한</button>
-        </form>
-        <th:block th:if="${member.suspended} and ${activeHistoryIdMap[member.username]} != null">
+          </form>
+          <th:block th:if="${member.suspended} and ${activeHistoryIdMap[member.username]} != null">
             <form th:action="@{/admin/suspensions/lift/manual/{id}(id=${activeHistoryIdMap[member.username]})}"
-                  method="post" style="display:inline;">
-           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-          <button type="submit">해제</button>
-        </form>
-      </th:block>
-    </td>
+              method="post" style="display:inline;">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+              <button type="submit">해제</button>
+            </form>
+          </th:block>
+        </td>
 
         </td>
 
@@ -95,6 +95,7 @@
       </tr>
     </tbody>
   </table>
+  <a href="/admin/withdrawals">탈퇴 사용자 이력</a>
   <a href="/admin/banned-words">금지어 설정</a>
   <a href="/admin/suspensions">이력 확인</a>
   <a href="/admin/suspensions/active">현재 정지중 이력</a>

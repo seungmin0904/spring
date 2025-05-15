@@ -3,6 +3,7 @@ package com.example.boardweb.security.dto;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,12 +20,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Builder
-public class MemberSecurityDTO implements UserDetails{
-    
+public class MemberSecurityDTO implements UserDetails {
+
     @NotBlank(message = "아이디는 필수입니다.")
     @Email(message = "이메일 형식으로 입력해주세요.")
     private String username;
-    
+
     @NotBlank(message = "비밀번호는 필수입니다.")
     @Size(min = 12, message = "비밀번호는 12자 이상이어야 합니다.")
     @Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&+=]).{12,}$", message = "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.")
@@ -38,17 +39,14 @@ public class MemberSecurityDTO implements UserDetails{
     private boolean emailVerified; // 이메일 인증 여부
 
     private boolean suspended;
-    
+
     private LocalDateTime suspendedUntil;
 
-
-
-
-
+    private Set<String> roleNames;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        
+
         return authorities;
     }
 
@@ -77,7 +75,8 @@ public class MemberSecurityDTO implements UserDetails{
     }
 
     @Builder
-    public MemberSecurityDTO(String username, String password, String name, List<GrantedAuthority> authorities, boolean emailVerified) {
+    public MemberSecurityDTO(String username, String password, String name, List<GrantedAuthority> authorities,
+            boolean emailVerified) {
         this.username = username;
         this.password = password;
         this.name = name;

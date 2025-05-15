@@ -38,6 +38,12 @@
 
       <button type="submit" class="btn btn-primary">정보 수정</button>
     </form>
+
+    <form th:action="@{/security/member/withdraw}" method="post">
+      <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+      <button type="submit" onclick="return confirm('정말 탈퇴하시겠습니까?')">탈퇴 신청</button>
+    </form>
+
     <!--  소셜 로그인 사용자 출력 -->
     <div th:if="${loginType == 'social'}">
       <div class="mb-3">

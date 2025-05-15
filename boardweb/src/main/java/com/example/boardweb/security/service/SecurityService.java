@@ -1,7 +1,6 @@
 package com.example.boardweb.security.service;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -11,18 +10,18 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardweb.oauth.dto.OAuthUserDTO;
 import com.example.boardweb.security.dto.MemberSecurityDTO;
-import com.example.boardweb.security.dto.SuspensionHistoryDTO;
 import com.example.boardweb.security.entity.EmailVerificationToken;
 import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.entity.MemberRole;
 import com.example.boardweb.security.entity.PasswordResetToken;
-import com.example.boardweb.security.entity.SuspensionHistory;
 import com.example.boardweb.security.repository.EmailVerificationTokenRepository;
 import com.example.boardweb.security.repository.MemberRepository;
 import com.example.boardweb.security.repository.PasswordResetTokenRepository;
@@ -31,7 +30,6 @@ import com.example.boardweb.security.util.SecurityUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,7 +59,7 @@ public class SecurityService {
                     .build();
 
             MemberRole role = MemberRole.builder()
-                    .roleName("ADMIN") // 반드시 ADMIN
+                    .roleName(MemberRole.Role.ADMIN) // 반드시 ADMIN
                     .member(admin)
                     .build();
 
@@ -97,7 +95,7 @@ public class SecurityService {
                 .build();
 
         MemberRole role = MemberRole.builder()
-                .roleName("USER")
+                .roleName(MemberRole.Role.USER)
                 .member(member)
                 .build();
 
@@ -391,5 +389,44 @@ public class SecurityService {
         }
 
         return false;
+    }
+
+    // 탈퇴 처리
+    @Transactional
+    public void requestWithdrawal(String username) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("회원이 존재하지 않습니다."));
+
+        if (member.getWithdrawalRequestedAt() != null) {
+            throw new IllegalStateException("이미 탈퇴를 신청한 계정입니다.");
+        }
+
+        member.setWithdrawalRequestedAt(LocalDateTime.now());
+        memberRepository.save(member);
+    }
+
+    @Transactional
+    public void cancelWithdrawal(String username) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("회원 없음"));
+
+        if (member.getWithdrawalRequestedAt() == null) {
+            throw new IllegalStateException("탈퇴 신청 상태가 아닙니다.");
+        }
+
+        member.setWithdrawalRequestedAt(null);
+        memberRepository.save(member);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Member> getWithdrawalRequestedMembers() {
+        return memberRepository.findByWithdrawalRequestedAtIsNotNullOrderByWithdrawalRequestedAtAsc();
+    }
+
+    // 회원검증
+    public boolean isWithdrawRequested(String username) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보 없음"));
+        return member.getWithdrawalRequestedAt() != null;
     }
 }

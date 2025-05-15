@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.repository.MemberRepository;
@@ -36,4 +37,17 @@ public class AutoUnbanScheduler {
         }
     }
 
+    // 매일 새벽 1시에 탈퇴 신청 30일 경과한 사용자 삭제
+    @Scheduled(cron = "0 0 1 * * *")
+    @Transactional
+    public void deleteWithdrawnMembers() {
+        LocalDateTime limit = LocalDateTime.now().minusDays(30);
+
+        List<Member> toDelete = memberRepository.findByWithdrawalRequestedAtBefore(limit);
+
+        for (Member member : toDelete) {
+            log.info("▶ 자동 삭제 대상 (탈퇴 30일 경과): {}", member.getUsername());
+            memberRepository.delete(member);
+        }
+    }
 }

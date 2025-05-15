@@ -3,9 +3,13 @@ package com.example.boardweb.security.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.example.boardweb.security.dto.MemberSecurityDTO;
 import com.example.boardweb.security.dto.SuspensionHistoryDTO;
 import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.entity.SuspensionHistory;
@@ -74,7 +79,7 @@ public class AdminController {
         // 자동 정지 여부 판단 맵 생성
         Map<String, Boolean> autoSuspensionMap = warningService.getAutoSuspensionMap(members);
         model.addAttribute("autoSuspensionMap", autoSuspensionMap);
-        
+
         Map<String, Long> activeHistoryIdMap = suspensionService.getActiveHistoryIdMap(members);
         model.addAttribute("activeHistoryIdMap", activeHistoryIdMap);
 
@@ -113,26 +118,66 @@ public class AdminController {
 
     @PostMapping("/suspensions/lift/manual/{id}")
     public String manualLift(@PathVariable("id") Long id) {
-        suspensionService.liftSuspensionById(id, true);
+        // 1. 정지 해제 실행 → username 리턴
+        String username = suspensionService.liftSuspensionById(id, true);
+
+        // 2. 현재 로그인한 사용자 정보 확인
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // 3. 현재 로그인 사용자가 정지 해제 대상과 같다면 SecurityContext 갱신
+        if (principal instanceof MemberSecurityDTO dto &&
+                dto.getUsername().equals(username)) {
+
+            // 최신 Member 정보 조회
+            Member updated = adminMemberService.getMembers(username);
+
+            // 새 DTO 생성
+            MemberSecurityDTO updatedDTO = MemberSecurityDTO.builder()
+                    .username(updated.getUsername())
+                    .password(updated.getPassword())
+                    .name(updated.getName())
+                    .emailVerified(updated.isEmailVerified())
+                    .suspended(updated.isSuspended())
+                    .suspendedUntil(updated.getSuspendedUntil())
+                    .roleNames(updated.getRoles().stream()
+                            .map(r -> r.getRoleName().name()).collect(Collectors.toSet()))
+                    .build();
+
+            // 새로운 인증 정보로 교체
+            Authentication newAuth = new UsernamePasswordAuthenticationToken(
+                    updatedDTO,
+                    null,
+                    updatedDTO.getAuthorities());
+
+            SecurityContextHolder.getContext().setAuthentication(newAuth);
+        }
+
         return "redirect:/admin/suspensions";
     }
 
     @GetMapping("/suspensions/active")
     public String viewActiveSuspensions(Model model) {
-    List<SuspensionHistoryDTO> list = suspensionService.getActiveHistories();
-    model.addAttribute("histories", list);
-    model.addAttribute("pageTitle", "현재 정지중인 사용자 이력");
-    return "admin/suspension-list";
+        List<SuspensionHistoryDTO> list = suspensionService.getActiveHistories();
+        model.addAttribute("histories", list);
+        model.addAttribute("pageTitle", "현재 정지중인 사용자 이력");
+        return "admin/suspension-list";
 
     }
 
     @GetMapping("/suspensions/lifted")
     public String viewLiftedSuspensions(Model model) {
-    List<SuspensionHistoryDTO> list = suspensionService.getLiftedHistories();
-    model.addAttribute("histories", list);
-    model.addAttribute("pageTitle", "해제된 사용자 이력");
-    return "admin/suspension-list";
+        List<SuspensionHistoryDTO> list = suspensionService.getLiftedHistories();
+        model.addAttribute("histories", list);
+        model.addAttribute("pageTitle", "해제된 사용자 이력");
+        return "admin/suspension-list";
 
+    }
+
+    @GetMapping("/withdrawals")
+    public String showWithdrawals(Model model) {
+        List<Member> withdrawals = securityService.getWithdrawalRequestedMembers();
+        model.addAttribute("withdrawals", withdrawals);
+        return "admin/withdrawn-member-list"; // 뷰 파일명 그대로 반영
     }
 
     // 공통 레이아웃(템플릿) 에서 항상 isAdmin이 필요할 경우 번거로운 model.addAttribute("isAdmin") 삽입 대신
@@ -148,4 +193,5 @@ public class AdminController {
     // .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
     // }
     // }
+
 }

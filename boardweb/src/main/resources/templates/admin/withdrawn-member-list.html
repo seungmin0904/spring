@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>탈퇴 신청 회원 목록</title>
+</head>
+
+<body>
+    <h2>탈퇴 신청 회원 목록</h2>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>이메일</th>
+                <th>이름</th>
+                <th>탈퇴 신청일</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="member : ${withdrawals}">
+                <td th:text="${member.username}"></td>
+                <td th:text="${member.name}"></td>
+                <td th:text="${#temporals.format(member.withdrawalRequestedAt, 'yyyy-MM-dd HH:mm')}"></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+
+</html>

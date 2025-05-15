@@ -4,17 +4,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardweb.security.entity.Member;
 import com.example.boardweb.security.repository.MemberRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class AdminMemberService {
-    
+
     private final MemberRepository memberRepository;
 
     public List<Member> getAllMembers() {
@@ -38,7 +38,7 @@ public class AdminMemberService {
     }
 
     public Member getMembers(String username) {
-    return memberRepository.findById(username)
-            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-}
+        return memberRepository.findById(username)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    }
 }

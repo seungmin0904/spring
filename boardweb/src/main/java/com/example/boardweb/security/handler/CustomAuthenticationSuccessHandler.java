@@ -51,6 +51,14 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             // 정지 처리 시 최신 db상태 조회
             Member updated = memberRepository.findWithRolesByUsername(user.getUsername())
                     .orElseThrow(() -> new IllegalStateException("회원 없음"));
+            // 로그 확인
+            System.out.println("▶ 로그인 사용자: " + updated.getUsername());
+            System.out.println("▶ 탈퇴 요청일: " + updated.getWithdrawalRequestedAt());
+
+            if (!user.isEmailVerified()) {
+                response.sendRedirect("/security/need-verification");
+                return;
+            }
             // 정지 여부 검사
             if (updated.isSuspended()) {
                 if (updated.getSuspendedUntil() != null &&
@@ -65,6 +73,11 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                 }
             }
 
+            // 탈퇴 신청 여부 검사
+            if (updated.getWithdrawalRequestedAt() != null) {
+                response.sendRedirect("/security/withdraw-info");
+                return;
+            }
             // 1. 권한 리스트 생성 (명시적 캐스팅)
             // SimpleGrantedAuthority는 GrantedAuthority의 자식 타입이므로
             // 타입 캐스팅 또는 제네릭 와일드카드 없이 직접 넘기면 타입 추론이 깨질 수 있음

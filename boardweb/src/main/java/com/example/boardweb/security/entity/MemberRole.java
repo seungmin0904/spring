@@ -1,6 +1,8 @@
 package com.example.boardweb.security.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -33,10 +35,14 @@ public class MemberRole {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EqualsAndHashCode.Include
     private Long id;
-
-    private String roleName;
+    @Enumerated(EnumType.STRING)
+    private Role roleName;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "member_username", nullable = false)
     private Member member;
+
+    public enum Role {
+        USER, ADMIN
+    }
 }
