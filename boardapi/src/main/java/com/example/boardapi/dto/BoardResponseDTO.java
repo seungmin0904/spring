@@ -7,8 +7,8 @@ import lombok.Data;
 @Builder
 public class BoardResponseDTO {
 
-    private Long id;
+    private Long bno;
     private String title;
     private String content;
-    private String writer;
+    private String writer;  // 작성자 출력용 
 }

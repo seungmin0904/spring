@@ -5,11 +5,11 @@ import lombok.*;
 @Setter
 @Getter
 @ToString
-@RequiredArgsConstructor
+@NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode
 public class BoardRequestDTO {
     private String title;
     private String content;
-    private String writer;
-
+    private String username; // 작성자 식별용 
 }

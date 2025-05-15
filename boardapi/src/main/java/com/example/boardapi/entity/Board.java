@@ -1,9 +1,18 @@
 package com.example.boardapi.entity;
 
+import java.util.List;
+
+import com.example.boardapi.base.Base;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,13 +25,29 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Board {
+public class Board extends Base{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long bno;
+    
     private String title;
-    private String content;
-    private String writer;
 
+    @Column(length = 2000)
+    private String content;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Member member;
+
+    // 선택: 양방향 설정
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
+    private List<Reply> replies;
+
+    public String getWriterName() {
+        return member != null ? member.getName() : null;
+    }
+
+    public String getWriterUsername() {
+        return member != null ? member.getUsername() : null;
+    }
 }

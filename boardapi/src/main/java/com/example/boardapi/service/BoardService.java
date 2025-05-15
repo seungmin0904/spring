@@ -8,8 +8,10 @@ import org.springframework.stereotype.Service;
 import com.example.boardapi.dto.BoardRequestDTO;
 import com.example.boardapi.dto.BoardResponseDTO;
 import com.example.boardapi.entity.Board;
+import com.example.boardapi.entity.Member;
 import com.example.boardapi.mapper.BoardMapper;
 import com.example.boardapi.repository.BoardRepository;
+import com.example.boardapi.repository.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,28 +19,46 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BoardService {
 
-    private final BoardRepository boardRepository;
+   private final BoardRepository boardRepository;
+    private final MemberRepository memberRepository;
 
-    public BoardResponseDTO register(BoardRequestDTO dto) {
-        Board board = boardRepository.save(BoardMapper.toEntity(dto));
+    // 게시글 등록
+    public void register(BoardRequestDTO dto) {
+        Member member = memberRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
 
-        return BoardMapper.toDTO(board);
+        Board board = BoardMapper.toEntity(dto, member);
+        boardRepository.save(board);
     }
 
-    public List<BoardResponseDTO> getList() {
-        return boardRepository.findAll()
-                .stream()
+    // 전체 게시글 조회
+    public List<BoardResponseDTO> getAll() {
+        List<Board> boards = boardRepository.findAll();
+        return boards.stream()
                 .map(BoardMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
-    public BoardResponseDTO get(Long id) {
-        return boardRepository.findById(id)
-                .map(BoardMapper::toDTO)
-                .orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
+    // 게시글 단건 조회
+    public BoardResponseDTO get(Long bno) {
+        Board board = boardRepository.findById(bno)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다"));
+        return BoardMapper.toDTO(board);
     }
 
-    public void delete(Long id) {
-        boardRepository.deleteById(id);
+    // 게시글 수정
+    public void modify(Long bno, BoardRequestDTO dto) {
+        Board board = boardRepository.findById(bno)
+                .orElseThrow(() -> new IllegalArgumentException("수정할 게시글이 없습니다"));
+
+        board.setTitle(dto.getTitle());
+        board.setContent(dto.getContent());
+
+        boardRepository.save(board);
+    }
+
+    // 게시글 삭제
+    public void delete(Long bno) {
+        boardRepository.deleteById(bno);
     }
 }
