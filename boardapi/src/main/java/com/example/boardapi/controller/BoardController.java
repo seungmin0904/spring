@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.boardapi.dto.BoardRequestDTO;
 import com.example.boardapi.dto.BoardResponseDTO;
+import com.example.boardapi.entity.Board;
 import com.example.boardapi.entity.Member;
+import com.example.boardapi.mapper.BoardMapper;
 import com.example.boardapi.service.BoardService;
 
 import lombok.RequiredArgsConstructor;
@@ -28,11 +30,11 @@ public class BoardController {
 
     // 게시글 등록
     @PostMapping
-    public ResponseEntity<Void> register(@RequestBody BoardRequestDTO dto,
+    public ResponseEntity<BoardResponseDTO> register(@RequestBody BoardRequestDTO dto,
             @AuthenticationPrincipal Member member) {
 
-        boardService.register(dto, member);
-        return ResponseEntity.ok().build();
+        Board saved = boardService.register(dto, member);
+        return ResponseEntity.ok(BoardMapper.toDTO(saved));
     }
 
     // 전체 게시글 조회

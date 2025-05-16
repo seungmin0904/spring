@@ -7,12 +7,16 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.example.boardapi.filter.JwtFilter;
 import com.example.boardapi.security.custom.CustomUserDetailsService;
+import com.example.boardapi.security.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,32 +25,39 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // 최신 Lambda DSL 방식
+                .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (REST API용)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/members/register").permitAll()
-                        .requestMatchers("/api/members/login").permitAll()
-                        .anyRequest().authenticated() // 나머지는 인증 필요
-                )
-                // .formLogin(Customizer.withDefaults()); // 로그인 페이지 사용 시 기본 설정
-                .formLogin(form -> form.disable())
-                .userDetailsService(userDetailsService); // rest api 방식 html 로그인 사용 안함
+                        .requestMatchers("/api/members/register", "/api/members/login").permitAll() // 회원가입/로그인 허용
+                        .anyRequest().authenticated())
+                .formLogin(form -> form.disable()) // 폼로그인 비활성화 (HTML UI 미사용)
+                .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
+                .userDetailsService(userDetailsService); // 사용자 정보 서비스 등록
+
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        return new BCryptPasswordEncoder();
     }
 
     // 저장용 - 강력한 인코딩만 사용
     @Bean
     public BCryptPasswordEncoder bcryptEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    // jwtFilter 주입용
+    @Bean
+    public JwtFilter jwtFilter() {
+        return new JwtFilter(jwtUtil, userDetailsService);
     }
 
     // 주입용

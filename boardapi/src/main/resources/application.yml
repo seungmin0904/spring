@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: boardapi
+
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521:xe
+    username: c##java
+    password: 12345
+    driver-class-name: oracle.jdbc.OracleDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        highlight_sql: true
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        orm:
+          jdbc:
+            bind: trace
+    org.springframework.security: DEBUG
+
+jwt:
+  secret: "my-super-secret-key-that-is-very-strong-2025" # 보안 키는 실제 환경에선 Base64 또는 길게!
+  expiration: 3600000 # 1시간 (밀리초 기준) = 1000 * 60 * 60

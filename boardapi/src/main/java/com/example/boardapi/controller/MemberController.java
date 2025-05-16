@@ -5,6 +5,9 @@ import com.example.boardapi.dto.MemberRequestDTO;
 import com.example.boardapi.dto.MemberResponseDTO;
 import com.example.boardapi.service.MemberService;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,8 +27,8 @@ public class MemberController {
 
     // 로그인 (POST /api/members/login)
     @PostMapping("/login")
-    public ResponseEntity<MemberResponseDTO> login(@RequestBody LoginRequestDTO dto) {
-        MemberResponseDTO response = memberService.login(dto);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO dto) {
+        String token = memberService.login(dto);
+        return ResponseEntity.ok(Map.of("token", token));
     }
 }

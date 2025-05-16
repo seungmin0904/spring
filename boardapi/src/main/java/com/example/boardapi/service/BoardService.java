@@ -24,9 +24,10 @@ public class BoardService {
     private final SecurityService securityService;
 
     // 게시글 등록
-    public void register(BoardRequestDTO dto, Member member) {
+    public Board register(BoardRequestDTO dto, Member member) {
         Board board = BoardMapper.toEntity(dto, member);
         boardRepository.save(board);
+        return board;
     }
 
     // 전체 게시글 조회
