@@ -3,15 +3,19 @@ package com.example.boardapi.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.example.boardapi.base.Base;
+
 @Entity
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"board", "parent", "member"})
+@ToString(exclude = { "board", "parent", "member" })
 
-public class Reply extends Base{
+public class Reply extends Base {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long rno;
@@ -27,6 +31,19 @@ public class Reply extends Base{
 
     @Column(nullable = false)
     private String text;
+
+    @Column(nullable = true)
+    @Builder.Default
+    private boolean deleted = false;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    private List<Reply> children = new ArrayList<>();
+
+    public void softDelete() {
+        this.deleted = true;
+        this.text = "삭제된 댓글입니다";
+    }
 
     public void updateText(String newText) {
         this.text = newText;

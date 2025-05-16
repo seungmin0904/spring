@@ -3,6 +3,7 @@ package com.example.boardapi.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.boardapi.dto.BoardRequestDTO;
 import com.example.boardapi.dto.BoardResponseDTO;
+import com.example.boardapi.entity.Member;
 import com.example.boardapi.service.BoardService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,8 +28,10 @@ public class BoardController {
 
     // 게시글 등록
     @PostMapping
-    public ResponseEntity<Void> register(@RequestBody BoardRequestDTO dto) {
-        boardService.register(dto);
+    public ResponseEntity<Void> register(@RequestBody BoardRequestDTO dto,
+            @AuthenticationPrincipal Member member) {
+
+        boardService.register(dto, member);
         return ResponseEntity.ok().build();
     }
 
@@ -46,15 +50,17 @@ public class BoardController {
     // 게시글 수정
     @PutMapping("/{bno}")
     public ResponseEntity<Void> modify(@PathVariable Long bno,
-                                       @RequestBody BoardRequestDTO dto) {
-        boardService.modify(bno, dto);
+            @RequestBody BoardRequestDTO dto,
+            @AuthenticationPrincipal Member member) {
+        boardService.modify(bno, dto, member);
         return ResponseEntity.ok().build();
     }
 
     // 게시글 삭제
     @DeleteMapping("/{bno}")
-    public ResponseEntity<Void> delete(@PathVariable Long bno) {
-        boardService.delete(bno);
+    public ResponseEntity<Void> delete(@PathVariable Long bno,
+            @AuthenticationPrincipal Member member) {
+        boardService.delete(bno, member);
         return ResponseEntity.ok().build();
     }
 }

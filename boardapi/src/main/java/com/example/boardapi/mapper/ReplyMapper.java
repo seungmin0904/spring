@@ -1,4 +1,5 @@
 package com.example.boardapi.mapper;
+
 import com.example.boardapi.dto.ReplyDTO;
 import com.example.boardapi.dto.ReplyRequestDTO;
 import com.example.boardapi.entity.*;
@@ -12,7 +13,7 @@ public class ReplyMapper {
         return ReplyDTO.builder()
                 .rno(entity.getRno())
                 .bno(entity.getBoard().getBno())
-                .text(entity.getText())
+                .text(entity.isDeleted() ? "삭제된 댓글" : entity.getText())
                 .replyer(entity.getMember().getName())
                 .username(entity.getMember().getUsername())
                 .createdDate(entity.getCreatedDate())

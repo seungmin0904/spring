@@ -6,7 +6,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,9 +16,9 @@ public class ReplyDTO {
     private Long rno;
     private Long bno;
     private String text;
-    private String replyer;   // Member.name
-    private String username;  // Member.username
-
+    private String replyer; // Member.name
+    private String username; // Member.username
+    private boolean deleted;
     private LocalDateTime createdDate;
 
     @Builder.Default

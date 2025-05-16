@@ -12,6 +12,7 @@ import com.example.boardapi.entity.Member;
 import com.example.boardapi.mapper.BoardMapper;
 import com.example.boardapi.repository.BoardRepository;
 import com.example.boardapi.repository.MemberRepository;
+import com.example.boardapi.security.service.SecurityService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,14 +20,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BoardService {
 
-   private final BoardRepository boardRepository;
-    private final MemberRepository memberRepository;
+    private final BoardRepository boardRepository;
+    private final SecurityService securityService;
 
     // 게시글 등록
-    public void register(BoardRequestDTO dto) {
-        Member member = memberRepository.findByUsername(dto.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자"));
-
+    public void register(BoardRequestDTO dto, Member member) {
         Board board = BoardMapper.toEntity(dto, member);
         boardRepository.save(board);
     }
@@ -47,10 +45,11 @@ public class BoardService {
     }
 
     // 게시글 수정
-    public void modify(Long bno, BoardRequestDTO dto) {
+    public void modify(Long bno, BoardRequestDTO dto, Member currentUser) {
         Board board = boardRepository.findById(bno)
                 .orElseThrow(() -> new IllegalArgumentException("수정할 게시글이 없습니다"));
 
+        securityService.checkBoardOwnership(board, currentUser);
         board.setTitle(dto.getTitle());
         board.setContent(dto.getContent());
 
@@ -58,7 +57,11 @@ public class BoardService {
     }
 
     // 게시글 삭제
-    public void delete(Long bno) {
+    public void delete(Long bno, Member currentUser) {
+        Board board = boardRepository.findById(bno)
+                .orElseThrow(() -> new IllegalArgumentException("삭제할 게시글이 없습니다"));
+
+        securityService.checkBoardOwnership(board, currentUser); // 권한 검증
         boardRepository.deleteById(bno);
     }
 }

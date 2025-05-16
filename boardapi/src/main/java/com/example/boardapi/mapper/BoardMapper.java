@@ -20,7 +20,9 @@ public class BoardMapper {
                 .bno(entity.getBno())
                 .title(entity.getTitle())
                 .content(entity.getContent())
-                .writer(entity.getWriterName())
+                .writerName(entity.getWriterName())
+                .createdDate(entity.getCreatedDate().toString())
+                .modifiedDate(entity.getUpdatedDate().toString())
                 .build();
     }
 }
