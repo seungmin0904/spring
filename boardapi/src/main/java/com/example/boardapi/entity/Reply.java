@@ -20,10 +20,13 @@ public class Reply extends Base {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long rno;
 
+    
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_bno")
     private Board board;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_rno")
     private Reply parent;
 
     @ManyToOne(fetch = FetchType.LAZY)

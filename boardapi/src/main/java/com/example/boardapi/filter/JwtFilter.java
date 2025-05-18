@@ -12,12 +12,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.example.boardapi.security.custom.CustomUserDetailsService;
 import com.example.boardapi.security.util.JwtUtil;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -30,24 +34,29 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
+                String uri = request.getRequestURI();
+                 if (uri.equals("/api/members/login") || uri.equals("/api/members/register")) {
+                    filterChain.doFilter(request, response);
+                    return;
+                  }
+                String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            try {
-                String username = jwtUtil.validateAndGetUsername(token);
-                var userDetails = userDetailsService.loadUserByUsername(username);
+           try {
+    String username = jwtUtil.validateAndGetUsername(token);
+    var userDetails = userDetailsService.loadUserByUsername(username);
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            } catch (Exception e) {
-                // 유효하지 않으면 아무 작업 안 함 (또는 로그 남김)
-            }
-        }
+    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+        userDetails, null, userDetails.getAuthorities());
+    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+    SecurityContextHolder.getContext().setAuthentication(authToken);
 
-        filterChain.doFilter(request, response);
-    }
+} catch (Exception e) {
+    log.warn("❌ JWT 예외 발생: {}", e.getMessage());
 }
+        }
+           filterChain.doFilter(request, response);
+     }
+  }

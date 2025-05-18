@@ -6,6 +6,7 @@ import com.example.boardapi.dto.MemberResponseDTO;
 import com.example.boardapi.entity.Member;
 import com.example.boardapi.mapper.MemberMapper;
 import com.example.boardapi.repository.MemberRepository;
+import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.security.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -37,10 +38,16 @@ public class MemberService {
         return MemberMapper.toDTO(saved);
     }
 
-    public String login(LoginRequestDTO dto) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
+   public Member login(LoginRequestDTO dto) {
+    Authentication authentication = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword())
+    );
 
-        return jwtUtil.generateToken(dto.getUsername());
-    }
+    // 인증 성공 후 사용자 정보 가져오기
+    MemberSecurityDTO principal = (MemberSecurityDTO) authentication.getPrincipal();
+
+    // 원래 Member 엔티티가 필요하면 repository로 다시 불러오기
+    return memberRepository.findByUsername(principal.getUsername())
+        .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
+   }
 }

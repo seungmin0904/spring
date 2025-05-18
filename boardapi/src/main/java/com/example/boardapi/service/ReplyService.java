@@ -10,12 +10,14 @@ import com.example.boardapi.repository.BoardRepository;
 import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.repository.ReplyRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReplyService {
@@ -48,24 +50,40 @@ public class ReplyService {
 
         List<Reply> entities = replyRepository.findByBoardOrderByCreatedDateAsc(board);
 
-        Map<Long, ReplyDTO> dtoMap = new HashMap<>();
-        List<ReplyDTO> rootReplies = new ArrayList<>();
+       Map<Long, ReplyDTO> dtoMap = new HashMap<>();
+    Map<Long, List<ReplyDTO>> childrenBuffer = new HashMap<>();
+    List<ReplyDTO> rootReplies = new ArrayList<>();
 
-        for (Reply reply : entities) {
-            ReplyDTO dto = replyMapper.toDTO(reply);
-            dtoMap.put(dto.getRno(), dto);
+        // 4. 반복문으로 모든 댓글을 DTO로 변환 + 트리 조립
+    for (Reply reply : entities) {
+        Long currentRno = reply.getRno();
+        Long parentRno = reply.getParent() != null ? reply.getParent().getRno() : null;
+        ReplyDTO dto = dtoMap.computeIfAbsent(currentRno, rno -> replyMapper.toDTO(reply));
 
-            if (reply.getParent() != null) {
-                ReplyDTO parentDTO = dtoMap.get(reply.getParent().getRno());
-                if (parentDTO != null) {
-                    parentDTO.getChildren().add(dto);
-                }
+
+        if (parentRno != null) {
+            if (dtoMap.containsKey(parentRno)) {
+                dtoMap.get(parentRno).getChildren().add(dto);
             } else {
-                rootReplies.add(dto);
+                childrenBuffer.computeIfAbsent(parentRno, k -> new ArrayList<>()).add(dto);
             }
-        }
+        } 
+           if (parentRno == null && !rootReplies.contains(dto)) {
+        rootReplies.add(dto);
+    }
 
-        return rootReplies;
+        // 현재 댓글이 다른 대기 중인 자식들을 갖고 있는 경우 연결
+        if (childrenBuffer.containsKey(currentRno)) {
+            dto.getChildren().addAll(childrenBuffer.get(currentRno));
+            childrenBuffer.remove(currentRno);
+        }
+    }
+
+    // 5. 로그 확인 (선택)
+    log.info("▶ 전체 댓글 수: {}", entities.size());
+    log.info("▶ 루트 댓글 수: {}", rootReplies.size());
+
+    return rootReplies;
     }
 
     // 댓글 수정

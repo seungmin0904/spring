@@ -16,7 +16,9 @@ public class ReplyMapper {
                 .text(entity.isDeleted() ? "삭제된 댓글" : entity.getText())
                 .replyer(entity.getMember().getName())
                 .username(entity.getMember().getUsername())
+                .deleted(entity.isDeleted())
                 .createdDate(entity.getCreatedDate())
+                .parentRno(entity.getParent() != null ? entity.getParent().getRno() : null)
                 .build();
     }
 

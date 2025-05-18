@@ -2,6 +2,7 @@ package com.example.boardapi.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -35,6 +36,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/members/register", "/api/members/login").permitAll() // 회원가입/로그인 허용
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/boards/**").permitAll()
+    .requestMatchers(HttpMethod.POST, "/api/boards").authenticated()
+    .requestMatchers(HttpMethod.PUT, "/api/boards/**").authenticated()
+    .requestMatchers(HttpMethod.DELETE, "/api/boards/**").authenticated()
                         .anyRequest().authenticated())
                 .formLogin(form -> form.disable()) // 폼로그인 비활성화 (HTML UI 미사용)
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)

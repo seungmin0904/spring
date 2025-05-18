@@ -16,6 +16,9 @@ spring:
         format_sql: true
         highlight_sql: true
 
+        thymeleaf:
+    check-template-location: false  # API 프로젝트라면 Thymeleaf 템플릿 경고 방지
+
 logging:
   level:
     org:

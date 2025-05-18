@@ -2,6 +2,8 @@ package com.example.boardapi.security.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SecurityException;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtil {
     private final Key key; // 서버 기동마다 달라짐
@@ -38,9 +41,18 @@ public class JwtUtil {
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
-        } catch (JwtException e) {
-            // 토큰이 유효하지 않을 경우 예외 발생 → 필요시 커스텀 처리
-            throw new IllegalArgumentException("유효하지 않은 JWT 토큰입니다.", e);
+        } catch (ExpiredJwtException e) {
+            log.warn("JWT 만료: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.warn("지원되지 않는 JWT: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.warn("잘못된 JWT 형식: {}", e.getMessage());
+        } catch (SecurityException e) {
+            log.warn("JWT 서명 검증 실패: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("잘못된 JWT 요청: {}", e.getMessage());
         }
+        return null; // 토큰이 유효하지 않음
     }
+
 }

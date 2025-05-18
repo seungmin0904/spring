@@ -1,0 +1,62 @@
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import HomePage from "@/pages/HomePage";
+import LoginPage from "@/pages/LoginPage";
+import PostListPage from "@/pages/PostListPage";
+import PostDetailPage from "@/pages/PostDetailPage";
+import PostFormPage from "@/pages/PostFormPage";
+import Layout from "@/layouts/Layout";
+import axiosInstance from "@/lib/axiosInstance";
+
+function App() {
+  const [token, setToken] = useState(null);
+  const [name, setName] = useState(null);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    const savedName = localStorage.getItem("name");
+    if (savedToken && savedName) {
+      setToken(savedToken);
+      setName(savedName);
+    }
+  }, []);
+
+  const handleLogin = (token) => {
+    if (token) {
+      localStorage.setItem("token", token);
+      setToken(token);
+      axiosInstance.get("/members/me").then((res) => {
+        setName(res.data.name);
+        localStorage.setItem("name", res.data.name);
+      });
+    } else {
+      localStorage.clear();
+      setToken(null);
+      setName(null);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    setToken(null);
+    setName(null);
+  };
+
+  return (
+    <BrowserRouter>
+     <Routes>
+  <Route path="/" element={<Layout name={name} onLogout={handleLogout} />}>
+    <Route index element={<HomePage />} />
+    <Route path="posts" element={<PostListPage />} />
+    <Route path="posts/new" element={<PostFormPage />} />
+    <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
+    <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
+  </Route>
+  <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+</Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

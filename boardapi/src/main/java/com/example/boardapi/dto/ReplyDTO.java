@@ -15,6 +15,7 @@ public class ReplyDTO {
 
     private Long rno;
     private Long bno;
+    private Long parentRno;
     private String text;
     private String replyer; // Member.name
     private String username; // Member.username
