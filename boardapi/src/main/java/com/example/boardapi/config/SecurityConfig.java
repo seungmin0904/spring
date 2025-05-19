@@ -14,6 +14,8 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.example.boardapi.filter.JwtFilter;
 import com.example.boardapi.security.custom.CustomUserDetailsService;
@@ -32,21 +34,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (REST API용)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/members/register", "/api/members/login").permitAll() // 회원가입/로그인 허용
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/boards/**").permitAll()
-    .requestMatchers(HttpMethod.POST, "/api/boards").authenticated()
-    .requestMatchers(HttpMethod.PUT, "/api/boards/**").authenticated()
-    .requestMatchers(HttpMethod.DELETE, "/api/boards/**").authenticated()
-                        .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/boards", "/api/replies/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/boards/**", "/api/replies/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/boards/**", "/api/replies/**").authenticated()
+                        .anyRequest().permitAll())
                 .formLogin(form -> form.disable()) // 폼로그인 비활성화 (HTML UI 미사용)
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
                 .userDetailsService(userDetailsService); // 사용자 정보 서비스 등록
 
         return http.build();
+    }
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:5173") // React 개발 서버 주소
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
     }
 
     @Bean

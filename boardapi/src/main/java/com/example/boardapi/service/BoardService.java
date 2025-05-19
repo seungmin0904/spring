@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +29,9 @@ import com.example.boardapi.repository.ReplyRepository;
 import com.example.boardapi.security.service.SecurityService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BoardService {
@@ -39,10 +42,11 @@ public class BoardService {
     private final ReplyRepository replyRepository;
     private final BoardMapper boardMapper;
     private final ReplyMapper replyMapper;
+
     // 게시글 등록
     public Board register(BoardRequestDTO dto, String username) {
         Member member = memberRepository.findByUsername(username)
-        .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
+                .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
 
         Board board = BoardMapper.toEntity(dto, member);
         boardRepository.save(board);
@@ -50,13 +54,13 @@ public class BoardService {
     }
 
     // 전체 게시글 조회
-     public PageResultDTO<BoardResponseDTO> getAll(PageRequestDTO pageRequestDTO) {
-         Sort.Direction direction = pageRequestDTO.getSort().equalsIgnoreCase("ASC")
-            ? Sort.Direction.ASC
-            : Sort.Direction.DESC;
+    public PageResultDTO<BoardResponseDTO> getAll(PageRequestDTO pageRequestDTO) {
+        Sort.Direction direction = pageRequestDTO.getSort().equalsIgnoreCase("ASC")
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
         Pageable pageable = pageRequestDTO.getPageable(Sort.by(direction, "createdDate"));
         Page<Board> result = boardRepository.search(pageRequestDTO, pageable);
-        
+
         return new PageResultDTO<>(result.map(BoardMapper::toDTO));
     }
 
@@ -71,8 +75,9 @@ public class BoardService {
     public void modify(Long bno, BoardRequestDTO dto, String username) {
         Board board = boardRepository.findById(bno)
                 .orElseThrow(() -> new IllegalArgumentException("수정할 게시글이 없습니다"));
-          Member member = memberRepository.findByUsername(username)
-        .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
+
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
 
         securityService.checkBoardOwnership(board, member);
         board.setTitle(dto.getTitle());
@@ -81,11 +86,19 @@ public class BoardService {
     }
 
     // 게시글 삭제
-    public void delete(Long bno, Member currentUser) {
+    public void delete(Long bno, String username) {
         Board board = boardRepository.findById(bno)
                 .orElseThrow(() -> new IllegalArgumentException("삭제할 게시글이 없습니다"));
+        if (board.getMember() == null) {
+            throw new IllegalStateException("게시글에 작성자 정보가 없습니다.");
+        }
 
-        securityService.checkBoardOwnership(board, currentUser); // 권한 검증
+        System.out.println("✅ 로그인 사용자: " + username);
+        System.out.println("✅ 게시글 작성자: " + board.getMember().getUsername());
+
+        if (!board.getMember().getUsername().equals(username)) {
+            throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");
+        }
         boardRepository.deleteById(bno);
     }
 
@@ -107,7 +120,7 @@ public class BoardService {
                 .build();
     }
 
-     // 댓글 트리 구성
+    // 댓글 트리 구성
     private List<ReplyDTO> buildReplyTree(List<ReplyDTO> flatList) {
         Map<Long, ReplyDTO> dtoMap = flatList.stream()
                 .collect(Collectors.toMap(ReplyDTO::getRno, dto -> dto));

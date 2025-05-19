@@ -8,6 +8,7 @@ import PostDetailPage from "@/pages/PostDetailPage";
 import PostFormPage from "@/pages/PostFormPage";
 import Layout from "@/layouts/Layout";
 import axiosInstance from "@/lib/axiosInstance";
+import RegisterPage from "@/pages/RegisterPage";
 
 function App() {
   const [token, setToken] = useState(null);
@@ -52,6 +53,7 @@ function App() {
     <Route path="posts/new" element={<PostFormPage />} />
     <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
     <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
+    <Route path="/register" element={<RegisterPage />} />
   </Route>
   <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
 </Routes>

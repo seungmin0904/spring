@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,7 +42,7 @@ public class BoardController {
     @PostMapping
     public ResponseEntity<BoardResponseDTO> register(@RequestBody BoardRequestDTO dto,
             @AuthenticationPrincipal MemberSecurityDTO memberDTO) {
-                log.info("🧑 로그인 사용자 = {}", memberDTO.getUsername()); // null이면 인증 실패 상태임
+        log.info("🧑 로그인 사용자 = {}", memberDTO.getUsername()); // null이면 인증 실패 상태임
         Board saved = boardService.register(dto, memberDTO.getUsername());
         return ResponseEntity.ok(BoardMapper.toDTO(saved));
     }
@@ -49,7 +50,7 @@ public class BoardController {
     // 전체 게시글 조회
     @GetMapping
     public ResponseEntity<PageResultDTO<BoardResponseDTO>> getAll(PageRequestDTO pageRequestDTO) {
-    return ResponseEntity.ok(boardService.getAll(pageRequestDTO));
+        return ResponseEntity.ok(boardService.getAll(pageRequestDTO));
     }
 
     // 게시글 단건 조회
@@ -63,7 +64,7 @@ public class BoardController {
     public ResponseEntity<Void> modify(@PathVariable Long bno,
             @RequestBody BoardRequestDTO dto,
             @AuthenticationPrincipal MemberSecurityDTO memberDTO) {
-                
+
         boardService.modify(bno, dto, memberDTO.getUsername());
         return ResponseEntity.ok().build();
     }
@@ -71,15 +72,20 @@ public class BoardController {
     // 게시글 삭제
     @DeleteMapping("/{bno}")
     public ResponseEntity<Void> delete(@PathVariable Long bno,
-            @AuthenticationPrincipal Member member) {
-        boardService.delete(bno, member);
+            @AuthenticationPrincipal MemberSecurityDTO membersecurityDTO) {
+
+        if (membersecurityDTO == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 인증 실패 시 401
+        }
+
+        boardService.delete(bno, membersecurityDTO.getUsername());
         return ResponseEntity.ok().build();
     }
 
-    // 게시글 1 댓글 전체 불러오기  
+    // 게시글 1 댓글 전체 불러오기
 
-@GetMapping("/{bno}/full")
-public ResponseEntity<BoardWithRepliesDTO> getFull(@PathVariable Long bno) {
-    return ResponseEntity.ok(boardService.getBoardWithReplies(bno));
-}
+    @GetMapping("/{bno}/full")
+    public ResponseEntity<BoardWithRepliesDTO> getFull(@PathVariable Long bno) {
+        return ResponseEntity.ok(boardService.getBoardWithReplies(bno));
+    }
 }

@@ -30,6 +30,7 @@ yarn-error.log*
 */.mvn/wrapper/maven-wrapper.properties
 **/applicationsecret.properties
 **/application.properties
+**/application.yml
 
 ### Java ###
 # Compiled class file
