@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "../components/ui/Navbar";
 import PostPreviewList from "../components/ui/PostPreviewList";
 
 const HomePage = () => {
   const [recentPosts, setRecentPosts] = useState([]);
 
   useEffect(() => {
-    fetch("/api/boards/recent")
+    fetch("/api/boards?page=0&size=5")
       .then((res) => res.json())
       .then((data) => setRecentPosts(data))
       .catch((err) => console.error("게시글 로딩 실패", err));
@@ -14,8 +13,7 @@ const HomePage = () => {
 
   return (
     <div>
-      {/* ✅ 고정된 상단 Navbar */}
-      <Navbar />
+      
 
       {/* ✅ 본문 내용 */}
       <main className="pt-24 px-4 max-w-5xl mx-auto">

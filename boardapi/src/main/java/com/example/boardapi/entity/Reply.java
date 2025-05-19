@@ -3,8 +3,11 @@ package com.example.boardapi.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.data.annotation.CreatedDate;
 
 import com.example.boardapi.base.Base;
 
@@ -38,6 +41,10 @@ public class Reply extends Base {
     @Column(nullable = true)
     @Builder.Default
     private boolean deleted = false;
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdDate;
 
     @Builder.Default
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)

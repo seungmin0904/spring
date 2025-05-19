@@ -1,34 +1,42 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const Navbar = () => {
+// eslint-disable-next-line no-unused-vars
+const Navbar = ({ name ,onLogout}) => {
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
+    onLogout?.();
   };
 
-  return (
-    <nav className="fixed top-0 w-full z-50 bg-white shadow-md px-6 py-4 flex justify-between items-center">
-      <Link to="/" className="text-xl font-bold">Simple Board</Link>
+   return (
+    <nav className="fixed top-0 w-full z-50 bg-white text-black shadow-md">
+  <div className="flex items-center justify-between px-6 py-4 w-full">
+    {/* 왼쪽: 로고 */}
+    <div className="text-xl font-bold text-indigo-600">
+      <Link to="/">Simple Board</Link>
+    </div>
 
-      <div className="space-x-4">
-        <Link to="/posts" className="hover:underline">게시판</Link>
-        {isLoggedIn ? (
-          <>
-            <Link to="/mypage" className="hover:underline">마이페이지</Link>
-            <button onClick={handleLogout} className="hover:underline">로그아웃</button>
-          </>
-        ) : (
-          <>
-            <Link to="/login" className="hover:underline">로그인</Link>
-            <Link to="/register" className="hover:underline">회원가입</Link>
-          </>
-        )}
-      </div>
-    </nav>
+    {/* 오른쪽: 메뉴 */}
+    <div className="flex items-center space-x-4 text-sm">
+      <Link to="/posts" className="hover:underline">게시판</Link>
+      {isLoggedIn ? (
+        <>
+          <Link to="/mypage" className="hover:underline">마이페이지</Link>
+          <button onClick={handleLogout} className="hover:underline">로그아웃</button>
+        </>
+      ) : (
+        <>
+          <Link to="/login" className="hover:underline">로그인</Link>
+          <Link to="/register" className="hover:underline">회원가입</Link>
+        </>
+      )}
+    </div>
+  </div>
+</nav>
   );
 };
 

@@ -41,40 +41,49 @@ const PostDetailPage = ({ name }) => {
   const { board } = data;
 
   return (
-    <div className="pt-24 px-4 max-w-3xl mx-auto space-y-6">
-      <Card>
+    
+  <div className="min-h-screen bg-gray-50 px-4 py-10">
+    {/* 중앙 고정 카드 */}
+    <div className="w-[1200px] mx-auto">
+      <Card className="h-[900px] w-full shadow-lg flex flex-col">
         <CardHeader>
-          <CardTitle className="text-2xl">{board.title}</CardTitle>
-          <p className="text-sm text-zinc-500">작성자: {board.writerName}</p>
-          <p className="text-xs text-zinc-400">
-            작성일: {new Date(board.createdDate).toLocaleString("ko-KR", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
+          <div className="mb-2 space-y-1">
+            <CardTitle className="text-3xl font-bold">{board.title}</CardTitle>
+            <div className="text-sm text-zinc-500 flex justify-between items-center">
+              <span> 작성자 : {board.writerName}</span>
+              <span className="text-xs text-zinc-400">
+                {new Date(board.createdDate).toLocaleString("ko-KR", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="text-zinc-800 whitespace-pre-line">
+
+        <CardContent className="flex-1 overflow-y-auto text-black whitespace-pre-line text-lg leading-relaxed px-8 py-6">
           {board.content}
         </CardContent>
       </Card>
 
+      {/* 버튼들 */}
       {board.writerName === name && (
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={() => navigate(`/posts/${bno}/edit`)}>
-            수정
-          </Button>
-          <Button variant="destructive" onClick={handleDelete}>
-            삭제
-          </Button>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={() => navigate(`/posts/${bno}/edit`)}>수정</Button>
+          <Button variant="destructive" onClick={handleDelete}>삭제</Button>
         </div>
       )}
 
-      <ReplyList bno={bno} />
+      {/* 댓글 리스트 */}
+      <div className="mt-10">
+        <ReplyList bno={bno} />
+      </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default PostDetailPage;

@@ -9,9 +9,11 @@ import PostFormPage from "@/pages/PostFormPage";
 import Layout from "@/layouts/Layout";
 import axiosInstance from "@/lib/axiosInstance";
 import RegisterPage from "@/pages/RegisterPage";
+  
 
 function App() {
-  const [setToken] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [token,setToken] = useState(null);
   const [name, setName] = useState(null);
 
   useEffect(() => {
@@ -20,6 +22,7 @@ function App() {
     if (savedToken && savedName) {
       setToken(savedToken);
       setName(savedName);
+      
     }
   }, []);
 

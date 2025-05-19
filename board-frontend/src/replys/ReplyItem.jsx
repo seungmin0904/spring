@@ -83,9 +83,13 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
           </div>
         </div>
       ) : (
-      <p className="text-sm">
-        <strong>{reply.replyer}</strong>: {reply.text}
-      </p>
+        <>
+      <div className="flex justify-between items-center text-sm text-zinc-500 mb-1">
+        <span>{reply.replyer}</span>
+        <span>{new Date(reply.createdDate).toLocaleString()}</span>
+     </div>
+     <p className="text-zinc-800">{reply.text}</p>
+      </>
       )}
 
       <div className="flex items-center gap-2 mt-1">
