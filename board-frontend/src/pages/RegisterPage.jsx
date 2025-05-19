@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axiosInstance";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,14 @@ const RegisterPage = () => {
     username: "",
     password: "",
     name: "",
+    code: "",
   });
 
   const [error, setError] = useState(null);
+  const [codeSent, setCodeSent] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [expiryDate, setExpiryDate] = useState(null);
+  const [secondsLeft, setSecondsLeft] = useState(null);
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -23,9 +28,42 @@ const RegisterPage = () => {
     }));
   };
 
+  const handleSendCode = async () => {
+    try {
+     const res = await axiosInstance.post("/auth/email/send", {
+        username: form.username,
+      });
+      alert("인증코드가 전송되었습니다.");
+      setCodeSent(true);
+      setVerified(false);
+      setExpiryDate(res.data.expiryDate);
+    } catch (err) {
+      alert("코드 전송 실패: " + (err.response?.data?.error || "에러"));
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    try {
+      const res = await axiosInstance.post("/auth/email/verify", {
+        username: form.username,
+        code: form.code,
+      });
+      alert(res.data || "인증 성공");
+      setVerified(true);
+    } catch (err) {
+      alert("인증 실패: " + (err.response?.data?.error || "에러"));
+    }
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    if (!verified) {
+      alert("이메일 인증을 완료해주세요.");
+      return;
+    }
 
     try {
       await axiosInstance.post("/members/register", form);
@@ -36,6 +74,25 @@ const RegisterPage = () => {
       setError(message);
     }
   };
+
+  useEffect(() => {
+    if (!expiryDate) return;
+
+    const end = new Date(expiryDate).getTime();
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((end - now) / 1000));
+      setSecondsLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        setCodeSent(false); // 인증 입력창 숨기기
+        alert("⏰ 인증 시간이 만료되었습니다. 다시 요청해주세요.");
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiryDate]);
 
   return (
     <div className="pt-24 px-4 max-w-md mx-auto">
@@ -55,7 +112,51 @@ const RegisterPage = () => {
                 onChange={handleChange}
                 required
               />
+              <Button
+                type="button"
+                onClick={handleSendCode}
+                className="mt-2"
+                disabled={!form.username}
+              >
+                인증코드 발송
+              </Button>
             </div>
+
+            {codeSent && (
+              <div>
+              {!verified && <Label htmlFor="code">인증코드</Label>}
+                {verified ? (
+         <div className="text-green-600 text-sm font-semibold mt-1">
+              인증이 완료되었습니다.
+            </div>
+               ) : (
+                 <>
+                <div className="flex space-x-2">
+                  <Input
+                    id="code"
+                    name="code"
+                    value={form.code}
+                    onChange={handleChange}
+                    required
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleVerifyCode}
+                  >
+                    확인
+                  </Button>
+                </div>
+                {secondsLeft !== null && (
+                    <span className="text-sm text-gray-500">
+                      남은 시간: {Math.floor(secondsLeft / 60)}:
+                      {String(secondsLeft % 60).padStart(2, "0")}
+                    </span>
+                  )}
+                  </>
+                )}
+              </div>
+            )}
+            
             <div>
               <Label htmlFor="password">비밀번호</Label>
               <Input

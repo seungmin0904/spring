@@ -33,14 +33,15 @@ public class EmailVerificationToken {
     private LocalDateTime expiryDate;
     private boolean verified; // 이메일 인증 여부
 
-    public static EmailVerificationToken create(String username) {
-        return EmailVerificationToken.builder()
-                .username(username)
-                .token(UUID.randomUUID().toString())
-                .expiryDate(LocalDateTime.now().plusMinutes(10)) // 10분 유효
-                .verified(false)
-                .build();
-    }
+    // 토큰 정적 발급 메서드
+    // public static EmailVerificationToken create(String username) {
+    // return EmailVerificationToken.builder()
+    // .username(username)
+    // .token(UUID.randomUUID().toString())
+    // .expiryDate(LocalDateTime.now().plusMinutes(10)) // 10분 유효
+    // .verified(false)
+    // .build();
+    // }
 
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiryDate);

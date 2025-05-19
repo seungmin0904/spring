@@ -51,7 +51,7 @@ const PostFormPage = ({ isEdit = false }) => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-[600px]">
       <Card className="shadow-md rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
@@ -77,18 +77,59 @@ const PostFormPage = ({ isEdit = false }) => {
                 placeholder="내용을 입력하세요"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                rows={12}
+                rows={20}
               />
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full text-lg py-6">
               {isEdit ? "수정하기" : "등록하기"}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
-  );
+  
+);
+  // <div className="w-full flex justify-center pt-24 px-4">
+  //   <div className="w-full max-w-5xl">
+  //     <Card className="shadow-md rounded-xl">
+  //       <CardHeader>
+  //         <CardTitle className="text-3xl text-center">
+  //           {isEdit ? "✏️ 게시글 수정" : "📝 새 게시글 작성"}
+  //         </CardTitle>
+  //       </CardHeader>
+  //       <CardContent>
+  //         <form onSubmit={handleSubmit} className="space-y-6">
+  //           <div className="space-y-2">
+  //             <Label htmlFor="title">제목</Label>
+  //             <Input
+  //               id="title"
+  //               placeholder="제목을 입력하세요"
+  //               value={title}
+  //               onChange={(e) => setTitle(e.target.value)}
+  //             />
+  //           </div>
+
+  //           <div className="space-y-2">
+  //             <Label htmlFor="content">내용</Label>
+  //             <Textarea
+  //               id="content"
+  //               placeholder="내용을 입력하세요"
+  //               value={content}
+  //               onChange={(e) => setContent(e.target.value)}
+  //               rows={20} // ✅ 행 수 증가
+  //             />
+  //           </div>
+
+  //           <Button type="submit" className="w-full text-lg py-6">
+  //             {isEdit ? "수정하기" : "등록하기"}
+  //           </Button>
+  //         </form>
+  //       </CardContent>
+  //     </Card>
+  //   </div>
+  // </div>
+
 };
 
 export default PostFormPage;

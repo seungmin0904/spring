@@ -11,7 +11,7 @@ import axiosInstance from "@/lib/axiosInstance";
 import RegisterPage from "@/pages/RegisterPage";
 
 function App() {
-  const [token, setToken] = useState(null);
+  const [setToken] = useState(null);
   const [name, setName] = useState(null);
 
   useEffect(() => {

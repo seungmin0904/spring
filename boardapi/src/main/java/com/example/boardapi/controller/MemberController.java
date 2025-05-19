@@ -4,6 +4,7 @@ import com.example.boardapi.dto.LoginRequestDTO;
 import com.example.boardapi.dto.MemberRequestDTO;
 import com.example.boardapi.dto.MemberResponseDTO;
 import com.example.boardapi.entity.Member;
+import com.example.boardapi.repository.EmailVerificationTokenRepository;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.security.util.JwtUtil;
 import com.example.boardapi.service.MemberService;
@@ -23,35 +24,43 @@ public class MemberController {
 
     private final MemberService memberService;
     private final JwtUtil jwtUtil;
+    private final EmailVerificationTokenRepository tokenRepository;
+
     // 회원가입 (POST /api/members/register)
     @PostMapping("/register")
     public ResponseEntity<MemberResponseDTO> register(@RequestBody MemberRequestDTO dto) {
+        boolean isVerified = tokenRepository
+                .findByUsernameAndVerifiedTrue(dto.getUsername())
+                .isPresent();
+        if (!isVerified) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(null); // 또는 커스텀 에러 DTO 반환 가능
+        }
         MemberResponseDTO response = memberService.register(dto);
+        tokenRepository.deleteByUsername(dto.getUsername());
         return ResponseEntity.ok(response);
     }
 
     // 로그인 (POST /api/members/login)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO dto) {
-       Member member = memberService.login(dto);
-    String token = jwtUtil.generateToken(member.getUsername());
+        Member member = memberService.login(dto);
+        String token = jwtUtil.generateToken(member.getUsername());
 
-    return ResponseEntity.ok(Map.of(
-        "token", token,
-        "username", member.getUsername(),
-        "name", member.getName()
-    ));
-  }
+        return ResponseEntity.ok(Map.of(
+                "token", token,
+                "username", member.getUsername(),
+                "name", member.getName()));
+    }
 
-  @GetMapping("/me")
+    @GetMapping("/me")
     public ResponseEntity<?> getMe(@AuthenticationPrincipal MemberSecurityDTO authUser) {
         if (authUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 필요");
         }
 
         return ResponseEntity.ok(Map.of(
-            "username", authUser.getUsername(),
-            "name", authUser.getName()
-        ));
+                "username", authUser.getUsername(),
+                "name", authUser.getName()));
     }
 }
