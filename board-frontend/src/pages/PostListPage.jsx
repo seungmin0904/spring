@@ -86,16 +86,30 @@ const PostListPage = () => {
   ) : (
     <div className="space-y-2 divide-y divide-gray-200">
       {posts.map((post) => (
-        <div
-          key={post.bno}
-          className="w-full py-4 px-2 hover:bg-gray-100 cursor-pointer"
-          onClick={() => navigate(`/posts/${post.bno}`)}
-        >
-          <h3 className="text-lg font-semibold">{post.title}</h3>
-          <p className="text-sm text-gray-500">
-            {post.writerName} · {post.createdDate}
-          </p>
-        </div>
+  <div
+    key={post.bno}
+    className="w-full py-4 px-2 flex gap-4 hover:bg-gray-100 cursor-pointer"
+    onClick={() => navigate(`/posts/${post.bno}`)}
+  >
+    {post.imageUrl && post.imageUrl.trim() !== "" ? (
+      <img
+        src={`${import.meta.env.VITE_API_BASE_URL}${post.imageUrl}`}
+        alt="썸네일"
+        className="w-32 h-24 object-cover rounded border"
+      />
+    ) : (
+      <div className="w-32 h-24 bg-gray-200 text-gray-500 flex items-center justify-center text-sm rounded border">
+        No Image
+      </div>
+    )}
+
+    <div className="flex-1">
+      <h3 className="text-lg font-semibold">{post.title}</h3>
+      <p className="text-sm text-gray-500">
+        {post.writerName} · {post.createdDate}
+      </p>
+    </div>
+  </div>
       ))}
     </div>
   )}

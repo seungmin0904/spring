@@ -36,6 +36,10 @@ public class Board extends Base{
     @Column(length = 2000)
     private String content;
 
+    private String imageUrl; // 썸네일용 이미지
+
+    private String attachmentsJson; // JSON 문자열로 첨부파일 저장
+
     @ManyToOne(fetch = FetchType.LAZY)
     private Member member;
 

@@ -63,10 +63,9 @@ const PostDetailPage = ({ name }) => {
             </div>
           </div>
         </CardHeader>
-
-        <CardContent className="flex-1 overflow-y-auto text-black whitespace-pre-line text-lg leading-relaxed px-8 py-6">
-          {board.content}
-        </CardContent>
+  <CardContent className="flex-1 overflow-y-auto text-black px-8 py-6">
+  <div className="prose prose-zinc max-w-none overflow-x-auto" dangerouslySetInnerHTML={{ __html: board.content }}/>
+  </CardContent>
       </Card>
 
       {/* 버튼들 */}
