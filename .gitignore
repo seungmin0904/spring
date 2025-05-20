@@ -23,6 +23,7 @@ yarn-error.log*
 .idea/
 
 ### 추가 
+upload/
 */.gitignore
 */.gitattributes
 */mvnw
