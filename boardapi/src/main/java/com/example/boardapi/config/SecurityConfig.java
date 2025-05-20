@@ -40,10 +40,19 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/members/register", "/api/members/login").permitAll() // 회원가입/로그인 허용
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/boards", "/api/replies/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/boards/**", "/api/replies/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/boards/**", "/api/replies/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**",
+                                "/api/members/check-nickname")
+                        .permitAll()
+
+                        .requestMatchers(HttpMethod.GET, "/api/members/mypage").authenticated()
+
+                        .requestMatchers(HttpMethod.POST, "/api/boards", "/api/replies/**", "/api/members/mypage")
+                        .authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/boards/**", "/api/replies/**", "/api/members/mypage",
+                                "/api/members/nickname")
+                        .authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/boards/**", "/api/replies/**", "/api/members/mypage")
+                        .authenticated()
                         .anyRequest().permitAll())
                 .formLogin(form -> form.disable()) // 폼로그인 비활성화 (HTML UI 미사용)
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)

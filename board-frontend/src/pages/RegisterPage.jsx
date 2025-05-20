@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -20,12 +22,42 @@ const RegisterPage = () => {
   const [verified, setVerified] = useState(false);
   const [expiryDate, setExpiryDate] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(null);
+  const [isAvailable, setIsAvailable] = useState(null); // 닉네임 중복 확인 상태
+  const [message, setMessage] = useState("");
+
+
 
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
+
+    if (e.target.name === "name") {
+      setIsAvailable(null); // 닉네임 바꾸면 중복 상태 초기화
+      setMessage("");
+    }
+  };
+
+  const checkNickname = async () => {
+    if (!form.name) return;
+    try {
+      const res = await axiosInstance.get("/members/check-nickname", {
+        params: { nickname: form.name },
+      });
+
+      if (res.data === true) {
+        setIsAvailable(false);
+        setMessage("이미 사용 중인 닉네임입니다.");
+      } else {
+        setIsAvailable(true);
+        setMessage("사용 가능한 닉네임입니다.");
+      }
+    } catch (e) {
+      console.error(e);
+      setIsAvailable(null);
+      setMessage("중복 확인 실패");
+    }
   };
 
   const handleSendCode = async () => {
@@ -65,6 +97,11 @@ const RegisterPage = () => {
       return;
     }
 
+    if (!isAvailable) {
+      alert("닉네임 중복 확인을 완료해주세요.");
+      return;
+    }
+
     try {
       await axiosInstance.post("/members/register", form);
       alert("회원가입 완료!");
@@ -98,10 +135,32 @@ const RegisterPage = () => {
     <div className="pt-24 px-4 max-w-md mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>📝 회원가입</CardTitle>
+          <CardTitle>회원가입</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name">닉네임</Label>
+              <Input
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                required
+              />
+              <Button
+                type="button"
+                onClick={checkNickname}
+                className="mt-2"
+              >
+                중복 확인
+              </Button>
+              {message && (
+                <p className={`text-sm ${isAvailable ? "text-green-500" : "text-red-500"}`}>
+                  {message}
+                </p>
+              )}
+            </div>
             <div>
               <Label htmlFor="username">이메일</Label>
               <Input
@@ -164,16 +223,6 @@ const RegisterPage = () => {
                 name="password"
                 type="password"
                 value={form.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="name">이름</Label>
-              <Input
-                id="name"
-                name="name"
-                value={form.name}
                 onChange={handleChange}
                 required
               />

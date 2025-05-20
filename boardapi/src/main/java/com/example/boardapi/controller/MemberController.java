@@ -53,6 +53,7 @@ public class MemberController {
                 "name", member.getName()));
     }
 
+    // 회원정보
     @GetMapping("/me")
     public ResponseEntity<?> getMe(@AuthenticationPrincipal MemberSecurityDTO authUser) {
         if (authUser == null) {
@@ -62,5 +63,25 @@ public class MemberController {
         return ResponseEntity.ok(Map.of(
                 "username", authUser.getUsername(),
                 "name", authUser.getName()));
+    }
+
+    // 중복검사
+    @GetMapping("/check-nickname")
+    public ResponseEntity<Boolean> checkNickname(@RequestParam String nickname,
+            @AuthenticationPrincipal MemberSecurityDTO member) {
+
+        boolean isTaken = (member == null)
+                ? memberService.isNicknameTaken(nickname) // 비회원
+                : memberService.isNicknameTaken(nickname, member.getUsername()); // 회원
+
+        return ResponseEntity.ok(isTaken);
+    }
+
+    @PutMapping("/nickname")
+    public ResponseEntity<Void> updateNickname(@RequestBody Map<String, String> body,
+            @AuthenticationPrincipal MemberSecurityDTO member) {
+        String newNickname = body.get("nickname");
+        memberService.updateNickname(member.getUsername(), newNickname);
+        return ResponseEntity.ok().build();
     }
 }

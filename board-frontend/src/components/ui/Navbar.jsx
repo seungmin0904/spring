@@ -1,8 +1,9 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "@/context/UserContext";
 
-// eslint-disable-next-line no-unused-vars
-const Navbar = ({ name ,onLogout}) => {
+ const Navbar = ({onLogout}) => {
+  const { name } = useUser();
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
 
@@ -22,6 +23,10 @@ const Navbar = ({ name ,onLogout}) => {
 
     {/* 오른쪽: 메뉴 */}
     <div className="flex items-center space-x-4 text-sm">
+      {/* 로그인 사용자 닉네임 표시 */}
+    {isLoggedIn && name && (
+    <span className="text-gray-500"> 닉네임: {name}</span>
+    )}
       <Link to="/posts" className="hover:underline">게시판</Link>
       {isLoggedIn ? (
         <>

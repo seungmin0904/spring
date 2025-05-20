@@ -55,7 +55,7 @@ const PostFormPage = ({ isEdit = false }) => {
       <Card className="shadow-md rounded-xl">
         <CardHeader>
           <CardTitle className="text-2xl text-center">
-            {isEdit ? "✏️ 게시글 수정" : "📝 새 게시글 작성"}
+            {isEdit ? " 게시글 수정" : " 새 게시글 작성"}
           </CardTitle>
         </CardHeader>
         <CardContent>

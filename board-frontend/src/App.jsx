@@ -9,6 +9,8 @@ import PostFormPage from "@/pages/PostFormPage";
 import Layout from "@/layouts/Layout";
 import axiosInstance from "@/lib/axiosInstance";
 import RegisterPage from "@/pages/RegisterPage";
+import MyPage from "@/pages/MyPage";
+import { UserContext } from "@/context/UserContext";
   
 
 function App() {
@@ -48,19 +50,23 @@ function App() {
   };
 
   return (
-    <BrowserRouter>
-     <Routes>
-  <Route path="/" element={<Layout name={name} onLogout={handleLogout} />}>
-    <Route index element={<HomePage />} />
-    <Route path="posts" element={<PostListPage />} />
-    <Route path="posts/new" element={<PostFormPage />} />
-    <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
-    <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
-    <Route path="/register" element={<RegisterPage />} />
+<UserContext.Provider value={{ name, setName }}>    
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Layout onLogout={handleLogout} />}>
+      <Route index element={<HomePage />} />
+      <Route path="posts" element={<PostListPage />} />
+      <Route path="posts/new" element={<PostFormPage />} />
+      <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
+      <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/mypage" element={<MyPage />} />
   </Route>
-  <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-</Routes>
-    </BrowserRouter>
+
+   <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+  </Routes>
+  </BrowserRouter>
+</UserContext.Provider>
   );
 }
 
