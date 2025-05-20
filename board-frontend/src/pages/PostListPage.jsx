@@ -1,16 +1,56 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axiosInstance";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PostListPage = () => {
-  const [posts, setPosts] = useState([]);
   const navigate = useNavigate();
 
+  const [posts, setPosts] = useState([]);
+  const [type, setType] = useState("t");
+  const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState(null);
+
+  const fetchPosts = useCallback(async () => {
+    try {
+      const res = await axiosInstance.get("/boards", {
+        params: {
+          type,
+          keyword,
+          page,
+          size: 10,
+          sort: "DESC",
+        },
+      });
+      setPosts(res.data.content);
+      setPageInfo({
+        page: res.data.page,
+        totalPages: res.data.totalPages,
+        isFirst: res.data.isFirst,
+        isLast: res.data.isLast,
+      });
+    } catch (error) {
+      console.error("게시글 불러오기 실패", error);
+    }
+  },[type, keyword, page]);
+  
   useEffect(() => {
-    axiosInstance.get("/boards").then((res) => setPosts(res.data.content));
-  }, []);
+    fetchPosts(type, keyword, page);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    
+    if (!keyword.trim()) {
+    alert("검색어를 입력하세요.");
+    return;
+  }
+    setPage(1); // 검색 시 첫 페이지로
+    fetchPosts();
+  };
 
   return (
    <div className="pt-24 px-4 max-w-4xl w-full mx-auto">
@@ -19,6 +59,28 @@ const PostListPage = () => {
     <Button onClick={() => navigate("/posts/new")}>✏️ 글쓰기</Button>
   </div>
 
+    {/* 검색 폼 */}
+      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="border px-2 py-1 rounded"
+        >
+          <option value="t">제목</option>
+          <option value="c">내용</option>
+          <option value="w">작성자</option>
+          <option value="tc">제목+내용</option>
+        </select>
+        <Input
+          className="w-60"
+          placeholder="검색어를 입력하세요"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+        />
+        <Button type="submit">🔍 검색</Button>
+      </form>
+    
+  {/* 게시글 목록 */}
   {posts.length === 0 ? (
     <p className="text-gray-400">게시글이 없습니다.</p>
   ) : (
@@ -37,6 +99,28 @@ const PostListPage = () => {
       ))}
     </div>
   )}
+
+   {/* 페이지네이션 */}
+      {pageInfo && (
+        <div className="flex justify-center gap-4 mt-8">
+          <Button
+            onClick={() => setPage((prev) => prev - 1)}
+            disabled={pageInfo.isFirst}
+          >
+            ◀ 이전
+          </Button>
+          <span className="text-sm text-gray-600">
+            {pageInfo.page + 1} / {pageInfo.totalPages}
+          </span>
+          <Button
+            onClick={() => setPage((prev) => prev + 1)}
+            disabled={pageInfo.isLast}
+          >
+            다음 ▶
+          </Button>
+        </div>
+      )}
+
 </div>
   );
 };
