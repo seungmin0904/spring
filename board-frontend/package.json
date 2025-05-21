@@ -13,6 +13,9 @@
     "@radix-ui/react-label": "^2.1.6",
     "@radix-ui/react-slot": "^1.2.2",
     "@radix-ui/react-toast": "^1.2.13",
+    "@tiptap/extension-image": "^2.12.0",
+    "@tiptap/react": "^2.12.0",
+    "@tiptap/starter-kit": "^2.12.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",
