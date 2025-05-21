@@ -25,18 +25,16 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Board extends Base{
+public class Board extends Base {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long bno;
-    
+
     private String title;
 
     @Column(length = 2000)
     private String content;
-
-    private String imageUrl; // 썸네일용 이미지
 
     private String attachmentsJson; // JSON 문자열로 첨부파일 저장
 
@@ -54,4 +52,5 @@ public class Board extends Base{
     public String getWriterUsername() {
         return member != null ? member.getUsername() : null;
     }
+
 }

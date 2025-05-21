@@ -14,5 +14,4 @@ public class BoardResponseDTO {
     private String createdDate; // 엔티티의 Base에서 수동으로 넣어줌
     private String modifiedDate;
 
-    private String imageUrl;
 }

@@ -27,6 +27,7 @@ import com.example.boardapi.repository.BoardRepository;
 import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.repository.ReplyRepository;
 import com.example.boardapi.security.service.SecurityService;
+import com.example.boardapi.util.HtmlUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,8 +81,23 @@ public class BoardService {
                 .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
 
         securityService.checkBoardOwnership(board, member);
+        // 기존 content에서 <img> 제거
+        String rawContent = dto.getContent();
+        String cleanedContent = rawContent.replaceFirst("(?i)<img[^>]*>", "");
+
+        // 새로운 썸네일 추출 및 timestamp 추가
+        String thumbnail = HtmlUtils.extractFirstImageUrl(rawContent);
+        String thumbnailWithTimestamp = thumbnail != null
+                ? thumbnail + "?t=" + System.currentTimeMillis()
+                : null;
+
+        // 대표 이미지 + 본문 조합
+        String newContent = (thumbnail != null ? "<img src='" + thumbnailWithTimestamp + "'>" : "") + cleanedContent;
+        log.info("🖼️ 최종 저장될 썸네일 URL = {}", thumbnailWithTimestamp);
+
         board.setTitle(dto.getTitle());
-        board.setContent(dto.getContent());
+        board.setContent(newContent);
+
         boardRepository.save(board);
     }
 

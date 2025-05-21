@@ -1,4 +1,4 @@
-// src/pages/PostFormPage.jsx
+// ✅ PostFormPage.jsx - imageUrl 필드 제거 및 content 내 <img> 삽입 방식 유지
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axiosInstance";
@@ -16,19 +16,15 @@ const PostFormPage = ({ isEdit = false }) => {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const [attachmentFiles, setAttachmentFiles] = useState([]);
 
   useEffect(() => {
     if (isEdit && bno) {
       axiosInstance.get(`/boards/${bno}`).then((res) => {
-        setTitle(res.data.title);
-
-        // HTML 태그 모두 제거해서 순수 텍스트만 textarea에 넣음
-        const strippedContent = res.data.content.replace(/<[^>]+>/g, "").trim();
-        setContent(strippedContent);
-
-        setImageUrl(res.data.imageUrl); // 이미지 미리보기 용
+        const { title, content } = res.data;
+        setTitle(title);
+        setContent(content);
       });
     }
   }, [isEdit, bno]);
@@ -39,7 +35,7 @@ const PostFormPage = ({ isEdit = false }) => {
     const res = await axiosInstance.post("/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return res.data; // ex: "/uploads/xxx.png"
+    return res.data; // "/uploads/xxx.png"
   };
 
   const handleImageChange = async (e) => {
@@ -48,8 +44,10 @@ const PostFormPage = ({ isEdit = false }) => {
 
     try {
       const uploadedUrl = await uploadFile(file);
-      setImageUrl(uploadedUrl);
-      toast({ title: "이미지가 본문에 추가되었습니다." });
+      setUploadedImageUrl(uploadedUrl);
+      setContent(prev => `<img src='${uploadedUrl}' alt='대표 이미지'/>
+` + prev);
+      toast({ title: "대표 이미지가 본문에 삽입되었습니다." });
     } catch (error) {
       console.error("이미지 업로드 실패:", error);
       toast({
@@ -74,23 +72,17 @@ const PostFormPage = ({ isEdit = false }) => {
         attachments = await Promise.all(attachmentFiles.map(uploadFile));
       }
 
-      // textarea엔 태그 제거된 content만 있고, 저장 시에는 이미지 태그 포함
-      let cleanedContent = content.replace(/<[^>]+>/g, "").trim();
-
-      const finalContent = imageUrl
-        ? `<img src="${import.meta.env.VITE_API_BASE_URL}${imageUrl}" />${cleanedContent}`
-        : cleanedContent;
-
       const payload = {
         title,
-        content: finalContent,
-        ...(isEdit ? {} : { imageUrl, attachments }),
+        content,
+        ...(isEdit ? {} : { attachments })
       };
 
       if (isEdit && bno) {
         await axiosInstance.put(`/boards/${bno}`, payload);
         toast({ title: "수정 완료" });
         navigate(`/posts/${bno}`);
+        window.location.reload();
       } else {
         const res = await axiosInstance.post("/boards", payload);
         toast({ title: "등록 완료" });
@@ -128,15 +120,6 @@ const PostFormPage = ({ isEdit = false }) => {
 
             <div className="space-y-2">
               <Label htmlFor="content">내용</Label>
-
-              {imageUrl && (
-                <img
-                  src={`${import.meta.env.VITE_API_BASE_URL}${imageUrl}`}
-                  alt="본문 이미지 미리보기"
-                  className="max-w-full rounded border"
-                />
-              )}
-
               <Textarea
                 id="content"
                 placeholder="내용을 입력하세요"
@@ -145,24 +128,24 @@ const PostFormPage = ({ isEdit = false }) => {
                 rows={20}
               />
             </div>
-
+            {uploadedImageUrl && (
+  <div className="space-y-2">
+    <img
+      src={`${import.meta.env.VITE_API_BASE_URL}${uploadedImageUrl}`}
+      alt="미리보기"
+      className="max-w-full h-auto border rounded"
+    />
+  </div>
+)}
             <div className="space-y-2">
-              <Label htmlFor="thumbnail">썸네일 이미지</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-              />
+              <Label htmlFor="thumbnail">이미지 업로드</Label>
+              <Input type="file" accept="image/*" onChange={handleImageChange} />
             </div>
 
             {!isEdit && (
               <div className="space-y-2">
                 <Label htmlFor="attachments">첨부파일</Label>
-                <Input
-                  type="file"
-                  multiple
-                  onChange={handleAttachmentChange}
-                />
+                <Input type="file" multiple onChange={handleAttachmentChange} />
               </div>
             )}
 
@@ -177,6 +160,7 @@ const PostFormPage = ({ isEdit = false }) => {
 };
 
 export default PostFormPage;
+
   // <div className="w-full flex justify-center pt-24 px-4">
   //   <div className="w-full max-w-5xl">
   //     <Card className="shadow-md rounded-xl">

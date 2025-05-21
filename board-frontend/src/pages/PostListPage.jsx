@@ -93,13 +93,13 @@ const PostListPage = () => {
   >
     {post.imageUrl && post.imageUrl.trim() !== "" ? (
       <img
-        src={`${import.meta.env.VITE_API_BASE_URL}${post.imageUrl}`}
+        src={`${import.meta.env.VITE_API_BASE_URL}${post.imageUrl}?v=${Date.now()}`}
         alt="썸네일"
         className="w-32 h-24 object-cover rounded border"
       />
     ) : (
-      <div className="w-32 h-24 bg-gray-200 text-gray-500 flex items-center justify-center text-sm rounded border">
-        No Image
+      <div className="w-32 h-24 bg-white-200 text-white-500 flex items-center justify-center text-sm rounded border">
+        
       </div>
     )}
 

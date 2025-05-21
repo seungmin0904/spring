@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @SuperBuilder
 public class PageRequestDTO {
-     @Builder.Default
+    @Builder.Default
     private int page = 1;
     @Builder.Default
     private int size = 10;
@@ -31,11 +31,10 @@ public class PageRequestDTO {
     public Pageable getPageable(Sort sortObj) {
         // Spring Data PageRequest를 반환
         return PageRequest.of(
-            page - 1,
-            size,
-            sortObj.isEmpty() 
-              ? Sort.by("bno").descending() 
-              : sortObj
-        );
+                page <= 0 ? 0 : page - 1,
+                size,
+                sortObj.isEmpty()
+                        ? Sort.by("bno").descending()
+                        : sortObj);
     }
 }
