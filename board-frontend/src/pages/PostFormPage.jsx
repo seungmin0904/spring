@@ -1,16 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axiosInstance";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
-import "@/tiptap.css";
-import CustomPlaceholder from '@/extensions/CustomPlaceholder';
+import "@toast-ui/editor/dist/toastui-editor.css";
+import { Editor } from "@toast-ui/react-editor";
 
 const PostFormPage = ({ isEdit = false }) => {
   const { bno } = useParams();
@@ -19,33 +15,33 @@ const PostFormPage = ({ isEdit = false }) => {
 
   const [title, setTitle] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState([]);
+  const [initialContent, setInitialContent] = useState("");
+  const editorRef = useRef();
 
-  const editor = useEditor({
-  extensions: [
-    StarterKit,
-    Image.configure({ inline: false }),
-    CustomPlaceholder.configure({
-      placeholder:'내용을 입력하세요.',
-      emptyEditorClass: 'is-editor-empty',
-      showOnlyWhenEditable: true,
-      showOnlyCurrent: false,
-    })
-  ],
-  content: '',
-})
-
-  // 수정 모드일 때 게시글 불러오기
   useEffect(() => {
     if (isEdit && bno) {
       axiosInstance.get(`/boards/${bno}`).then((res) => {
         const { title, content } = res.data;
         setTitle(title);
-        if (editor) editor.commands.setContent(content);
+        setInitialContent(content || "");
+        setTimeout(() => {
+          if (editorRef.current) {
+            editorRef.current.getInstance().setHTML(content || "");
+          }
+        }, 0);
       });
-    }
-  }, [isEdit, bno, editor]);
+  } else {
+    // 새 글쓰기 모드일 때 모든 값 초기화
+    setTitle("");
+    setInitialContent("");
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.getInstance().setHTML("");
+      }
+    }, 0);
+  }
+}, [isEdit, bno]);
 
-  // 파일 업로드 처리
   const uploadFile = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -55,24 +51,14 @@ const PostFormPage = ({ isEdit = false }) => {
     return res.data;
   };
 
-  // 이미지 삽입
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !editor) return;
-
+  const imageUploadHandler = async (blob, callback) => {
     try {
-      const uploadedUrl = await uploadFile(file);
+      const uploadedUrl = await uploadFile(blob);
       const fullUrl = `${import.meta.env.VITE_API_BASE_URL}${uploadedUrl}`;
-      editor.commands.insertContent({
-        type: "image",
-        attrs: {
-          src: fullUrl,
-          alt: "본문 이미지",
-        },
-      });
+      callback(fullUrl, "업로드 이미지");
       toast({ title: "이미지가 본문에 삽입되었습니다." });
     } catch (error) {
-      console.error("이미지 업로드 실패:", error);
+      console.log(error)
       toast({
         title: "이미지 업로드 실패",
         description: "파일을 업로드할 수 없습니다.",
@@ -81,25 +67,23 @@ const PostFormPage = ({ isEdit = false }) => {
     }
   };
 
-  // 첨부파일 변경
   const handleAttachmentChange = (e) => {
     setAttachmentFiles([...e.target.files]);
   };
 
-  // 제출 처리
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       let attachments = [];
-
       if (!isEdit && attachmentFiles.length > 0) {
         attachments = await Promise.all(attachmentFiles.map(uploadFile));
       }
+      const content = editorRef.current?.getInstance().getHTML();
 
       const payload = {
         title,
-        content: editor?.getHTML(),
+        content,
         ...(isEdit ? {} : { attachments }),
       };
 
@@ -114,7 +98,7 @@ const PostFormPage = ({ isEdit = false }) => {
         navigate(`/posts/${res.data.bno}`);
       }
     } catch (error) {
-      console.error(error);
+      console.log(error)
       toast({
         title: "저장 실패",
         description: "서버 오류 발생",
@@ -124,57 +108,57 @@ const PostFormPage = ({ isEdit = false }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16 px-4 flex flex-col">
-  <div className="w-full min-w-[1000px] max-w-[1200px] mx-auto flex flex-col flex-1">
-    <div className="flex flex-col flex-1 bg-white shadow-lg rounded-xl p-10 overflow-auto border border-zinc-200">
-      <CardHeader>
-        <CardTitle className="text-3xl font-bold text-left">
-          {isEdit ? "✏️ 게시글 수정" : "📝 새 게시글 작성"}
-        </CardTitle>
-      </CardHeader>
-
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-16 px-4">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col flex-1 space-y-6 mt-6"
+        className="flex flex-col w-full max-w-4xl mx-auto space-y-8"
+        style={{ minWidth: 1000 }}
       >
         {/* 제목 */}
-        <div className="flex-none">
-          <Label htmlFor="title">제목</Label>
+        <div>
+          <Label htmlFor="title" className="mb-2 block text-lg font-semibold">제목</Label>
           <Input
             id="title"
             placeholder="제목을 입력하세요"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full"
+            className="w-full text-lg"
           />
         </div>
 
-        {/* 내용 */}
-        <div className="flex-1 flex flex-col">
-          <Label htmlFor="content">내용</Label>
-          <div className="flex-1">
-            <EditorContent editor={editor}
-            className="tiptap-editor relative w-full h-full min-h-[700px] border border-zinc-300 rounded-md p-4"
-            onClick={() => editor?.commands.focus()}
+        {/* Toast UI Editor 본문 */}
+        <div>
+          <Label htmlFor="content" className="mb-2 block text-lg font-semibold">내용</Label>
+          <div className="w-full">
+            <Editor
+              ref={editorRef}
+              initialValue={initialContent}
+              previewStyle="vertical"
+              height="900px" 
+              initialEditType="wysiwyg"
+              useCommandShortcut={true}
+              hideModeSwitch={true}
+              language="ko"
+              hooks={{ addImageBlobHook: imageUploadHandler }}
+              placeholder="내용을 입력하세요."
+              toolbarItems={[
+                ["heading", "bold", "italic", "strike"],
+                ["hr", "quote"],
+                ["ul", "ol", "task", "indent", "outdent"],
+                ["table", "image", "link"],
+                ["code", "codeblock"],
+              ]}
+              usageStatistics={false}
+              // border 등 스타일 조정은 아래 tailwind로 전체 폼에서 관리!
+              className="bg-white border border-zinc-200 rounded-xl"
             />
           </div>
         </div>
 
-        {/* 이미지 업로드 */}
-        <div className="flex-none">
-          <Label htmlFor="image">이미지 업로드</Label>
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full"
-          />
-        </div>
-
         {/* 첨부파일 */}
         {!isEdit && (
-          <div className="flex-none">
-            <Label htmlFor="attachments">첨부파일</Label>
+          <div>
+            <Label htmlFor="attachments" className="mb-2 block text-lg font-semibold">첨부파일</Label>
             <Input
               type="file"
               multiple
@@ -186,14 +170,14 @@ const PostFormPage = ({ isEdit = false }) => {
 
         {/* 버튼 */}
         <div className="flex justify-end">
-          <Button type="submit" className="text-lg">
+          <Button type="submit" 
+          variant="outline" 
+          className="rounded-xl border-zinc-300 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 text-lg px-8 py-2">
             {isEdit ? "수정하기" : "등록하기"}
           </Button>
         </div>
       </form>
     </div>
-  </div>
-</div>
   );
 };
 

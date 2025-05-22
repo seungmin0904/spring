@@ -55,7 +55,7 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
     }
   };
 
-  return (
+   return (
     <div
       className={`mt-2 ${depth === 0 ? "border-l border-zinc-300" : ""}`}
       style={{ marginLeft: `${depth * 12}px`, paddingLeft: "12px" }}
@@ -67,7 +67,9 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
             value={editedText}
             onChange={(e) => setEditedText(e.target.value)}
           />
-          <div className="space-x-2">
+          <div className="flex items-center justify-between mt-1">
+            <div /> {/* 왼쪽 비움 */}
+          <div className="flex items-center gap-2">
             <button
               onClick={handleEditSubmit}
               className="text-xs text-blue-600 hover:underline"
@@ -82,25 +84,27 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
             </button>
           </div>
         </div>
+       </div> 
       ) : (
         <>
-      <div className="flex justify-between items-center text-sm text-zinc-500 mb-1">
-        <span>{reply.replyer}</span>
-        <span>{new Date(reply.createdDate).toLocaleString()}</span>
-     </div>
-     <p className="text-zinc-800">{reply.text}</p>
-      </>
+          <div className="flex justify-between items-center text-sm text-zinc-500 mb-1">
+            <span>{reply.replyer}</span>
+            <span>{new Date(reply.createdDate).toLocaleString()}</span>
+          </div>
+          <p className="text-zinc-800">{reply.text}</p>
+        </>
       )}
 
-      <div className="flex items-center gap-2 mt-1">
-      <button
-        onClick={() => setShowReplyForm(!showReplyForm)}
-        className="text-xs text-blue-500 hover:underline mt-1"
-      >
-        답글 달기
-      </button>
-
-      {reply.username === currentUser && !editing && (
+      {/* 버튼 한 줄 정렬 */}
+      <div className="flex items-center justify-between mt-1">
+        <button
+          onClick={() => setShowReplyForm(!showReplyForm)}
+          className="text-xs text-blue-500 hover:underline"
+        >
+          답글 달기
+        </button>
+        <div className="flex items-center gap-2">
+        {reply.username === currentUser && !editing && (
           <>
             <button
               onClick={() => setEditing(true)}
@@ -117,12 +121,16 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
           </>
         )}
       </div>
+     </div>
+
+      {/* 답글 작성 폼 */}
       {showReplyForm && (
         <div className="mt-2">
           <ReplyForm bno={bno} parentRno={reply.rno} onSubmit={refresh} />
         </div>
       )}
 
+      {/* 대댓글 */}
       <div className="mt-2 space-y-2">
         {reply.children?.map((child) => (
           <ReplyItem
@@ -130,7 +138,8 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
             reply={child}
             bno={bno}
             refresh={refresh}
-            depth={depth + 1} // 💡 자식일수록 들여쓰기 깊어짐
+            depth={depth + 1}
+            currentUser={currentUser}
           />
         ))}
       </div>

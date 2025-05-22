@@ -48,15 +48,12 @@ const ReplyList = ({ bno }) => {
   const totalCount = countTotalReplies(replies);
 
   return (
-    <div className="mt-8 space-y-4">
+    <div className="mt-12 space-y-8 w-full">
       <ReplyForm bno={bno} onSubmit={fetchReplies} />
-    <div>
-        <h2 className="text-lg font-semibold">💬 댓글</h2>
-      <h3 className="font-bold mb-2">댓글 {totalCount}개</h3>
-   </div>
-   
 
-      <div className="mt-4 space-y-3">
+      {/* 리스트와 입력폼 사이 공간 띄우기 */}
+      <div className="mt-8 space-y-4">
+      <h3 className="font-bold text-lg mb-4">댓글 {totalCount}개</h3>
         {replies.map((reply) => (
           <ReplyItem
             key={reply.rno}

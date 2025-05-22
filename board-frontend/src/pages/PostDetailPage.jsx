@@ -41,16 +41,14 @@ const PostDetailPage = ({ name }) => {
   const { board } = data;
 
   return (
-    
-  <div className="min-h-screen bg-gray-50 px-4 py-10">
-    {/* 중앙 고정 카드 */}
-    <div className="w-[1200px] mx-auto">
-      <Card className="h-[900px] w-full shadow-lg flex flex-col">
-        <CardHeader>
-          <div className="mb-2 space-y-1">
-            <CardTitle className="text-3xl font-bold">{board.title}</CardTitle>
+    <div className="min-h-screen bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* 본문 카드 */}
+        <Card className="rounded-2xl border border-zinc-300 shadow bg-white flex flex-col min-h-[700px]">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold mb-2">{board.title}</CardTitle>
             <div className="text-sm text-zinc-500 flex justify-between items-center">
-              <span> 작성자 : {board.writerName}</span>
+              <span>작성자 : {board.writerName}</span>
               <span className="text-xs text-zinc-400">
                 {new Date(board.createdDate).toLocaleString("ko-KR", {
                   year: "numeric",
@@ -61,32 +59,49 @@ const PostDetailPage = ({ name }) => {
                 })}
               </span>
             </div>
+          </CardHeader>
+          <CardContent
+            key={board.content}
+            className="flex-1 overflow-y-auto px-8 py-6 prose prose-zinc max-w-none text-black"
+          >
+            <div
+              dangerouslySetInnerHTML={{ __html: board.content }}
+            />
+          </CardContent>
+        </Card>
+
+        {/* 수정/삭제 버튼 */}
+        {board.writerName === name && (
+          <div className="flex justify-end gap-2 mt-6">
+            <Button
+              variant="outline"
+              className="rounded-xl
+              border border-green-200
+              bg-green-50
+              text-green-600
+              hover:bg-green-100
+              hover:text-green-800"
+              onClick={() => navigate(`/posts/${bno}/edit`)}
+            >
+              수정
+            </Button>
+            <Button
+              variant="ghost"
+              className="rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
+              onClick={handleDelete}
+            >
+              삭제
+            </Button>
           </div>
-        </CardHeader>
-  <CardContent 
-  key={board.content}
-  className="flex-1 overflow-y-auto text-black px-8 py-6">
-  <div 
-  className="prose prose-zinc max-w-none overflow-x-auto" 
-  dangerouslySetInnerHTML={{ __html: board.content }}/>
-  </CardContent>
-      </Card>
+        )}
 
-      {/* 버튼들 */}
-      {board.writerName === name && (
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={() => navigate(`/posts/${bno}/edit`)}>수정</Button>
-          <Button variant="destructive" onClick={handleDelete}>삭제</Button>
+        {/* 댓글 리스트 - 위에 넉넉한 공간 띄우기 */}
+        <div className="mt-14">
+          <ReplyList bno={bno} />
         </div>
-      )}
-
-      {/* 댓글 리스트 */}
-      <div className="mt-10">
-        <ReplyList bno={bno} />
       </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default PostDetailPage;
