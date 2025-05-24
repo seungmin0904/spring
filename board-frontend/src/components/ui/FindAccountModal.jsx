@@ -1,15 +1,16 @@
 import { useState } from "react";
 import axiosInstance from "@/lib/axiosInstance";
-import { Input, Button } from "@/components/ui";
+import { Input }from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 // props: mode ("id" | "pw"), onClose
 
 const FindAccountModal = ({ mode, onClose }) => {
-  const [step, setStep] = useState("email"); // "email" | "result"
-  const [email, setEmail] = useState("");
+  const [step, setStep] = useState("username"); // "username" | "verify" | "result"
+  const [username, setUsername] = useState(""); // 이메일
   const [code, setCode] = useState("");
   const [msg, setMsg] = useState("");
-  const [result, setResult] = useState(""); // id값 또는 완료메시지
+  const [result, setResult] = useState(""); // name값 또는 완료메시지
   // 비밀번호 변경용
   const [newPw, setNewPw] = useState("");
   const [newPw2, setNewPw2] = useState("");
@@ -18,7 +19,7 @@ const FindAccountModal = ({ mode, onClose }) => {
   const sendCode = async () => {
     setMsg("");
     try {
-      await axiosInstance.post("/api/auth/email/send", { email });
+      await axiosInstance.post("/auth/email/send", { username });
       setMsg("인증코드가 전송되었습니다.");
       setStep("verify");
     } catch (e) {
@@ -31,9 +32,9 @@ const FindAccountModal = ({ mode, onClose }) => {
   const verifyCode = async () => {
     setMsg("");
     try {
-      await axiosInstance.post("/api/auth/email/verify", { email, code });
+      await axiosInstance.post("/auth/email/verify", { username, code });
       setStep("result");
-      setMsg(""); // 성공시 메시지 초기화
+      setMsg("");
     } catch (e) {
         console.log(e)
       setMsg("인증코드가 올바르지 않습니다.");
@@ -49,7 +50,7 @@ const FindAccountModal = ({ mode, onClose }) => {
       return;
     }
     try {
-      await axiosInstance.put("/api/members/password/reset", { email, newPassword: newPw });
+      await axiosInstance.put("/members/password/reset", { email: username, newPassword: newPw });
       setResult("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
     } catch (e) {
         console.log(e)
@@ -57,11 +58,12 @@ const FindAccountModal = ({ mode, onClose }) => {
     }
   };
 
-  // 아이디 찾기
+  // 아이디(=name) 찾기
   const findId = async () => {
     try {
-      const res = await axiosInstance.get("/api/members/find-id", { params: { email } });
-      setResult(`당신의 아이디: ${res.data.username || res.data.id || "(조회 실패)"}`);
+      const res = await axiosInstance.get("/auth/email/find-id", { params: { username } });
+      // name을 리턴해야 정상!
+      setResult(`당신의 아이디: ${res.data || "(조회 실패)"}`);
     } catch {
       setResult("아이디 조회 실패");
     }
@@ -76,16 +78,16 @@ const FindAccountModal = ({ mode, onClose }) => {
           {mode === "id" ? "아이디 찾기" : "비밀번호 찾기"}
         </h3>
 
-        {/* STEP 1: 이메일 인증 */}
-        {step === "email" && (
+        {/* STEP 1: 이메일(=username) 인증 */}
+        {step === "username" && (
           <>
             <Input
               type="email"
               placeholder="이메일"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
             />
-            <Button className="w-full" onClick={sendCode} disabled={!email}>
+            <Button className="w-full" onClick={sendCode} disabled={!username}>
               인증코드 받기
             </Button>
             {msg && <p className="text-red-500 text-sm">{msg}</p>}

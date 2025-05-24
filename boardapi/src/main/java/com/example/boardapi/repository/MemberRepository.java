@@ -14,6 +14,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByUsername(String username); // 중복 체크용
 
     Optional<Member> findByname(String name); // 마이페이지 닉네임 변경용
-
+    
     boolean existsByname(String name);
 }

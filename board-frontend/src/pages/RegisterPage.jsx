@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axiosInstance";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
+import { Button } from "@/components/ui/Button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    username: "",
+    name: "",         // 아이디
+    username: "",     // 이메일
     password: "",
-    name: "",
     code: "",
   });
 
@@ -22,11 +20,10 @@ const RegisterPage = () => {
   const [verified, setVerified] = useState(false);
   const [expiryDate, setExpiryDate] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(null);
-  const [isAvailable, setIsAvailable] = useState(null); // 닉네임 중복 확인 상태
+  const [isAvailable, setIsAvailable] = useState(null); // 아이디 중복 확인 상태
   const [message, setMessage] = useState("");
 
-
-
+  // 폼 변경
   const handleChange = (e) => {
     setForm((prev) => ({
       ...prev,
@@ -34,12 +31,13 @@ const RegisterPage = () => {
     }));
 
     if (e.target.name === "name") {
-      setIsAvailable(null); // 닉네임 바꾸면 중복 상태 초기화
+      setIsAvailable(null); // 아이디 바꾸면 중복 상태 초기화
       setMessage("");
     }
   };
 
-  const checkNickname = async () => {
+  // 아이디 중복 확인
+  const checkName = async () => {
     if (!form.name) return;
     try {
       const res = await axiosInstance.get("/members/check-nickname", {
@@ -48,21 +46,22 @@ const RegisterPage = () => {
 
       if (res.data === true) {
         setIsAvailable(false);
-        setMessage("이미 사용 중인 닉네임입니다.");
+        setMessage("이미 사용 중인 아이디입니다.");
       } else {
         setIsAvailable(true);
-        setMessage("사용 가능한 닉네임입니다.");
+        setMessage("사용 가능한 아이디입니다.");
       }
     } catch (e) {
-      console.error(e);
+      console.log(e)
       setIsAvailable(null);
       setMessage("중복 확인 실패");
     }
   };
 
+  // 이메일 인증코드 발송
   const handleSendCode = async () => {
     try {
-     const res = await axiosInstance.post("/auth/email/send", {
+      const res = await axiosInstance.post("/auth/email/send", {
         username: form.username,
       });
       alert("인증코드가 전송되었습니다.");
@@ -74,20 +73,21 @@ const RegisterPage = () => {
     }
   };
 
+  // 이메일 인증코드 검증
   const handleVerifyCode = async () => {
     try {
-      const res = await axiosInstance.post("/auth/email/verify", {
+      await axiosInstance.post("/auth/email/verify", {
         username: form.username,
         code: form.code,
       });
-      alert(res.data || "인증 성공");
+      alert("인증 성공");
       setVerified(true);
     } catch (err) {
       alert("인증 실패: " + (err.response?.data?.error || "에러"));
     }
   };
 
-
+  // 회원가입 제출
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -98,12 +98,16 @@ const RegisterPage = () => {
     }
 
     if (!isAvailable) {
-      alert("닉네임 중복 확인을 완료해주세요.");
+      alert("아이디 중복 확인을 완료해주세요.");
       return;
     }
 
     try {
-      await axiosInstance.post("/members/register", form);
+      await axiosInstance.post("/members/register", {
+        name: form.name,
+        username: form.username,
+        password: form.password,
+      });
       alert("회원가입 완료!");
       navigate("/login");
     } catch (err) {
@@ -139,8 +143,9 @@ const RegisterPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* 아이디 */}
             <div>
-              <Label htmlFor="name">닉네임</Label>
+              <Label htmlFor="name">아이디</Label>
               <Input
                 id="name"
                 name="name"
@@ -150,7 +155,7 @@ const RegisterPage = () => {
               />
               <Button
                 type="button"
-                onClick={checkNickname}
+                onClick={checkName}
                 className="mt-2"
               >
                 중복 확인
@@ -161,6 +166,7 @@ const RegisterPage = () => {
                 </p>
               )}
             </div>
+            {/* 이메일 */}
             <div>
               <Label htmlFor="username">이메일</Label>
               <Input
@@ -180,42 +186,42 @@ const RegisterPage = () => {
                 인증코드 발송
               </Button>
             </div>
-
+            {/* 인증코드 */}
             {codeSent && (
               <div>
-              {!verified && <Label htmlFor="code">인증코드</Label>}
+                {!verified && <Label htmlFor="code">인증코드</Label>}
                 {verified ? (
-         <div className="text-green-600 text-sm font-semibold mt-1">
-              인증이 완료되었습니다.
-            </div>
-               ) : (
-                 <>
-                <div className="flex space-x-2">
-                  <Input
-                    id="code"
-                    name="code"
-                    value={form.code}
-                    onChange={handleChange}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleVerifyCode}
-                  >
-                    확인
-                  </Button>
-                </div>
-                {secondsLeft !== null && (
-                    <span className="text-sm text-gray-500">
-                      남은 시간: {Math.floor(secondsLeft / 60)}:
-                      {String(secondsLeft % 60).padStart(2, "0")}
-                    </span>
-                  )}
+                  <div className="text-green-600 text-sm font-semibold mt-1">
+                    인증이 완료되었습니다.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex space-x-2">
+                      <Input
+                        id="code"
+                        name="code"
+                        value={form.code}
+                        onChange={handleChange}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        onClick={handleVerifyCode}
+                      >
+                        확인
+                      </Button>
+                    </div>
+                    {secondsLeft !== null && (
+                      <span className="text-sm text-gray-500">
+                        남은 시간: {Math.floor(secondsLeft / 60)}:
+                        {String(secondsLeft % 60).padStart(2, "0")}
+                      </span>
+                    )}
                   </>
                 )}
               </div>
             )}
-            
+            {/* 비밀번호 */}
             <div>
               <Label htmlFor="password">비밀번호</Label>
               <Input

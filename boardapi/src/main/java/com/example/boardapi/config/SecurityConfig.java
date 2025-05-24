@@ -40,9 +40,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/members/register", "/api/members/login").permitAll() // 회원가입/로그인 허용
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/members/password/reset","/api/members/password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**",
-                                "/api/members/check-nickname")
+                                "/api/members/check-nickname","/api/members/find-id")
                         .permitAll()
+                                
 
                         .requestMatchers(HttpMethod.GET, "/api/members/mypage").authenticated()
 
@@ -51,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/boards/**", "/api/replies/**", "/api/members/mypage",
                                 "/api/members/nickname")
                         .authenticated()
+                        
                         .requestMatchers(HttpMethod.DELETE, "/api/boards/**", "/api/replies/**", "/api/members/mypage")
                         .authenticated()
                         .anyRequest().permitAll())

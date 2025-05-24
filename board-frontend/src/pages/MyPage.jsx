@@ -53,19 +53,25 @@ const MyPage = () => {
 
   // 닉네임 저장
   const handleSaveNickname = async () => {
-    if (!isAvailable) return alert("닉네임 중복 확인이 필요합니다.");
+  if (!isAvailable) return alert("닉네임 중복 확인이 필요합니다.");
 
-    try {
-      await axiosInstance.put("/members/nickname", { nickname });
-      setOriginalNickname(nickname);
-      setNickname(nickname);
-      setName(nickname);
-      alert("닉네임이 변경되었습니다.");
-    } catch (e) {
-      console.log(e)
-      alert("닉네임 변경 실패");
+  try {
+    const res = await axiosInstance.put("/members/nickname", { name: nickname }); // 서버는 { name: 새닉네임 } 형태 받음
+    const data = res.data;
+
+    if (data.token) {
+      localStorage.setItem("token", data.token); // 새 토큰으로 교체
     }
-  };
+
+    setOriginalNickname(nickname);
+    setNickname(nickname);
+    setName(nickname); // UserContext에 닉네임 변경 반영
+    alert("닉네임이 변경되었습니다.");
+  } catch (e) {
+    console.log(e);
+    alert("닉네임 변경 실패");
+  }
+};
 
   // 비밀번호 변경
   const handlePasswordChange = async (e) => {
@@ -83,7 +89,7 @@ const MyPage = () => {
     }
 
     try {
-      await axiosInstance.put("/api/members/password", {
+      await axiosInstance.put("/members/password", {
         currentPassword: currentPw,
         newPassword: newPw,
       });

@@ -25,12 +25,12 @@ public class JwtUtil {
        // this.expiration = expiration;
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String name) {
        Date expirationDate = Date.from(
         Instant.now().plus(10, ChronoUnit.HOURS) // 토큰 유효시간 설정 -> 시,분,12시간,주,월, 다 설정가능
        );
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(name)
                 .setIssuedAt(new Date())
                 // .setExpiration(expirationDate)
                 .signWith(key)

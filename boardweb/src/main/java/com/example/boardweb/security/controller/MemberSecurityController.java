@@ -167,13 +167,12 @@ public class MemberSecurityController {
     }
 
     // 비밀번호 찾기 처리 컨트롤러
-
-    // 이메일 입력, 인증 전송 처리
     @GetMapping("/forgot-password")
     public String showForgotPasswordForm() {
         return "security/forgot-password"; // 이메일 입력 폼
     }
-
+    
+    // 이메일 입력, 인증 전송 처리
     @PostMapping("/forgot-password")
     public String handleForgotPassword(@RequestParam String email, RedirectAttributes rttr) {
         try {
