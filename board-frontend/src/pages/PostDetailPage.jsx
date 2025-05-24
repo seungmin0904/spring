@@ -41,67 +41,83 @@ const PostDetailPage = ({ name }) => {
   const { board } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-4xl mx-auto">
-        {/* 본문 카드 */}
-        <Card className="rounded-2xl border border-zinc-300 shadow bg-white flex flex-col min-h-[700px]">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold mb-2">{board.title}</CardTitle>
-            <div className="text-sm text-zinc-500 flex justify-between items-center">
-              <span>작성자 : {board.writerName}</span>
-              <span className="text-xs text-zinc-400">
-                {new Date(board.createdDate).toLocaleString("ko-KR", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent
-            key={board.content}
-            className="flex-1 overflow-y-auto px-8 py-6 prose prose-zinc max-w-none text-black"
-          >
-            <div
-              dangerouslySetInnerHTML={{ __html: board.content }}
-            />
-          </CardContent>
-        </Card>
+  <div className="min-h-screen bg-gray-50 px-4 py-10 flex flex-col items-center">
+    <div className="w-full flex flex-col items-center">
+      {/* 본문 카드 */}
+      <Card
+        className="
+          rounded-2xl border border-zinc-300 shadow bg-white
+          flex flex-col
+          min-h-[900px]
+          min-w-[1000px]
+          max-w-[1100px]
+          w-[900px]      
+          mx-auto
+        "
+        style={{ boxSizing: "border-box" }}
+      >
 
-        {/* 수정/삭제 버튼 */}
-        {board.writerName === name && (
-          <div className="flex justify-end gap-2 mt-6">
-            <Button
-              variant="outline"
-              className="rounded-xl
-              border border-green-200
-              bg-green-50
-              text-green-600
-              hover:bg-green-100
-              hover:text-green-800"
-              onClick={() => navigate(`/posts/${bno}/edit`)}
-            >
-              수정
-            </Button>
-            <Button
-              variant="ghost"
-              className="rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100"
-              onClick={handleDelete}
-            >
-              삭제
-            </Button>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-3xl font-bold mb-2">{board.title}</CardTitle>
+          <div className="text-sm text-zinc-500 flex justify-between items-center">
+            <span>작성자 : {board.writerName}</span>
+            <span className="text-xs text-zinc-400">
+              {new Date(board.createdDate).toLocaleString("ko-KR", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
           </div>
-        )}
+        </CardHeader>
+        <CardContent
+          key={board.content}
+          className="flex-1 px-8 py-6 prose prose-zinc max-w-none text-black"
+        >
+          <div dangerouslySetInnerHTML={{ __html: board.content }} />
+        </CardContent>
+      </Card>
 
-        {/* 댓글 리스트 - 위에 넉넉한 공간 띄우기 */}
-        <div className="mt-14">
-          <ReplyList bno={bno} />
+      {/* 버튼 영역 */}
+      <div className="flex justify-between items-center mt-2 w-full max-w-[1100px]">
+        <Button
+          onClick={() => navigate("/posts/new")}
+          variant="outline"
+          className="rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+        >
+          ✏️ 글쓰기
+        </Button>
+        <div>
+          {board.writerName === name && (
+            <>
+              <Button
+                variant="outline"
+                className="rounded-xl border border-green-200 bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-800 ml-2"
+                onClick={() => navigate(`/posts/${bno}/edit`)}
+              >
+                수정
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-xl border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-800 ml-2"
+                onClick={handleDelete}
+              >
+                삭제
+              </Button>
+            </>
+          )}
         </div>
       </div>
+
+      {/* 댓글 리스트 */}
+      <div className="mt-14 w-full max-w-[1100px]">
+        <ReplyList bno={bno} />
+      </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default PostDetailPage;

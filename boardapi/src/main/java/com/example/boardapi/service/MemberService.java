@@ -78,4 +78,5 @@ public class MemberService {
         member.setName(name);
         memberRepository.save(member);
     }
+
 }

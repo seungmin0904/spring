@@ -1,17 +1,25 @@
-import { useEffect, useState } from "react";
-import axiosInstance from "@/lib/axiosInstance"; // ← 토큰 포함 axios 인스턴스
+import { useState, useEffect } from "react";
+import axiosInstance from "@/lib/axiosInstance";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@/context/UserContext";
 
 const MyPage = () => {
+  // 닉네임 변경
   const [nickname, setNickname] = useState("");
   const [originalNickname, setOriginalNickname] = useState("");
   const [isAvailable, setIsAvailable] = useState(null);
-  const [message, setMessage] = useState("");
-  const { setName } = useUser(); 
+  const [nicknameMsg, setNicknameMsg] = useState("");
+  const { setName } = useUser();
 
-  // 현재 사용자 닉네임 불러오기
+  // 비밀번호 변경
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [pwMsg, setPwMsg] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  // 닉네임 불러오기
   useEffect(() => {
     axiosInstance.get("/members/me").then((res) => {
       setNickname(res.data.nickname || "");
@@ -19,6 +27,7 @@ const MyPage = () => {
     });
   }, []);
 
+  // 닉네임 중복확인
   const checkNickname = async () => {
     if (!nickname) return;
     try {
@@ -28,20 +37,22 @@ const MyPage = () => {
 
       if (nickname === originalNickname) {
         setIsAvailable(true);
-        setMessage("현재 사용 중인 닉네임입니다.");
+        setNicknameMsg("현재 사용 중인 닉네임입니다.");
       } else if (res.data === true) {
         setIsAvailable(false);
-        setMessage("이미 사용 중인 닉네임입니다.");
+        setNicknameMsg("이미 사용 중인 닉네임입니다.");
       } else {
         setIsAvailable(true);
-        setMessage("사용 가능한 닉네임입니다.");
+        setNicknameMsg("사용 가능한 닉네임입니다.");
       }
     } catch (e) {
-      console.error(e);
+      console.log(e)
+      setNicknameMsg("닉네임 중복 확인 실패");
     }
   };
 
-  const handleSave = async () => {
+  // 닉네임 저장
+  const handleSaveNickname = async () => {
     if (!isAvailable) return alert("닉네임 중복 확인이 필요합니다.");
 
     try {
@@ -51,38 +62,116 @@ const MyPage = () => {
       setName(nickname);
       alert("닉네임이 변경되었습니다.");
     } catch (e) {
-        console.log(e)
-      alert("변경 실패");
+      console.log(e)
+      alert("닉네임 변경 실패");
+    }
+  };
+
+  // 비밀번호 변경
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPwMsg("");
+    setPwSuccess(false);
+
+    if (newPw.length < 6) {
+      setPwMsg("새 비밀번호는 6자 이상이어야 합니다.");
+      return;
+    }
+    if (newPw !== newPw2) {
+      setPwMsg("새 비밀번호가 서로 다릅니다.");
+      return;
+    }
+
+    try {
+      await axiosInstance.put("/api/members/password", {
+        currentPassword: currentPw,
+        newPassword: newPw,
+      });
+      setPwMsg("비밀번호가 성공적으로 변경되었습니다.");
+      setPwSuccess(true);
+      setCurrentPw(""); setNewPw(""); setNewPw2("");
+    } catch (err) {
+      setPwMsg(
+        err.response?.data?.message ||
+          "비밀번호 변경 실패 (현재 비밀번호가 일치하지 않습니다.)"
+      );
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-24 space-y-6">
-      <h2 className="text-2xl font-bold">마이페이지</h2>
+    <div className="max-w-md mx-auto mt-24 space-y-8">
+      <h2 className="text-2xl font-bold text-center mb-8">마이페이지</h2>
 
-      <div className="space-y-2">
-        <h3>닉네임 변경</h3>
-        <Input
-          value={nickname}
-          onChange={(e) => {
-            setNickname(e.target.value);
-            setIsAvailable(null);
-            setMessage("");
-          }}
-        />
-        <Button variant="outline" onClick={checkNickname}>
-          중복 확인
-        </Button>
-        {message && (
-          <p className={`text-sm ${isAvailable ? "text-green-500" : "text-red-500"}`}>
-            {message}
+      {/* 닉네임 변경 */}
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow space-y-4">
+        <h3 className="font-semibold text-lg">닉네임 변경</h3>
+        <div className="flex gap-2">
+          <Input
+            value={nickname}
+            onChange={(e) => {
+              setNickname(e.target.value);
+              setIsAvailable(null);
+              setNicknameMsg("");
+            }}
+            className="flex-1"
+            placeholder="닉네임 입력"
+          />
+          <Button variant="outline" onClick={checkNickname}>
+            중복 확인
+          </Button>
+        </div>
+        {nicknameMsg && (
+          <p
+            className={`text-sm ${
+              isAvailable ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {nicknameMsg}
           </p>
         )}
+        <Button
+          onClick={handleSaveNickname}
+          disabled={isAvailable !== true}
+          className="mt-2 w-full"
+        >
+          저장
+        </Button>
       </div>
 
-      <Button onClick={handleSave} disabled={isAvailable !== true}>
-        저장
-      </Button>
+      {/* 비밀번호 변경 */}
+      <form
+        className="rounded-xl border border-zinc-200 bg-white p-6 shadow space-y-4"
+        onSubmit={handlePasswordChange}
+      >
+        <h3 className="font-semibold text-lg">비밀번호 변경</h3>
+        <Input
+          type="password"
+          placeholder="현재 비밀번호"
+          value={currentPw}
+          onChange={(e) => setCurrentPw(e.target.value)}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="새 비밀번호 (6자 이상)"
+          value={newPw}
+          onChange={(e) => setNewPw(e.target.value)}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="새 비밀번호 확인"
+          value={newPw2}
+          onChange={(e) => setNewPw2(e.target.value)}
+          required
+        />
+        {pwMsg && (
+          <p className={`text-sm ${pwSuccess ? "text-green-500" : "text-red-500"}`}>{pwMsg}</p>
+        )}
+        <Button type="submit" className="mt-2 w-full">
+          비밀번호 변경
+        </Button>
+      </form>
     </div>
   );
 };

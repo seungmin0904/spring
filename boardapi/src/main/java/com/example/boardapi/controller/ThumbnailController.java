@@ -25,19 +25,23 @@ public class ThumbnailController {
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
         // content 에서 첫 번째 <img src="..."> 추출
-        String imagePath = HtmlUtils.extractFirstImageUrl(board.getContent()); // 예: /uploads/abc.jpg
+        String url = HtmlUtils.extractFirstImageUrl(board.getContent());
+if (url == null) return ResponseEntity.notFound().build();
 
-        if (imagePath == null || !imagePath.startsWith("/uploads/")) {
-            return ResponseEntity.notFound().build();
-        }
+String imagePath;
+int idx = url.indexOf("/uploads/");
+if (idx != -1) {
+    imagePath = url.substring(idx);
+} else {
+    return ResponseEntity.notFound().build();
+}
+File file = new File("." + imagePath);
+System.out.println("현재 실행 디렉토리: " + System.getProperty("user.dir"));
+System.out.println("이미지 파일 경로: " + file.getAbsolutePath());
+System.out.println("파일 존재?: " + file.exists());
 
-        File file = new File("." + imagePath); // 상대 경로 보정: ./uploads/abc.jpg
-
-        if (!file.exists()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Resource resource = new FileSystemResource(file);
+if (!file.exists()) return ResponseEntity.notFound().build();
+Resource resource = new FileSystemResource(file);
         // 이미지 타입 자동 감지 (png, jpg, etc)
         MediaType mediaType = MediaTypeFactory.getMediaType(resource)
                 .orElse(MediaType.APPLICATION_OCTET_STREAM);

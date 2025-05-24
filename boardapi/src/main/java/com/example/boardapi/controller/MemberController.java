@@ -84,4 +84,6 @@ public class MemberController {
         memberService.updateNickname(member.getUsername(), newNickname);
         return ResponseEntity.ok().build();
     }
+
+    
 }

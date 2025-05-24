@@ -9,26 +9,30 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Slf4j
 @Component
 public class JwtUtil {
     private final Key key; // 서버 기동마다 달라짐
-    private final long expiration; // 1시간
+   // private final long expiration; // 1시간
 
     public JwtUtil(
-            @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.expiration}") long expiration) {
+            @Value("${jwt.secret}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
-        this.expiration = expiration;
+       // this.expiration = expiration;
     }
 
     public String generateToken(String username) {
+       Date expirationDate = Date.from(
+        Instant.now().plus(10, ChronoUnit.HOURS) // 토큰 유효시간 설정 -> 시,분,12시간,주,월, 다 설정가능
+       );
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                // .setExpiration(expirationDate)
                 .signWith(key)
                 .compact();
     }

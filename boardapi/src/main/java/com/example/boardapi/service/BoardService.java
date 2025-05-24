@@ -79,24 +79,31 @@ public class BoardService {
 
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
+                securityService.checkBoardOwnership(board, member);
+        
+        // ★ 기존 content 백업
+        String beforeContent = board.getContent();
 
-        securityService.checkBoardOwnership(board, member);
         // 기존 content에서 <img> 제거
         String rawContent = dto.getContent();
-        String cleanedContent = rawContent.replaceFirst("(?i)<img[^>]*>", "");
+        String cleanedContent = rawContent;
 
-        // 새로운 썸네일 추출 및 timestamp 추가
+        // 1. content에서 이미지 추출
         String thumbnail = HtmlUtils.extractFirstImageUrl(rawContent);
-        String thumbnailWithTimestamp = thumbnail != null
-                ? thumbnail + "?t=" + System.currentTimeMillis()
-                : null;
 
-        // 대표 이미지 + 본문 조합
-        String newContent = (thumbnail != null ? "<img src='" + thumbnailWithTimestamp + "'>" : "") + cleanedContent;
-        log.info("🖼️ 최종 저장될 썸네일 URL = {}", thumbnailWithTimestamp);
+        // 2. 썸네일 없으면 기존 이미지 재사용
+        if (thumbnail == null || thumbnail.isBlank()) {
+        // 기존 content에서 <img> 추출 (혹은 imageUrl 필드)
+            thumbnail = HtmlUtils.extractFirstImageUrl(beforeContent);  
+        }
+
+        // 3. timestamp 추가 (안바뀌는 증상 발생 시 캐시 무시용)
+        String thumbnailWithTimestamp = thumbnail != null
+        ? thumbnail + "?t=" + System.currentTimeMillis()
+        : null;
 
         board.setTitle(dto.getTitle());
-        board.setContent(newContent);
+        board.setContent(cleanedContent);
 
         boardRepository.save(board);
     }
@@ -109,8 +116,8 @@ public class BoardService {
             throw new IllegalStateException("게시글에 작성자 정보가 없습니다.");
         }
 
-        System.out.println("✅ 로그인 사용자: " + username);
-        System.out.println("✅ 게시글 작성자: " + board.getMember().getUsername());
+        System.out.println(" 로그인 사용자: " + username);
+        System.out.println(" 게시글 작성자: " + board.getMember().getUsername());
 
         if (!board.getMember().getUsername().equals(username)) {
             throw new AccessDeniedException("작성자만 삭제할 수 있습니다.");

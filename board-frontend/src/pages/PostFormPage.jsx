@@ -169,11 +169,11 @@ const PostFormPage = ({ isEdit = false }) => {
         )}
 
         {/* 버튼 */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
           <Button type="submit" 
           variant="outline" 
-          className="rounded-xl border-zinc-300 bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 text-lg px-8 py-2">
-            {isEdit ? "수정하기" : "등록하기"}
+          className="rounded-xl border border-green-200 bg-green-50 text-green-500 hover:bg-green-100 hover:text-green-800 ml-2">
+            {isEdit ? "수정완료" : "등록하기"}
           </Button>
         </div>
       </form>

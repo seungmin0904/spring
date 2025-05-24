@@ -56,10 +56,16 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
   };
 
    return (
-    <div
-      className={`mt-2 ${depth === 0 ? "border-l border-zinc-300" : ""}`}
-      style={{ marginLeft: `${depth * 12}px`, paddingLeft: "12px" }}
-    >
+  <div
+  className={
+    depth === 0
+      ? "mb-2" 
+      : "border-l-2 border-zinc-200 ml-2 pl-2 mb-2 bg-transparent"
+  }
+  style={{
+    marginLeft: depth === 0 ? 0 : `${Math.min(depth * 8, 24)}px`
+  }}
+>
       {editing ? (
         <div className="space-y-1">
           <textarea
@@ -120,13 +126,16 @@ const ReplyItem = ({ reply, bno, refresh, depth = 0 }) => {
             </button>
           </>
         )}
+        
       </div>
      </div>
 
+     <div className="border-b-2 border-zinc-200 mt-2" />
+
       {/* 답글 작성 폼 */}
       {showReplyForm && (
-        <div className="mt-2">
-          <ReplyForm bno={bno} parentRno={reply.rno} onSubmit={refresh} />
+        <div className={`mt-2 ${depth > 0 ? "border-none bg-transparent p-0" : ""}`}>
+          <ReplyForm bno={bno} parentRno={reply.rno} onSubmit={refresh}/>
         </div>
       )}
 

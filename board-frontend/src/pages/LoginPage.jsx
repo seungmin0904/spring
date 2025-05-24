@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import axiosInstance from "@/lib/axiosInstance";
 import { useNavigate } from "react-router-dom";
-
+import { useState } from "react";
+import FindAccountModal from "@/components/ui/FindAccountModal";
 
 const LoginPage = ({ onLogin }) => {
   const { register, handleSubmit } = useForm();
   const { toast } = useToast();
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [findMode, setFindMode] = useState(null); // "id" | "pw" | null 모달 제어 상태
   const onSubmit = async (data) => {
   try {
     const response = await axiosInstance.post("/members/login", {
@@ -72,8 +74,32 @@ const LoginPage = ({ onLogin }) => {
           로그인
         </Button>
       </form>
+
+      {/* 아이디/비번 찾기 버튼 영역 */}
+      <div className="flex justify-between mt-4 text-sm">
+        <button
+          className="text-blue-500 hover:underline"
+          onClick={() => setFindMode("id")}
+          type="button"
+        >
+          아이디 찾기
+        </button>
+        <button
+          className="text-blue-500 hover:underline"
+          onClick={() => setFindMode("pw")}
+          type="button"
+        >
+          비밀번호 찾기
+        </button>
+      </div>
+
+      {/* 모달 (조건부 렌더) */}
+      {findMode && (
+        <FindAccountModal mode={findMode} onClose={() => setFindMode(null)} />
+      )}
     </div>
   );
 };
+
 
 export default LoginPage;
