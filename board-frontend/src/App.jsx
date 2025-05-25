@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import { ThemeProvider } from "@/context/ThemeContext";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import PostListPage from "@/pages/PostListPage";
@@ -50,6 +50,7 @@ function App() {
   };
 
   return (
+    <ThemeProvider>
 <UserContext.Provider value={{ name, setName }}>    
   <BrowserRouter>
     <Routes>
@@ -61,12 +62,13 @@ function App() {
       <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/mypage" element={<MyPage />} />
+   <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
   </Route>
 
-   <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
   </Routes>
   </BrowserRouter>
 </UserContext.Provider>
+</ThemeProvider>
   );
 }
 

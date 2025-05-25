@@ -135,40 +135,58 @@ const RegisterPage = () => {
     return () => clearInterval(interval);
   }, [expiryDate]);
 
-  return (
-    <div className="pt-24 px-4 max-w-md mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>회원가입</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* 아이디 */}
-            <div>
-              <Label htmlFor="name">아이디</Label>
+  // RegisterPage.jsx
+return (
+  <div className="min-h-screen pt-32 px-4 flex items-start justify-center 
+                  bg-white dark:bg-[#18181b] text-black dark:text-white transition-colors">
+    <Card className="w-[520px] rounded-2xl shadow-xl py-12 px-10 flex flex-col justify-center 
+                    border border-zinc-200 bg-white dark:bg-[#18181b] text-black dark:text-white transition-colors">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-3xl font-bold text-center mb-1 text-gray-900 dark:text-white">
+          회원가입
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-7">
+          {/* 아이디 */}
+          <div>
+            <Label htmlFor="name" className="text-base mb-2 block">
+              아이디
+            </Label>
+            <div className="flex gap-2">
               <Input
                 id="name"
                 name="name"
                 value={form.name}
                 onChange={handleChange}
                 required
+                className="h-12 text-lg flex-1 
+                placeholder:text-gray-400 dark:placeholder:text-gray-500 
+                bg-white dark:bg-[#18181b] 
+                text-black dark:text-white transition-colors"
+                placeholder="아이디를 입력하세요"
               />
               <Button
                 type="button"
                 onClick={checkName}
-                className="mt-2"
+                className="h-12 px-5 text-base"
+                variant="outline"
               >
                 중복 확인
               </Button>
-              {message && (
-                <p className={`text-sm ${isAvailable ? "text-green-500" : "text-red-500"}`}>
-                  {message}
-                </p>
-              )}
             </div>
-            {/* 이메일 */}
-            <div>
-              <Label htmlFor="username">이메일</Label>
+            {message && (
+              <p className={`text-sm mt-1 ${isAvailable ? "text-green-600" : "text-red-600"}`}>
+                {message}
+              </p>
+            )}
+          </div>
+          {/* 이메일 */}
+          <div>
+            <Label htmlFor="username" className="text-base mb-2 block">
+              이메일
+            </Label>
+            <div className="flex gap-2">
               <Input
                 id="username"
                 name="username"
@@ -176,70 +194,93 @@ const RegisterPage = () => {
                 value={form.username}
                 onChange={handleChange}
                 required
+                className="h-12 text-lg flex-1 
+                placeholder:text-gray-400 dark:placeholder:text-gray-500 
+                bg-white dark:bg-[#18181b] 
+                text-black dark:text-white transition-colors"
+                placeholder="아이디/비밀번호 찾기 용"
               />
               <Button
                 type="button"
                 onClick={handleSendCode}
-                className="mt-2"
+                className="h-12 px-5 text-base"
+                variant="outline"
                 disabled={!form.username}
               >
                 인증코드 발송
               </Button>
             </div>
-            {/* 인증코드 */}
-            {codeSent && (
-              <div>
-                {!verified && <Label htmlFor="code">인증코드</Label>}
-                {verified ? (
-                  <div className="text-green-600 text-sm font-semibold mt-1">
-                    인증이 완료되었습니다.
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="code"
-                        name="code"
-                        value={form.code}
-                        onChange={handleChange}
-                        required
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleVerifyCode}
-                      >
-                        확인
-                      </Button>
-                    </div>
-                    {secondsLeft !== null && (
-                      <span className="text-sm text-gray-500">
-                        남은 시간: {Math.floor(secondsLeft / 60)}:
-                        {String(secondsLeft % 60).padStart(2, "0")}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-            {/* 비밀번호 */}
+          </div>
+          {/* 인증코드 */}
+          {codeSent && (
             <div>
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={form.password}
-                onChange={handleChange}
-                required
-              />
+              {!verified && (
+                <Label htmlFor="code" className="text-base mb-1 block">
+                  인증코드
+                </Label>
+              )}
+              {verified ? (
+                <div className="text-green-600 text-base font-semibold mt-1">
+                  인증이 완료되었습니다.
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2">
+                    <Input
+                      id="code"
+                      name="code"
+                      value={form.code}
+                      onChange={handleChange}
+                      required
+                      className="h-12 text-lg flex-1 bg-white dark:bg-[#18181b] text-black dark:text-white transition-colors"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      className="h-12 px-6 text-base"
+                      variant="secondary"
+                    >
+                      확인
+                    </Button>
+                  </div>
+                  {secondsLeft !== null && (
+                    <span className="text-sm text-gray-500 mt-1 block">
+                      남은 시간: {Math.floor(secondsLeft / 60)}:
+                      {String(secondsLeft % 60).padStart(2, "0")}
+                    </span>
+                  )}
+                </>
+              )}
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" className="w-full">가입하기</Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
+          )}
+          {/* 비밀번호 */}
+          <div>
+            <Label htmlFor="password" className="text-base mb-2 block">
+              비밀번호
+            </Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="h-12 text-lg placeholder:text-gray-400 dark:placeholder:text-gray-500 
+              bg-white dark:bg-[#18181b] text-black dark:text-white transition-colors"
+              placeholder="비밀번호를 입력하세요"
+            />
+          </div>
+          {error && <p className="text-red-500 text-base">{error}</p>}
+          <Button
+            type="submit"
+            className="w-full h-14 text-lg mt-2 rounded-xl"
+          >
+            가입하기
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  </div>
+);
+}
 export default RegisterPage;

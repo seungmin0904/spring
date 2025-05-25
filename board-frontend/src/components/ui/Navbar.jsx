@@ -1,11 +1,13 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
+import { useTheme } from "@/context/ThemeContext";
 
  const Navbar = ({onLogout}) => {
   const { name } = useUser();
   const isLoggedIn = !!localStorage.getItem("token");
   const navigate = useNavigate();
+  const { dark, setDark } = useTheme();
 
   const handleLogout = () => {
     localStorage.clear();
@@ -14,7 +16,7 @@ import { useUser } from "@/context/UserContext";
   };
 
    return (
-    <nav className="fixed top-0 w-full z-50 bg-white text-black shadow-md">
+    <nav className="fixed top-0 w-full z-50 bg-white dark:bg-[#18181b] text-black dark:text-white shadow-md">
   <div className="flex items-center justify-between px-6 py-4 w-full">
     {/* 왼쪽: 로고 */}
     <div className="text-xl font-bold text-indigo-600">
@@ -39,6 +41,12 @@ import { useUser } from "@/context/UserContext";
           <Link to="/register" className="hover:underline">회원가입</Link>
         </>
       )}
+      <button
+  className="ml-4 px-2 py-1 rounded border hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+  onClick={() => setDark((d) => !d)}
+>
+  {dark ? "🌙 다크" : "☀️ 라이트"}
+</button>
     </div>
   </div>
 </nav>
