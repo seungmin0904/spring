@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
 import { useTheme } from "@/context/ThemeContext";
+import { motion } from "framer-motion";
 
  const Navbar = ({onLogout}) => {
   const { name } = useUser();
@@ -42,11 +43,39 @@ import { useTheme } from "@/context/ThemeContext";
         </>
       )}
       <button
-  className="ml-4 px-2 py-1 rounded border hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-  onClick={() => setDark((d) => !d)}
->
-  {dark ? "🌙 다크" : "☀️ 라이트"}
-</button>
+      type="button"
+      aria-label="테마 토글"
+      onClick={() => setDark((d) => !d)}
+      className={`
+        relative w-14 h-8 flex items-center px-1 rounded-full border-2
+        ${dark ? "bg-gradient-to-r from-indigo-700 to-zinc-900 border-zinc-700" : "bg-gradient-to-r from-yellow-100 to-white border-yellow-200"}
+        shadow-inner transition-colors duration-300
+      `}
+    >
+      {/* Sun/moon background effect */}
+      <motion.span
+        className="absolute left-1 top-1/2 -translate-y-1/2 text-yellow-400 text-xl select-none transition"
+        animate={{ opacity: dark ? 0 : 1 }}
+        transition={{ duration: 0.25 }}
+      >☀️</motion.span>
+      <motion.span
+        className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-300 text-xl select-none transition"
+        animate={{ opacity: dark ? 1 : 0 }}
+        transition={{ duration: 0.25 }}
+      >🌙</motion.span>
+      {/* Thumb */}
+      <motion.div
+        className={`
+          z-10 w-6 h-6 rounded-full shadow-lg border-2 border-white
+          ${dark ? "bg-zinc-700" : "bg-yellow-300"}
+        `}
+        animate={{
+          x: dark ? 0 : 25,
+          backgroundColor: dark ? "#27272a" : "#fde047",
+        }}
+        transition={{ type: "spring", stiffness: 350, damping: 5 }}
+      />
+    </button>
     </div>
   </div>
 </nav>

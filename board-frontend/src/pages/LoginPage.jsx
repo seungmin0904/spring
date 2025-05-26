@@ -86,21 +86,23 @@ const LoginPage = ({ onLogin }) => {
             {...register("password", { required: true })}
             className="h-12 text-lg placeholder:text-gray-400 placeholder:opacity-80"
           />
-          <Button type="submit" className="w-full h-12 text-lg mt-2 rounded-xl">
+          <Button type="submit" className="w-full h-12 text-lg mt-2 rounded-xl ">
             로그인
           </Button>
         </form>
         {/* 아이디/비번 찾기 버튼 영역 */}
         <div className="flex justify-between mt-5 text-sm">
           <button
-            className="text-blue-500 hover:underline"
+            className="px-3 py-1 rounded bg-white hover:bg-blue-100 text-blue-500
+             dark:bg-zinc-900 dark:hover:bg-zinc-700 dark:text-blue-400"
             onClick={() => setFindMode("id")}
             type="button"
           >
             아이디 찾기
           </button>
           <button
-            className="text-blue-500 hover:underline"
+            className="px-3 py-1 rounded bg-white hover:bg-blue-100 text-blue-500
+             dark:bg-zinc-900 dark:hover:bg-zinc-700 dark:text-blue-400"
             onClick={() => setFindMode("pw")}
             type="button"
           >
@@ -110,7 +112,8 @@ const LoginPage = ({ onLogin }) => {
         <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-300">
           아직 회원이 아니신가요?{" "}
           <button
-            className="text-blue-500 hover:underline"
+            className="px-3 py-1 rounded bg-white hover:bg-blue-100 text-blue-500
+             dark:bg-zinc-900 dark:hover:bg-zinc-700 dark:text-blue-400"
             onClick={() => navigate("/register")}
             type="button"
           >
