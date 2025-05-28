@@ -38,14 +38,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (REST API용)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/members/register", "/api/members/login").permitAll() // 회원가입/로그인 허용
-                        .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/members/password/reset","/api/members/password").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**",
-                                "/api/members/check-nickname","/api/members/find-id")
+                        .requestMatchers("/api/members/register", "/api/members/login", "/error").permitAll() // 회원가입/로그인
+                                                                                                              // 허용
+                        .requestMatchers("/ws-chat/**").permitAll() // 채팅 엔드포인트
+                        .requestMatchers(HttpMethod.PUT, "/api/members/password/reset", "/api/members/password")
                         .permitAll()
-                                
+                        .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**",
+                                "/api/members/check-nickname", "/api/members/find-id")
+                        .permitAll()
 
+                        .requestMatchers("/api/chat/rooms/**").authenticated() // 채팅 rest api
                         .requestMatchers(HttpMethod.GET, "/api/members/mypage").authenticated()
 
                         .requestMatchers(HttpMethod.POST, "/api/boards", "/api/replies/**", "/api/members/mypage")
@@ -53,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/boards/**", "/api/replies/**", "/api/members/mypage",
                                 "/api/members/nickname")
                         .authenticated()
-                        
+
                         .requestMatchers(HttpMethod.DELETE, "/api/boards/**", "/api/replies/**", "/api/members/mypage")
                         .authenticated()
                         .anyRequest().permitAll())

@@ -43,6 +43,6 @@ public class MemberRole {
     private Member member;
 
     public enum Role {
-        USER, ADMIN
+        USER, ADMIN,
     }
 }

@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class PageResultDTO<T> {
-     private List<T> content;
+    private List<T> content;
     private int page;
     private int size;
     private int totalPages;
@@ -22,14 +22,13 @@ public class PageResultDTO<T> {
     private boolean isFirst;
     private boolean isLast;
 
-
     public PageResultDTO(Page<T> result) {
-    this.content = result.getContent();
-    this.page = result.getNumber();
-    this.size = result.getSize();
-    this.totalPages = result.getTotalPages();
-    this.totalElements = result.getTotalElements();
-    this.isFirst = result.isFirst();
-    this.isLast = result.isLast();
-}
+        this.content = result.getContent();
+        this.page = result.getNumber();
+        this.size = result.getSize();
+        this.totalPages = result.getTotalPages();
+        this.totalElements = result.getTotalElements();
+        this.isFirst = result.isFirst();
+        this.isLast = result.isLast();
+    }
 }

@@ -28,6 +28,8 @@ public class Member {
 
     private String name;
 
+    private boolean captain;
+
     private boolean emailVerified;
 
     // 선택: 양방향 관계
