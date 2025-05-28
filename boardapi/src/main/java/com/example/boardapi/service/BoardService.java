@@ -46,7 +46,7 @@ public class BoardService {
 
     // 게시글 등록
     public Board register(BoardRequestDTO dto, String username) {
-        Member member = memberRepository.findByUsername(username)
+        Member member = memberRepository.findByname(username)
                 .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
 
         Board board = BoardMapper.toEntity(dto, member);

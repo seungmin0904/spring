@@ -3,6 +3,7 @@ package com.example.boardapi.mapper;
 import com.example.boardapi.dto.MemberRequestDTO;
 import com.example.boardapi.dto.MemberResponseDTO;
 import com.example.boardapi.entity.Member;
+import com.example.boardapi.security.dto.MemberSecurityDTO;
 public class MemberMapper {
     
     // DTO → Entity
@@ -21,6 +22,15 @@ public class MemberMapper {
                 .mno(member.getMno())
                 .username(member.getUsername())
                 .name(member.getName())
+                .build();
+    }
+
+     // MemberSecurityDTO → Member 변환 추가
+    public static Member toEntity(MemberSecurityDTO dto) {
+        return Member.builder()
+                .username(dto.getUsername())
+                .password(dto.getPassword())
+                .name(dto.getName())
                 .build();
     }
 }

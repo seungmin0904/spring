@@ -11,7 +11,6 @@ import axiosInstance from "@/lib/axiosInstance";
 import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
 import { UserContext } from "@/context/UserContext";
-  
 
 function App() {
   // eslint-disable-next-line no-unused-vars

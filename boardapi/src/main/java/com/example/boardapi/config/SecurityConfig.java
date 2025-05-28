@@ -40,7 +40,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/members/register", "/api/members/login", "/error").permitAll() // 회원가입/로그인
                                                                                                               // 허용
-                        .requestMatchers("/ws-chat/**").permitAll() // 채팅 엔드포인트
                         .requestMatchers(HttpMethod.PUT, "/api/members/password/reset", "/api/members/password")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/boards/**", "/api/replies/**",

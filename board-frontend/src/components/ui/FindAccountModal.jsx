@@ -71,90 +71,93 @@ const FindAccountModal = ({ mode, onClose }) => {
 
   // 화면
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow p-8 w-[360px] space-y-4 relative">
-        <button className="absolute right-3 top-2 text-zinc-400" onClick={onClose}>✖</button>
-        <h3 className="font-bold text-lg mb-2">
-          {mode === "id" ? "아이디 찾기" : "비밀번호 찾기"}
-        </h3>
+  <div className="fixed inset-0 bg-black/30 dark:bg-black/60 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow p-8 w-[360px] space-y-4 relative">
+      <button
+        className="absolute right-3 top-2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+        onClick={onClose}
+      >✖</button>
+      <h3 className="font-bold text-lg mb-2 dark:text-zinc-100">
+        {mode === "id" ? "아이디 찾기" : "비밀번호 찾기"}
+      </h3>
 
-        {/* STEP 1: 이메일(=username) 인증 */}
-        {step === "username" && (
-          <>
-            <Input
-              type="email"
-              placeholder="이메일"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-            />
-            <Button className="w-full" onClick={sendCode} disabled={!username}>
-              인증코드 받기
-            </Button>
-            {msg && <p className="text-red-500 text-sm">{msg}</p>}
-          </>
-        )}
+      {/* STEP 1: 이메일(=username) 인증 */}
+      {step === "username" && (
+        <>
+          <Input
+            type="email"
+            placeholder="이메일"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+          />
+          <Button className="w-full" onClick={sendCode} disabled={!username}>
+            인증코드 받기
+          </Button>
+          {msg && <p className="text-red-500 text-sm">{msg}</p>}
+        </>
+      )}
 
-        {/* STEP 2: 인증 코드 확인 */}
-        {step === "verify" && (
-          <>
-            <Input
-              placeholder="인증코드"
-              value={code}
-              onChange={e => setCode(e.target.value)}
-              maxLength={8}
-            />
-            <Button className="w-full" onClick={verifyCode} disabled={!code}>
-              인증코드 확인
-            </Button>
-            {msg && <p className="text-red-500 text-sm">{msg}</p>}
-          </>
-        )}
+      {/* STEP 2: 인증 코드 확인 */}
+      {step === "verify" && (
+        <>
+          <Input
+            placeholder="인증코드"
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            maxLength={8}
+          />
+          <Button className="w-full" onClick={verifyCode} disabled={!code}>
+            인증코드 확인
+          </Button>
+          {msg && <p className="text-red-500 text-sm">{msg}</p>}
+        </>
+      )}
 
-        {/* STEP 3: 결과 폼 */}
-        {step === "result" && (
-          <>
-            {/* 아이디 찾기 */}
-            {mode === "id" && (
-              result
-                ? <div className="text-center my-6">
-                    <p className="font-bold">{result}</p>
-                    <Button className="mt-4 w-full" onClick={onClose}>확인</Button>
-                  </div>
-                : <Button className="w-full" onClick={findId}>아이디 확인하기</Button>
-            )}
-            {/* 비밀번호 찾기 */}
-            {mode === "pw" && (
-              result
-                ? <div className="text-center my-6">
-                    <p className="font-bold">{result}</p>
-                    <Button className="mt-4 w-full" onClick={onClose}>로그인하기</Button>
-                  </div>
-                : (
-                  <form className="space-y-2" onSubmit={resetPassword}>
-                    <Input
-                      type="password"
-                      placeholder="새 비밀번호"
-                      value={newPw}
-                      onChange={e => setNewPw(e.target.value)}
-                      required
-                    />
-                    <Input
-                      type="password"
-                      placeholder="새 비밀번호 확인"
-                      value={newPw2}
-                      onChange={e => setNewPw2(e.target.value)}
-                      required
-                    />
-                    {msg && <p className="text-red-500 text-sm">{msg}</p>}
-                    <Button className="w-full" type="submit">비밀번호 변경</Button>
-                  </form>
-                )
-            )}
-          </>
-        )}
-      </div>
+      {/* STEP 3: 결과 폼 */}
+      {step === "result" && (
+        <>
+          {/* 아이디 찾기 */}
+          {mode === "id" && (
+            result
+              ? <div className="text-center my-6">
+                  <p className="font-bold dark:text-zinc-100">{result}</p>
+                  <Button className="mt-4 w-full" onClick={onClose}>확인</Button>
+                </div>
+              : <Button className="w-full" onClick={findId}>아이디 확인하기</Button>
+          )}
+          {/* 비밀번호 찾기 */}
+          {mode === "pw" && (
+            result
+              ? <div className="text-center my-6">
+                  <p className="font-bold dark:text-zinc-100">{result}</p>
+                  <Button className="mt-4 w-full" onClick={onClose}>로그인하기</Button>
+                </div>
+              : (
+                <form className="space-y-2" onSubmit={resetPassword}>
+                  <Input
+                    type="password"
+                    placeholder="새 비밀번호"
+                    value={newPw}
+                    onChange={e => setNewPw(e.target.value)}
+                    required
+                  />
+                  <Input
+                    type="password"
+                    placeholder="새 비밀번호 확인"
+                    value={newPw2}
+                    onChange={e => setNewPw2(e.target.value)}
+                    required
+                  />
+                  {msg && <p className="text-red-500 text-sm">{msg}</p>}
+                  <Button className="w-full" type="submit">비밀번호 변경</Button>
+                </form>
+              )
+          )}
+        </>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default FindAccountModal;
