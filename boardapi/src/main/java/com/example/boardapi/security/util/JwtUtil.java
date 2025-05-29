@@ -37,6 +37,16 @@ public class JwtUtil {
                 .compact();
     }
 
+    public String getUsername(String token) {
+        // JWT의 subject(name)를 꺼내옴
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        return claims.getSubject();
+    }
+
     public String validateAndGetUsername(String token) {
         try {
             return Jwts.parserBuilder()
