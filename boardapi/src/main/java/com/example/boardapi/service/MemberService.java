@@ -12,7 +12,9 @@ import com.example.boardapi.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,7 +34,7 @@ public class MemberService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
-   // 회원가입: 이메일(=username)로 중복 체크, name(아이디/닉네임)은 별도 중복 체크
+    // 회원가입: 이메일(=username)로 중복 체크, name(아이디/닉네임)은 별도 중복 체크
     public MemberResponseDTO register(MemberRequestDTO dto) {
         if (memberRepository.existsByUsername(dto.getUsername())) {
             throw new IllegalStateException("이미 사용 중인 이메일입니다.");
@@ -82,16 +84,23 @@ public class MemberService {
         member.setName(newName);
         memberRepository.save(member);
     }
-    
+
     public Member getByName(String name) {
         log.debug("getByName 호출됨, name={}", name); // ★ 여기에 찍어!
         return memberRepository.findByname(name)
-            .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자"));
+                .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자"));
     }
 
-    // email로 아이디 찾기용 
+    // email로 아이디 찾기용
     public Optional<String> findByNickname(String email) {
         return memberRepository.findByUsername(email)
                 .map(Member::getName);
+    }
+
+    public List<MemberResponseDTO> getAllMembers() {
+        List<Member> members = memberRepository.findAll(); // 모든 회원 조회
+        return members.stream()
+                .map(MemberMapper::toDTO) // DTO로 변환
+                .collect(Collectors.toList());
     }
 }

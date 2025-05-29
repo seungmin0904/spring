@@ -1,10 +1,6 @@
 package com.example.jpa.repository;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.LongStream;
-
-import javax.swing.text.html.parser.Entity;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

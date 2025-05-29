@@ -27,8 +27,8 @@ public class Member {
     private String password;
 
     private String name;
-
-    private boolean emailVerified; 
+    private String profile;
+    private boolean emailVerified;
 
     // 선택: 양방향 관계
     @OneToMany(mappedBy = "member")

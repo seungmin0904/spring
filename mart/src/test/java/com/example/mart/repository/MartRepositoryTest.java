@@ -6,7 +6,6 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Commit;
 
@@ -20,7 +19,6 @@ import com.example.mart.entity.OrderItem;
 import com.example.mart.entity.constant.DeliveryStatus;
 import com.example.mart.entity.constant.OrderStatus;
 
-import jakarta.persistence.CascadeType;
 import jakarta.transaction.Transactional;
 
 @SpringBootTest

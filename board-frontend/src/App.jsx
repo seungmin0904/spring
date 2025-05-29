@@ -11,6 +11,8 @@ import axiosInstance from "@/lib/axiosInstance";
 import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
 import { UserContext } from "@/context/UserContext";
+import FriendListPage from "@/pages/FriendListPage";
+import { ChatProvider } from "@/context/ChatContext";
 
 function App() {
   // eslint-disable-next-line no-unused-vars
@@ -49,10 +51,12 @@ function App() {
   };
 
   return (
+    <ChatProvider>
     <ThemeProvider>
 <UserContext.Provider value={{ name, setName }}>    
   <BrowserRouter>
     <Routes>
+      <Route path="/friends" element={<FriendListPage />} /> 
       <Route path="/" element={<Layout onLogout={handleLogout} />}>
       <Route index element={<HomePage />} />
       <Route path="posts" element={<PostListPage />} />
@@ -68,6 +72,7 @@ function App() {
   </BrowserRouter>
 </UserContext.Provider>
 </ThemeProvider>
+</ChatProvider>
   );
 }
 

@@ -8,15 +8,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.example.jpa.dto.team.TeamMemberDTO;
 import com.example.jpa.service.teammember.TeamMemberService;
-import com.example.jpa.service.teammember.TeamMemberServiceImpl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-
 
 @RequestMapping("/team")
 @Log4j2
@@ -26,7 +23,7 @@ public class TeamMemberController {
 
     private final TeamMemberService teamMemberService;
 
-      // 1. 멤버 전체 조회
+    // 1. 멤버 전체 조회
     @GetMapping("/members")
     public String getAllMembers(Model model) {
         List<TeamMemberDTO> list = teamMemberService.getList();
@@ -85,6 +82,5 @@ public class TeamMemberController {
         teamMemberService.deleteMember(id);
         return "redirect:/team/members";
     }
-   
-    
+
 }

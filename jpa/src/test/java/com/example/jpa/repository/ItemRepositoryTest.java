@@ -4,18 +4,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties.Sort;
 import org.springframework.boot.test.context.SpringBootTest;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.example.jpa.entity.Item;
 import com.example.jpa.entity.QItem;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.QueryFactory;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 @SpringBootTest
 public class ItemRepositoryTest {

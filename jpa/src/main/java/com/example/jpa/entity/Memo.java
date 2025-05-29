@@ -3,7 +3,6 @@ package com.example.jpa.entity;
 import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -37,7 +36,7 @@ public class Memo {
 
     // Entity : DB에 저장되는 객체를 의미
     // @Entity : JPA에서 관리하는 객체임을 명시
-    
+
     // DB 테이블과 매핑되는 클래스
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

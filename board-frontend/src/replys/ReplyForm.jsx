@@ -7,6 +7,12 @@ const ReplyForm = ({ bno, parentRno = null, onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+     const trimmedContent = content.trim();
+     if (!trimmedContent) {
+     alert("댓글 내용을 입력하세요.");
+     return;
+    }
+
     const token = localStorage.getItem("token");
     if (!token) {
       alert("로그인 후 댓글을 작성할 수 있습니다.");

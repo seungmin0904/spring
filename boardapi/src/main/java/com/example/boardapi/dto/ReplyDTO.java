@@ -21,6 +21,7 @@ public class ReplyDTO {
     private String username; // Member.username
     private boolean deleted;
     private LocalDateTime createdDate;
+    private String parentWriterName;
 
     @Builder.Default
     private List<ReplyDTO> children = new ArrayList<>();

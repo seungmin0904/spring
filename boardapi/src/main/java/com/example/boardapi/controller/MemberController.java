@@ -13,6 +13,7 @@ import com.example.boardapi.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -111,7 +112,7 @@ public class MemberController {
         Member member = memberService.getByName(name);
         return ResponseEntity.ok(member);
     }
-    
+
     /**
      * 마이페이지 - 기존 비밀번호 확인 후 변경
      */
@@ -152,5 +153,11 @@ public class MemberController {
         } else {
             return ResponseEntity.badRequest().body("해당 이메일 사용자를 찾을 수 없습니다.");
         }
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<MemberResponseDTO>> getAllMembers() {
+        List<MemberResponseDTO> members = memberService.getAllMembers();
+        return ResponseEntity.ok(members);
     }
 }

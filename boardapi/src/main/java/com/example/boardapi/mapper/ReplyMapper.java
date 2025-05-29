@@ -10,6 +10,11 @@ import org.springframework.stereotype.Component;
 public class ReplyMapper {
 
     public ReplyDTO toDTO(Reply entity) {
+        // 부모 작성자 이름 가져오기
+        String parentWriterName = null;
+        if (entity.getParent() != null && entity.getParent().getMember() != null) {
+            parentWriterName = entity.getParent().getMember().getName();
+        }
         return ReplyDTO.builder()
                 .rno(entity.getRno())
                 .bno(entity.getBoard().getBno())
@@ -19,6 +24,7 @@ public class ReplyMapper {
                 .deleted(entity.isDeleted())
                 .createdDate(entity.getCreatedDate())
                 .parentRno(entity.getParent() != null ? entity.getParent().getRno() : null)
+                .parentWriterName(parentWriterName)
                 .build();
     }
 

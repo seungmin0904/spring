@@ -1,7 +1,6 @@
 package com.example.relation.entity.sports;
 
 import com.example.relation.entity.BaseEntity;
-import com.example.relation.entity.sports.Locker.LockerBuilder;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

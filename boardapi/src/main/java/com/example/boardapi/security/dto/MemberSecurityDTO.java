@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MemberSecurityDTO implements UserDetails {
+    private Long mno;
     private String username; // 이메일
     private String password;
     private String name;
@@ -43,14 +44,16 @@ public class MemberSecurityDTO implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-     @Override
+
+    @Override
     public String getUsername() {
-        // "아이디"를 검증 기준으로 사용 → 반드시 name 반환! email은 email관련만 담당하게 분리 
+        // "아이디"를 검증 기준으로 사용 → 반드시 name 반환! email은 email관련만 담당하게 분리
         return name;
     }
 
     public static MemberSecurityDTO from(Member member) {
         return MemberSecurityDTO.builder()
+                .mno(member.getMno())
                 .username(member.getUsername())
                 .password(member.getPassword())
                 .name(member.getName())

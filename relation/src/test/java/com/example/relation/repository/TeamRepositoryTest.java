@@ -6,14 +6,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.thymeleaf.engine.TemplateManager;
-
 import com.example.relation.entity.team.Team;
 import com.example.relation.entity.team.TeamMember;
 import com.example.relation.repository.team.TeamMemberRepository;
 import com.example.relation.repository.team.TeamRepository;
-
-import jakarta.transaction.Transactional;
 
 @SpringBootTest
 public class TeamRepositoryTest {

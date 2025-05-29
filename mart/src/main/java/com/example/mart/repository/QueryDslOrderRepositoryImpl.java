@@ -1,7 +1,6 @@
 package com.example.mart.repository;
 
 import java.util.List;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
@@ -16,7 +15,6 @@ import com.example.mart.entity.QOrderItem;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
-import com.querydsl.jpa.impl.JPAQuery;
 
 public class QueryDslOrderRepositoryImpl extends QuerydslRepositorySupport implements QueryDslOrderRepository {
 
