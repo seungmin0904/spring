@@ -17,34 +17,25 @@ import java.util.Date;
 @Component
 public class JwtUtil {
     private final Key key; // 서버 기동마다 달라짐
-   // private final long expiration; // 1시간
+    // private final long expiration; // 1시간
 
     public JwtUtil(
             @Value("${jwt.secret}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
-       // this.expiration = expiration;
+        // this.expiration = expiration;
     }
 
-    public String generateToken(String name) {
-       Date expirationDate = Date.from(
-        Instant.now().plus(10, ChronoUnit.HOURS) // 토큰 유효시간 설정 -> 시,분,12시간,주,월, 다 설정가능
-       );
+    public String generateToken(String username, String name) {
+        Date expirationDate = Date.from(
+                Instant.now().plus(10, ChronoUnit.HOURS) // 토큰 유효시간 설정 -> 시,분,12시간,주,월, 다 설정가능
+        );
         return Jwts.builder()
-                .setSubject(name)
+                .setSubject(username)
+                .claim("name", name)
                 .setIssuedAt(new Date())
-                // .setExpiration(expirationDate)
+                .setExpiration(expirationDate)
                 .signWith(key)
                 .compact();
-    }
-
-    public String getUsername(String token) {
-        // JWT의 subject(name)를 꺼내옴
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
     }
 
     public String validateAndGetUsername(String token) {
@@ -69,4 +60,12 @@ public class JwtUtil {
         return null; // 토큰이 유효하지 않음
     }
 
+    // ✅ claim 파싱 메서드 추가!
+    public Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
 }

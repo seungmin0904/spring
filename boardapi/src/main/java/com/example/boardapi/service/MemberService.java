@@ -73,11 +73,12 @@ public class MemberService {
     }
 
     // 닉네임 변경 (username=이메일로 식별)
-    public void updateNickname(String currentName, String newName) {
-        Member member = memberRepository.findByname(currentName)
+    // username(email) 기반으로 찾기
+    public void updateNickname(String currentUsername, String newName) {
+        Member member = memberRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("회원 없음"));
 
-        if (isNicknameTaken(newName, currentName)) {
+        if (isNicknameTaken(newName, currentUsername)) {
             throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
         }
 
@@ -85,9 +86,9 @@ public class MemberService {
         memberRepository.save(member);
     }
 
-    public Member getByName(String name) {
-        log.debug("getByName 호출됨, name={}", name); // ★ 여기에 찍어!
-        return memberRepository.findByname(name)
+    public Member getByUsername(String username) {
+        log.debug("getByUsername 호출됨, username={}", username);
+        return memberRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("존재하지 않는 사용자"));
     }
 

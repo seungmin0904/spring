@@ -51,7 +51,7 @@ public class MemberController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO dto) {
         Member member = memberService.login(dto);
-        String token = jwtUtil.generateToken(member.getName());
+        String token = jwtUtil.generateToken(member.getUsername(), member.getName());
 
         return ResponseEntity.ok(Map.of(
                 "token", token,
@@ -100,17 +100,10 @@ public class MemberController {
         memberService.updateNickname(currentName, newName);
 
         // 새 닉네임으로 JWT 토큰 재발급
-        String newToken = jwtUtil.generateToken(newName);
+        String newToken = jwtUtil.generateToken(currentName, newName);
 
         // 새 토큰을 JSON 응답으로 반환
         return ResponseEntity.ok(Map.of("token", newToken));
-    }
-
-    @GetMapping("/test")
-    public ResponseEntity<?> test(@RequestParam String name) {
-        log.warn("🔥 /api/members/test 진입 name={}", name);
-        Member member = memberService.getByName(name);
-        return ResponseEntity.ok(member);
     }
 
     /**

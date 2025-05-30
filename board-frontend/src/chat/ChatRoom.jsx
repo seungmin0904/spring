@@ -1,147 +1,86 @@
-import { useState, useEffect } from "react";
-import axiosInstance from "@/lib/axiosInstance";
-import ChatMessages from "./ChatMessages";
-import ChatInput from "./ChatInput";
+import React, { useEffect, useState, useRef } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
 
-const ChatRoom = () => {
-  const [roomId, setRoomId] = useState(null);
-  const [roomName, setRoomName] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
-  const [isJoined, setIsJoined] = useState(false);
+const ChatRoom = ({ roomId }) => {
   const [messages, setMessages] = useState([]);
-  const [stompClient, setStompClient] = useState(null);
+  const [input, setInput] = useState("");
+  const stompClient = useRef(null);
+  const isConnected = useRef(false);
+  const isSubscribed = useRef(false);
+  // 사용자 정보
+  const token = localStorage.getItem("token");
 
-  // ✅ 채널 생성 (A 계정)
-  const createRoom = async () => {
-    const name = prompt("채널 이름을 입력하세요!");
-    if (!name) return;
-
-    try {
-      const res = await axiosInstance.post("/chatrooms", { name });
-      alert(`채널 생성 완료! 초대코드: ${res.data.code}`);
-      setRoomId(res.data.id);
-      setRoomName(res.data.name);
-      setInviteCode(res.data.code); // A 계정도 초대코드 세팅
-      setIsJoined(true);
-    } catch (error) {
-      console.error("채널 생성 실패:", error);
-      alert("채널 생성 실패!");
-    }
-  };
-
-  // ✅ 채널 참여 (B 계정)
-  const joinRoom = async () => {
-    if (!inviteCode) {
-      alert("초대코드를 입력하세요!");
-      return;
-    }
-
-    try {
-      await axiosInstance.post(`/chatrooms/${inviteCode}/join`);
-      // ✅ 참여 후 채널 정보 가져오기
-      const res = await axiosInstance.get("/chatrooms");
-      const found = res.data.find((room) => room.code === inviteCode);
-
-      if (!found) {
-        alert("채널 정보 없음!");
-        return;
-      }
-
-      setRoomId(found.id);
-      setRoomName(found.name);
-      setIsJoined(true);
-    } catch (error) {
-      console.error("채널 참여 실패:", error);
-      alert("채널 참여 실패!");
-    }
-  };
-
-  // ✅ 소켓 연결 및 수신 구독
   useEffect(() => {
-    if (!isJoined || !roomId) return;
-
-    const socket = new SockJS("http://localhost:8080/ws-chat");
+    // JWT를 URL 쿼리파라미터로 전달!
+    const socket = new SockJS(`http://localhost:8080/ws-chat?token=${token}`);
     const client = Stomp.over(socket);
 
-    const token = localStorage.getItem("token");
-    const name = localStorage.getItem("name");
+    client.connect({}, () => {
+      console.log("✅ WebSocket 연결 성공");
+      isConnected.current = true;
 
-    const headers = { 
-        Authorization: `Bearer ${token}`,
-        name: name,
-    };
-
-    client.connect(headers, () => {
-      console.log("🔗 WebSocket 연결됨!");
-      client.subscribe(`/topic/channel.${roomId}`, (msg) => {
-        const newMsg = JSON.parse(msg.body);
-        console.log("📩 수신:", newMsg);
-        setMessages((prev) => [...prev, newMsg]);
+      // 구독
+     if (!isSubscribed.current) { // ✅ 이미 구독했는지 확인!
+      client.subscribe(`/topic/chatroom.${roomId}`, (msg) => {
+        const received = JSON.parse(msg.body);
+        console.log("📩 수신:", received);
+        setMessages((prev) => [...prev, received]);
       });
-    });
+      isSubscribed.current = true; // ✅ 구독했음 표시
+    }
+  });
 
-    setStompClient(client);
+    stompClient.current = client;
 
+    // 연결 종료
     return () => {
-      if (client && client.connected) {
-        client.disconnect(() => console.log("❌ WebSocket 연결 해제됨"));
+      if (isConnected.current && client.connected) {
+        client.disconnect(() => {
+          console.log("🛑 WebSocket 연결 종료");
+        });
       }
     };
-  }, [isJoined, roomId]);
+  }, [roomId]);
 
-  // ✅ 메시지 전송
-  const sendMessage = (text) => {
-    if (stompClient && roomId) {
-      const token = localStorage.getItem("token");
-      const headers = { Authorization: `Bearer ${token}` };
-      stompClient.send(
-        "/app/chat.send",
-        headers,
-        JSON.stringify({
-          roomId,
-          content: text,
-        })
-      );
-    }
+  const sendMessage = () => {
+    if (!input.trim()) return;
+
+    const chatMessage = { message: input };
+
+    stompClient.current.send(
+      `/app/chat.send/${roomId}`,
+      {}, // ✅ WebSocket 전송은 헤더 없이!
+      JSON.stringify(chatMessage)
+    );
+
+    setInput("");
   };
 
-  // ✅ 참여 전 화면
-  if (!isJoined) {
-    return (
-      <div className="p-4 flex flex-col gap-2 items-center">
-        <h2 className="text-lg font-bold mb-2">채팅방 테스트</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={createRoom}
-            className="bg-green-500 text-white px-3 py-1 rounded"
-          >
-            채널 생성 (A)
-          </button>
-          <input
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value)}
-            placeholder="초대코드 입력"
-            className="border p-1 rounded"
-          />
-          <button
-            onClick={joinRoom}
-            className="bg-blue-500 text-white px-3 py-1 rounded"
-          >
-            참여하기 (B)
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ 채팅 화면
   return (
-    <div className="flex flex-col flex-1 p-4">
-      <h2 className="text-xl font-bold mb-2">#{roomName}</h2>
-      <ChatMessages messages={messages} />
-      <ChatInput onSend={sendMessage} />
+    <div style={{ padding: "1rem" }}>
+      <h2>채팅방: {roomId}</h2>
+      <div
+        style={{
+          border: "1px solid #ccc",
+          height: "200px",
+          overflowY: "auto",
+          marginBottom: "0.5rem",
+          padding: "0.5rem",
+        }}
+      >
+      {messages.map((msg, idx) => (
+  <div key={idx}>
+    {msg.sender && <strong>{msg.sender}:</strong>} {msg.message}
+  </div>
+        ))}
+      </div>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="메시지를 입력하세요"
+      />
+      <button onClick={sendMessage}>보내기</button>
     </div>
   );
 };

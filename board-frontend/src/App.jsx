@@ -13,12 +13,12 @@ import MyPage from "@/pages/MyPage";
 import { UserContext } from "@/context/UserContext";
 import FriendListPage from "@/pages/FriendListPage";
 import { ChatProvider } from "@/context/ChatContext";
-
+import ChatRoom from "./chat/ChatRoom";
 function App() {
   // eslint-disable-next-line no-unused-vars
   const [token,setToken] = useState(null);
   const [name, setName] = useState(null);
-
+  
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedName = localStorage.getItem("name");
@@ -61,6 +61,7 @@ function App() {
       <Route index element={<HomePage />} />
       <Route path="posts" element={<PostListPage />} />
       <Route path="posts/new" element={<PostFormPage />} />
+      <Route path="/chatroom" element={<ChatRoom roomId="testRoom" />} />
       <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
       <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
       <Route path="/register" element={<RegisterPage />} />
