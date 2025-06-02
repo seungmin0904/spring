@@ -32,7 +32,7 @@ public class ReplyService {
         Board board = boardRepository.findById(dto.getBno())
                 .orElseThrow(() -> new IllegalArgumentException("게시글 없음"));
 
-        Member member = memberRepository.findByname(dto.getUsername())
+        Member member = memberRepository.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
 
         Reply parent = (dto.getParentRno() != null)
@@ -91,7 +91,7 @@ public class ReplyService {
         Reply reply = replyRepository.findById(rno)
                 .orElseThrow(() -> new IllegalArgumentException("댓글 없음"));
 
-        if (!reply.getMember().getName().equals(username)) {
+        if (!reply.getMember().getUsername().equals(username)) {
             throw new AccessDeniedException("수정 권한이 없습니다.");
         }
 
@@ -104,7 +104,7 @@ public class ReplyService {
         Reply reply = replyRepository.findById(rno)
                 .orElseThrow(() -> new IllegalArgumentException("댓글 없음"));
 
-        if (!reply.getMember().getName().equals(username)) {
+        if (!reply.getMember().getUsername().equals(username)) {
             throw new AccessDeniedException("삭제 권한이 없습니다.");
         }
 

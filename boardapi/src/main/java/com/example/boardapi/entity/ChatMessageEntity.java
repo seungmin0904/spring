@@ -23,7 +23,12 @@ public class ChatMessageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String roomId;
+
+    // 기존 roomId → ChatRoom 연관관계로
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id", nullable = false)
+    private ChatRoom room;
+
     private String message;
     private LocalDateTime sentAt;
 

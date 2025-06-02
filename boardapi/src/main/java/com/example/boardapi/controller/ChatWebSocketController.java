@@ -24,7 +24,7 @@ public class ChatWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/chat.send/{roomId}")
-    public void sendMessage(@DestinationVariable String roomId,
+    public void sendMessage(@DestinationVariable Long roomId,
             @Payload ChatMessageEntity chatMessageEntity,
             SimpMessageHeaderAccessor headerAccessor) {
 

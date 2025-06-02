@@ -46,7 +46,7 @@ public class BoardService {
 
     // 게시글 등록
     public Board register(BoardRequestDTO dto, String username) {
-        Member member = memberRepository.findByname(username)
+        Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
 
         Board board = BoardMapper.toEntity(dto, member);
@@ -79,8 +79,8 @@ public class BoardService {
 
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자 없음"));
-                securityService.checkBoardOwnership(board, member);
-        
+        securityService.checkBoardOwnership(board, member);
+
         // ★ 기존 content 백업
         String beforeContent = board.getContent();
 
@@ -93,14 +93,14 @@ public class BoardService {
 
         // 2. 썸네일 없으면 기존 이미지 재사용
         if (thumbnail == null || thumbnail.isBlank()) {
-        // 기존 content에서 <img> 추출 (혹은 imageUrl 필드)
-            thumbnail = HtmlUtils.extractFirstImageUrl(beforeContent);  
+            // 기존 content에서 <img> 추출 (혹은 imageUrl 필드)
+            thumbnail = HtmlUtils.extractFirstImageUrl(beforeContent);
         }
 
         // 3. timestamp 추가 (안바뀌는 증상 발생 시 캐시 무시용)
         String thumbnailWithTimestamp = thumbnail != null
-        ? thumbnail + "?t=" + System.currentTimeMillis()
-        : null;
+                ? thumbnail + "?t=" + System.currentTimeMillis()
+                : null;
 
         board.setTitle(dto.getTitle());
         board.setContent(cleanedContent);

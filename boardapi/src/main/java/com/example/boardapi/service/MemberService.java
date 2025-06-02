@@ -48,15 +48,15 @@ public class MemberService {
         return MemberMapper.toDTO(saved);
     }
 
-    // 로그인: name(아이디/닉네임) + password
+    // 로그인: username(email) + password
     public Member login(LoginRequestDTO dto) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(dto.getName(), dto.getPassword()));
+                new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword()));
 
         MemberSecurityDTO principal = (MemberSecurityDTO) authentication.getPrincipal();
 
-        // DB에서 name(닉네임)으로 조회
-        return memberRepository.findByname(principal.getName())
+        // DB에서 username(닉네임)으로 조회
+        return memberRepository.findByUsername(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
     }
 

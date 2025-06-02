@@ -1,6 +1,7 @@
 package com.example.boardapi.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.boardapi.entity.ChatMessageEntity;
 import com.example.boardapi.service.ChatMessageService;
+import com.example.boardapi.service.ChatRoomService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,10 +21,12 @@ import lombok.RequiredArgsConstructor;
 public class ChatController {
 
     private final ChatMessageService chatMessageService;
+    private final ChatRoomService chatRoomService;
 
     @GetMapping("/{roomId}")
-    public ResponseEntity<?> getChatMessages(@PathVariable String roomId) {
+    public ResponseEntity<?> getChatMessages(@PathVariable Long roomId) {
         List<ChatMessageEntity> messages = chatMessageService.getMessagesByRoomId(roomId);
         return ResponseEntity.ok(messages);
     }
+
 }
