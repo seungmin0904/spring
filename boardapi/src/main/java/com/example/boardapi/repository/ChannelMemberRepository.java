@@ -19,6 +19,8 @@ public interface ChannelMemberRepository extends JpaRepository<ChannelMember, Lo
 
     Optional<ChannelMember> findByRoomIdAndMemberMno(Long roomId, Long memberMno);
 
+    boolean existsByRoomIdAndMemberMno(Long roomId, Long memberMno);
+
     @Transactional
     void deleteByRoomId(Long roomId);
 }

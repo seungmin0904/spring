@@ -1,11 +1,15 @@
 package com.example.boardapi.service;
 
+import com.example.boardapi.dto.ChatRoomResponseDTO;
 import com.example.boardapi.entity.ChannelMember;
 import com.example.boardapi.entity.ChannelRole;
+import com.example.boardapi.entity.ChannelType;
 import com.example.boardapi.entity.ChatRoom;
+import com.example.boardapi.entity.Server;
 import com.example.boardapi.repository.ChannelMemberRepository;
 import com.example.boardapi.repository.ChatMessageRepository;
 import com.example.boardapi.repository.ChatRoomRepository;
+import com.example.boardapi.repository.ServerRepository;
 import com.example.boardapi.security.custom.DuplicateChatRoomException;
 
 import lombok.RequiredArgsConstructor;
@@ -22,21 +26,34 @@ public class ChatRoomService {
     private final ChannelMemberService channelMemberService;
     private final ChatMessageRepository chatMessageRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final ServerRepository serverRepository;
 
-    public ChatRoom createRoom(Long ownerId, String name, String description) {
+    public ChatRoomResponseDTO createRoom(Long serverId, Long ownerId, String name, String description,
+            ChannelType type) {
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new IllegalArgumentException("서버 없음"));
+
         if (chatRoomRepository.findByName(name).isPresent())
             throw new DuplicateChatRoomException("이미 존재하는 채널명입니다.");
 
-        String inviteCode = RandomStringUtils.randomAlphanumeric(8);
         ChatRoom room = chatRoomRepository.save(
                 ChatRoom.builder()
                         .name(name)
                         .description(description)
-                        .inviteCode(inviteCode)
+                        .type(type)
+                        .server(server)
                         .build());
         // 방장 자동 등록
         channelMemberService.joinChannel(ownerId, room.getId(), ChannelRole.ADMIN);
-        return room;
+
+        return ChatRoomResponseDTO.builder()
+                .id(room.getId())
+                .name(room.getName())
+                .description(room.getDescription())
+                .type(room.getType().name())
+                .serverId(room.getServer().getId())
+                .serverName(room.getServer().getName())
+                .build();
     }
 
     public List<ChatRoom> listRooms() {
@@ -63,16 +80,4 @@ public class ChatRoomService {
         chatRoomRepository.deleteById(roomId);
     }
 
-    // 초대코드 조회
-    public String getInviteCode(Long roomId) {
-        ChatRoom room = chatRoomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방 없음"));
-        return room.getInviteCode();
-    }
-
-    // 초대코드로 채팅방 조회
-    public ChatRoom getRoomByInviteCode(String inviteCode) {
-        return chatRoomRepository.findByInviteCode(inviteCode)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 초대코드"));
-    }
 }

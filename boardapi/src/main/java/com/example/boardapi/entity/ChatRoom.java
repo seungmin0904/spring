@@ -22,10 +22,17 @@ public class ChatRoom {
 
     private String description; // 방 설명
 
-    @Column(unique = true)
-    private String inviteCode;
-
     // (양방향 옵션)
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
     private List<ChatMessageEntity> messages;
+
+    // 채널 타입 (TEXT, VOICE)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChannelType type; // TEXT, VOICE
+
+    // 채널이 속한 서버 (N:1)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "server_id", nullable = false)
+    private Server server;
 }

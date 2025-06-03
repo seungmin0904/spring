@@ -60,7 +60,7 @@ public class JwtUtil {
         return null; // 토큰이 유효하지 않음
     }
 
-    // ✅ claim 파싱 메서드 추가!
+    // claim 파싱 메서드 추가!
     public Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)

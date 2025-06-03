@@ -24,7 +24,7 @@ export default function ChannelSidebar({ onSelectRoom, selectedRoomId }) {
     axios
       .post(
         "/api/chatrooms",
-        { name: newName, description: "" },
+        { name: newName, description: "",ownerId: Number(localStorage.getItem("userId")) },
         axiosConfig
       )
       .then(() => {
@@ -43,8 +43,8 @@ export default function ChannelSidebar({ onSelectRoom, selectedRoomId }) {
   // 채널 삭제
   const handleDelete = roomId => {
     axios
-      .delete(`/api/chatrooms/${roomId}`, axiosConfig)
-      .then(() => axios.get("/api/chatrooms", axiosConfig))
+      .delete(`api/chatrooms/${roomId}`, axiosConfig)
+      .then(() => axios.get("api/chatrooms", axiosConfig))
       .then(res => {
         setChannels(Array.isArray(res.data) ? res.data : []);
         // 현재 선택중인 채널이 삭제된 채널이면 선택 해제

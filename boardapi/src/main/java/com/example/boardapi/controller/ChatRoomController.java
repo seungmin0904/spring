@@ -1,6 +1,9 @@
 package com.example.boardapi.controller;
 
+import com.example.boardapi.dto.ChatRoomResponseDTO;
+import com.example.boardapi.entity.ChannelType;
 import com.example.boardapi.entity.ChatRoom;
+import com.example.boardapi.security.custom.GlobalExceptionHandler;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.ChatRoomService;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +25,15 @@ public class ChatRoomController {
 
     // 채널 생성
     @PostMapping
-    public ChatRoom createRoom(
+    public ChatRoomResponseDTO createRoom(
             @AuthenticationPrincipal MemberSecurityDTO member,
             @RequestBody Map<String, String> req) {
 
         String name = req.get("name");
         String description = req.get("description");
-        return chatRoomService.createRoom(member.getMno(), name, description); // member.getMno() == ownerId
+        Long serverId = Long.valueOf(req.get("serverId")); // ← 반드시 서버 ID 받아야 함
+        ChannelType type = ChannelType.valueOf(req.getOrDefault("type", "TEXT"));
+        return chatRoomService.createRoom(serverId, member.getMno(), name, description, type);
     }
 
     // 채널 목록 렌더링
@@ -47,16 +52,4 @@ public class ChatRoomController {
         return ResponseEntity.noContent().build();
     }
 
-    // 초대코드 조회
-    @GetMapping("/{roomId}/invite-code")
-    public Map<String, String> getInviteCode(@PathVariable Long roomId) {
-        String code = chatRoomService.getInviteCode(roomId);
-        return Map.of("code", code);
-    }
-
-    // 초대코드로 채팅방 조회
-    @GetMapping("/by-invite/{inviteCode}")
-    public ChatRoom getRoomByInviteCode(@PathVariable String inviteCode) {
-        return chatRoomService.getRoomByInviteCode(inviteCode);
-    }
 }

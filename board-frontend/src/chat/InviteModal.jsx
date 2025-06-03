@@ -5,7 +5,7 @@ export default function InviteModal({ open, onClose, room }) {
   const [inviteCode, setInviteCode] = useState("");
   useEffect(() => {
     if (room && open) {
-      axios.get(`/api/chatrooms/${room.id}/invite-code`)
+      axios.get(`/chatrooms/${room.id}/invite-code`)
         .then(res => setInviteCode(res.data.code));
     }
   }, [room, open]);

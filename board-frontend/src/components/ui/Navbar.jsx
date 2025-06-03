@@ -22,7 +22,6 @@ import { motion } from "framer-motion";
     {/* 왼쪽: 로고 */}
     <div className="text-xl font-bold text-indigo-600">
       <Link to="/">Simple Board</Link>
-      <Link to="/friends" className="hover:underline">친구 목록</Link>
     </div>
 
     {/* 오른쪽: 메뉴 */}

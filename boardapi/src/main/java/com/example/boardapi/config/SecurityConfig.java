@@ -19,6 +19,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.example.boardapi.filter.JwtFilter;
 import com.example.boardapi.security.custom.CustomUserDetailsService;
+import com.example.boardapi.security.custom.JwtAuthenticationEntryPoint;
 import com.example.boardapi.security.util.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,7 +48,7 @@ public class SecurityConfig {
                                 "/api/members/check-nickname", "/api/members/find-id")
                         .permitAll()
 
-                        .requestMatchers("/api/chat/rooms/**").authenticated() // 채팅 rest api
+                        .requestMatchers("/api/chatrooms/**").authenticated() // 채팅 rest api
                         .requestMatchers(HttpMethod.GET, "/api/members/mypage").authenticated()
 
                         .requestMatchers(HttpMethod.POST, "/api/boards", "/api/replies/**", "/api/members/mypage")
@@ -60,7 +62,9 @@ public class SecurityConfig {
                         .anyRequest().permitAll())
                 .formLogin(form -> form.disable()) // 폼로그인 비활성화 (HTML UI 미사용)
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
-                .userDetailsService(userDetailsService); // 사용자 정보 서비스 등록
+                .userDetailsService(userDetailsService) // 사용자 정보 서비스 등록
+                // JWT 인증 실패 401 처리
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint));
 
         return http.build();
     }

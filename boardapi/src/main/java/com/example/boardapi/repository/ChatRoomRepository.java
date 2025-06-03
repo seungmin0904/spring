@@ -9,7 +9,4 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     // Optional을 사용하여 이름이 없을 경우를 처리
     Optional<ChatRoom> findByName(String name);
 
-    // 초대코드로 채팅방 조회
-    Optional<ChatRoom> findByInviteCode(String inviteCode);
-
 }
