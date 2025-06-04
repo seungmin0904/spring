@@ -192,7 +192,7 @@
       <version>3.10.1</version>
       <configuration>
 	  	  <compilerArgs>
-  <arg>-Aquerydsl.defaultPackage=com.example.boardweb.board.entity</arg>
+  <arg>-Aquerydsl.defaultPackage=com.example.boardapi.entity</arg>
 </compilerArgs>
         <source>17</source>
         <target>17</target>

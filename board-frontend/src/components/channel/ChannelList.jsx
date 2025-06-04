@@ -1,7 +1,7 @@
 // ChannelList.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
-import InviteModal from "./InviteModal";
+import InviteModal from "../chat/InviteModal";
 
 export default function ChannelSidebar({ onSelectRoom, selectedRoomId }) {
   const [channels, setChannels] = useState([]);

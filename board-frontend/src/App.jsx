@@ -13,7 +13,9 @@ import MyPage from "@/pages/MyPage";
 import { UserContext } from "@/context/UserContext";
 import FriendListPage from "@/pages/FriendListPage";
 import { ChatProvider } from "@/context/ChatContext";
-import ChatRoom from "./chat/ChatRoom";
+import ChatRoom from "./components/room/ChatRoom";
+
+
 function App() {
   // eslint-disable-next-line no-unused-vars
   const [token,setToken] = useState(null);

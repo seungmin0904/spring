@@ -50,7 +50,7 @@ public class ChatRoomService {
                 .id(room.getId())
                 .name(room.getName())
                 .description(room.getDescription())
-                .type(room.getType().name())
+                .roomType(room.getRoomType())
                 .serverId(room.getServer().getId())
                 .serverName(room.getServer().getName())
                 .build();
