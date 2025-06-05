@@ -3,6 +3,7 @@ package com.example.boardapi.controller;
 import com.example.boardapi.dto.ChatRoomResponseDTO;
 import com.example.boardapi.entity.ChannelType;
 import com.example.boardapi.entity.ChatRoom;
+import com.example.boardapi.entity.ChatRoomType;
 import com.example.boardapi.security.custom.GlobalExceptionHandler;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.ChatRoomService;
@@ -31,9 +32,17 @@ public class ChatRoomController {
 
         String name = req.get("name");
         String description = req.get("description");
-        Long serverId = Long.valueOf(req.get("serverId")); // ← 반드시 서버 ID 받아야 함
         ChannelType type = ChannelType.valueOf(req.getOrDefault("type", "TEXT"));
-        return chatRoomService.createRoom(serverId, member.getMno(), name, description, type);
+        ChatRoomType roomType = ChatRoomType.valueOf(req.get("roomType"));
+
+        Long serverId = null;
+
+        // 서버 채널일 때만 파싱
+        if (roomType == ChatRoomType.SERVER && req.get("serverId") != null && !req.get("serverId").isEmpty()) {
+            serverId = Long.valueOf(req.get("serverId"));
+        }
+
+        return chatRoomService.createRoom(serverId, member.getMno(), name, description, type, roomType);
     }
 
     // 채널 목록 렌더링

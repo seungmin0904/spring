@@ -1,88 +1,113 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
 import Stomp from "stompjs";
+import axios from "@/lib/axiosInstance";
 
-const ChatRoom = ({ roomId }) => {
-  const [messages, setMessages] = useState([]);
+export default function ChatRoom({ roomId, token, currentUser }) {
+  const [messageMap, setMessageMap] = useState({}); // { [roomId]: messages[] }
   const [input, setInput] = useState("");
-  const stompClient = useRef(null);
-  const isConnected = useRef(false);
-  const isSubscribed = useRef(false);
-  // 사용자 정보
-  const token = localStorage.getItem("token");
+  const stompRef = useRef(null);
+  const subscriptionRef = useRef(null);
 
+  // 현재 roomId 메시지
+  const messages = messageMap[roomId] || [];
+
+  // 메시지 로딩 (방 진입시)
   useEffect(() => {
-    // JWT를 URL 쿼리파라미터로 전달!
+    if (!roomId) return;
+    // 이미 메모리에 있으면 fetch 안 함
+    if (messageMap[roomId]) return;
+  
+    axios.get(`/chat/${roomId}`)
+      .then(res => {
+        setMessageMap(prev => ({
+          ...prev,
+          [roomId]: res.data || []
+        }));
+      })
+      .catch(() => {
+        setMessageMap(prev => ({
+          ...prev,
+          [roomId]: []
+        }));
+      });
+  }, [roomId]);
+  
+  // 소켓 연결 및 구독
+  useEffect(() => {
+    if (!roomId || !token) return;
     const socket = new SockJS(`http://localhost:8080/ws-chat?token=${token}`);
     const client = Stomp.over(socket);
+    stompRef.current = client;
+
+    let connected = false;
 
     client.connect({}, () => {
-      console.log("✅ WebSocket 연결 성공");
-      isConnected.current = true;
-
-      // 구독
-     if (!isSubscribed.current) { // ✅ 이미 구독했는지 확인!
-      client.subscribe(`/topic/chatroom.${roomId}`, (msg) => {
-        const received = JSON.parse(msg.body);
-        console.log("📩 수신:", received);
-        setMessages((prev) => [...prev, received]);
+      connected = true;
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+      subscriptionRef.current = client.subscribe(`/topic/chatroom.${roomId}`, msg => {
+        const payload = JSON.parse(msg.body);
+        setMessageMap(prev => ({
+          ...prev,
+          [roomId]: [...(prev[roomId] || []), payload]
+        }));
       });
-      isSubscribed.current = true; // ✅ 구독했음 표시
-    }
-  });
+    });
 
-    stompClient.current = client;
-
-    // 연결 종료
     return () => {
-      if (isConnected.current && client.connected) {
-        client.disconnect(() => {
-          console.log("🛑 WebSocket 연결 종료");
-        });
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+      if (connected && stompRef.current && stompRef.current.connected) {
+        stompRef.current.disconnect();
       }
     };
-  }, [roomId]);
+  }, [roomId, token]);
 
-  const sendMessage = () => {
+  function sendMessage() {
     if (!input.trim()) return;
-
-    const chatMessage = { message: input };
-
-    stompClient.current.send(
-      `/app/chat.send/${roomId}`,
-      {}, // ✅ WebSocket 전송은 헤더 없이!
-      JSON.stringify(chatMessage)
-    );
-
-    setInput("");
-  };
+    if (stompRef.current && stompRef.current.connected) {
+      stompRef.current.send(
+        `/app/chat.send/${roomId}`,
+        {},
+        JSON.stringify({
+          message: input,
+        })
+      );
+      setInput("");
+      // (선택) 로컬 메시지에도 바로 반영하려면 아래 코드도 추가
+      // setMessageMap(prev => ({
+      //   ...prev,
+      //   [roomId]: [...(prev[roomId] || []), { sender: currentUser?.name, message: input }]
+      // }));
+    }
+  }
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>채팅방: {roomId}</h2>
-      <div
-        style={{
-          border: "1px solid #ccc",
-          height: "200px",
-          overflowY: "auto",
-          marginBottom: "0.5rem",
-          padding: "0.5rem",
-        }}
-      >
-      {messages.map((msg, idx) => (
-  <div key={idx}>
-    {msg.sender && <strong>{msg.sender}:</strong>} {msg.message}
-  </div>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-2 bg-zinc-950">
+        {messages.map((msg, i) => (
+          <div key={i}>
+            {msg.sender && <span className="font-bold">{msg.sender}:</span>}{" "}
+            {msg.message}
+          </div>
         ))}
       </div>
-      <input
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="메시지를 입력하세요"
-      />
-      <button onClick={sendMessage}>보내기</button>
+      <div className="flex gap-2 p-2 bg-zinc-900 border-t border-zinc-700">
+        <input
+          className="flex-1 bg-zinc-800 rounded p-2 text-white"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && sendMessage()}
+          placeholder="메시지 입력"
+        />
+        <button className="bg-blue-600 text-white rounded px-4" onClick={sendMessage}>
+          전송
+        </button>
+      </div>
     </div>
   );
-};
-
-export default ChatRoom;
+}

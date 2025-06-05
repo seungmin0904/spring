@@ -25,7 +25,7 @@ public class ChatWebSocketController {
 
     @MessageMapping("/chat.send/{roomId}")
     public void sendMessage(@DestinationVariable Long roomId,
-            @Payload ChatMessageEntity chatMessageEntity,
+            @Payload ChatMessageDTO dto,
             SimpMessageHeaderAccessor headerAccessor) {
 
         // WebSocket 세션에서 사용자 정보 가져오기
@@ -33,16 +33,16 @@ public class ChatWebSocketController {
         String nickname = (String) headerAccessor.getSessionAttributes().get("nickname");
 
         // 메시지 DB에 저장
-        chatMessageService.handleMessage(roomId, chatMessageEntity.getMessage(), username);
+        chatMessageService.handleMessage(roomId, dto.getMessage(), username);
 
         // WebSocket 응답용 DTO 생성
         ChatMessageDTO responseMessage = new ChatMessageDTO();
         responseMessage.setRoomId(roomId);
         responseMessage.setSender(nickname);
-        responseMessage.setMessage(chatMessageEntity.getMessage());
+        responseMessage.setMessage(dto.getMessage());
         responseMessage.setType("CHAT");
 
-        log.info("💬 [{}] {}: {}", roomId, nickname, chatMessageEntity.getMessage());
+        log.info("💬 [{}] {}: {}", roomId, nickname, dto.getMessage());
 
         // 명시적으로 동적 경로로 메시지 전송
         messagingTemplate.convertAndSend("/topic/chatroom." + roomId, responseMessage);

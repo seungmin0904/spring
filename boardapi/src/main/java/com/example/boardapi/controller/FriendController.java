@@ -1,16 +1,14 @@
 package com.example.boardapi.controller;
 
-import com.example.boardapi.entity.Friend;
-import com.example.boardapi.service.FriendService;
 import com.example.boardapi.dto.FriendDTO;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
+import com.example.boardapi.service.FriendService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/friends")
@@ -40,9 +38,9 @@ public class FriendController {
         friendService.rejectFriend(friendId, principal.getMno());
     }
 
-    // 4. 내 친구 목록
+    // 4. 내 친구 목록 (SimpleResponse로 변경)
     @GetMapping
-    public List<FriendDTO.Response> getFriends(@AuthenticationPrincipal MemberSecurityDTO member) {
+    public List<FriendDTO.SimpleResponse> getFriends(@AuthenticationPrincipal MemberSecurityDTO member) {
         return friendService.getFriends(member.getMno());
     }
 

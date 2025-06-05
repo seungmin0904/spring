@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "@/lib/axiosInstance"
 
 export default function InviteModal({ open, onClose, room }) {
   const [inviteCode, setInviteCode] = useState("");
   useEffect(() => {
     if (room && open) {
-      axios.get(`/chatrooms/${room.id}/invite-code`)
+      axiosInstance.get(`/chatrooms/${room.id}/invite-code`)
         .then(res => setInviteCode(res.data.code));
     }
   }, [room, open]);

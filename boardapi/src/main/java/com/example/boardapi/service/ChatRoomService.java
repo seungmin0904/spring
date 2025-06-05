@@ -5,6 +5,7 @@ import com.example.boardapi.entity.ChannelMember;
 import com.example.boardapi.entity.ChannelRole;
 import com.example.boardapi.entity.ChannelType;
 import com.example.boardapi.entity.ChatRoom;
+import com.example.boardapi.entity.ChatRoomType;
 import com.example.boardapi.entity.Server;
 import com.example.boardapi.repository.ChannelMemberRepository;
 import com.example.boardapi.repository.ChatMessageRepository;
@@ -29,30 +30,44 @@ public class ChatRoomService {
     private final ServerRepository serverRepository;
 
     public ChatRoomResponseDTO createRoom(Long serverId, Long ownerId, String name, String description,
-            ChannelType type) {
-        Server server = serverRepository.findById(serverId)
-                .orElseThrow(() -> new IllegalArgumentException("서버 없음"));
+            ChannelType type, ChatRoomType roomType) {
 
         if (chatRoomRepository.findByName(name).isPresent())
             throw new DuplicateChatRoomException("이미 존재하는 채널명입니다.");
 
-        ChatRoom room = chatRoomRepository.save(
-                ChatRoom.builder()
-                        .name(name)
-                        .description(description)
-                        .type(type)
-                        .server(server)
-                        .build());
-        // 방장 자동 등록
-        channelMemberService.joinChannel(ownerId, room.getId(), ChannelRole.ADMIN);
+        if (roomType == null)
+            throw new IllegalArgumentException("roomType은 필수입니다.");
+
+        if (roomType == ChatRoomType.SERVER && (serverId == null || serverId <= 0))
+            throw new IllegalArgumentException("serverId는 필수입니다.");
+
+        Server server = null;
+        if (roomType == ChatRoomType.SERVER) {
+            server = serverRepository.findById(serverId)
+                    .orElseThrow(() -> new IllegalArgumentException("서버 없음"));
+        }
+
+        ChatRoom room = ChatRoom.builder()
+                .name(name)
+                .description(description)
+                .type(type)
+                .roomType(roomType)
+                .server(server)
+                .build();
+
+        ChatRoom saved = chatRoomRepository.save(room);
+
+        if (roomType == ChatRoomType.SERVER) {
+            channelMemberService.joinChannel(ownerId, saved.getId(), ChannelRole.ADMIN);
+        }
 
         return ChatRoomResponseDTO.builder()
-                .id(room.getId())
-                .name(room.getName())
-                .description(room.getDescription())
-                .roomType(room.getRoomType())
-                .serverId(room.getServer().getId())
-                .serverName(room.getServer().getName())
+                .id(saved.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .roomType(saved.getRoomType())
+                .serverId(server != null ? server.getId() : null)
+                .serverName(server != null ? server.getName() : null)
                 .build();
     }
 

@@ -17,6 +17,7 @@ public class ChatRoomResponseDTO {
     private Long id;
     private String name;
     private String description;
+    private String type;
     private ChatRoomType roomType;
     private Long serverId;
     private String serverName;
@@ -27,6 +28,7 @@ public class ChatRoomResponseDTO {
                 .id(room.getId())
                 .name(room.getName())
                 .description(room.getDescription())
+                .type(null != room.getType() ? room.getType().name() : null)
                 .roomType(room.getRoomType())
                 .build();
     }

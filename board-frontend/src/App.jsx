@@ -1,33 +1,28 @@
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { UserContext } from "@/context/UserContext";
+import { ChatProvider } from "@/context/ChatContext";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import PostListPage from "@/pages/PostListPage";
 import PostDetailPage from "@/pages/PostDetailPage";
 import PostFormPage from "@/pages/PostFormPage";
-import Layout from "@/layouts/Layout";
-import axiosInstance from "@/lib/axiosInstance";
 import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
-import { UserContext } from "@/context/UserContext";
-import FriendListPage from "@/pages/FriendListPage";
-import { ChatProvider } from "@/context/ChatContext";
-import ChatRoom from "./components/room/ChatRoom";
-
+import Layout from "@/layouts/Layout";
+import axiosInstance from "@/lib/axiosInstance";
 
 function App() {
-  // eslint-disable-next-line no-unused-vars
-  const [token,setToken] = useState(null);
+  const [token, setToken] = useState(null);
   const [name, setName] = useState(null);
-  
+
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedName = localStorage.getItem("name");
     if (savedToken && savedName) {
       setToken(savedToken);
       setName(savedName);
-      
     }
   }, []);
 
@@ -54,28 +49,28 @@ function App() {
 
   return (
     <ChatProvider>
-    <ThemeProvider>
-<UserContext.Provider value={{ name, setName }}>    
-  <BrowserRouter>
-    <Routes>
-      <Route path="/friends" element={<FriendListPage />} /> 
-      <Route path="/" element={<Layout onLogout={handleLogout} />}>
-      <Route index element={<HomePage />} />
-      <Route path="posts" element={<PostListPage />} />
-      <Route path="posts/new" element={<PostFormPage />} />
-      <Route path="/chatroom" element={<ChatRoom roomId="testRoom" />} />
-      <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
-      <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/mypage" element={<MyPage />} />
-   <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-  </Route>
-
-  </Routes>
-  </BrowserRouter>
-</UserContext.Provider>
-</ThemeProvider>
-</ChatProvider>
+      <ThemeProvider>
+        <UserContext.Provider value={{ name, setName }}>
+          <BrowserRouter>
+            <Routes>
+              {/* 메인 레이아웃 라우트 */}
+              <Route path="/" element={<Layout onLogout={handleLogout} />}>
+                <Route index element={<HomePage />} />
+                <Route path="posts" element={<PostListPage />} />
+                <Route path="posts/new" element={<PostFormPage />} />
+                <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
+                <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route path="mypage" element={<MyPage />} />
+                {/* 여기에 추가적으로 필요한 라우트 */}
+              </Route>
+              {/* 로그인은 네비바 없는 단독 라우트 */}
+              <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+            </Routes>
+          </BrowserRouter>
+        </UserContext.Provider>
+      </ThemeProvider>
+    </ChatProvider>
   );
 }
 

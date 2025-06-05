@@ -1,10 +1,14 @@
 package com.example.boardapi.controller;
 
+import com.example.boardapi.dto.ChatRoomResponseDTO;
 import com.example.boardapi.dto.ServerRequestDTO;
 import com.example.boardapi.dto.ServerResponseDTO;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.ServerService;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +21,28 @@ public class ServerController {
 
     private final ServerService serverService;
 
+    // 전체 서버 검색용
+    @GetMapping
+    public ResponseEntity<List<ServerResponseDTO>> getServerList(
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal MemberSecurityDTO member) {
+        if (member == null)
+            return ResponseEntity.status(401).build();
+        List<ServerResponseDTO> list = serverService.searchServers(keyword);
+        return ResponseEntity.ok(list);
+    }
+
+    // 내가 참여한 서버
+    @GetMapping("/my")
+    public ResponseEntity<List<ServerResponseDTO>> getMyServers(
+            @AuthenticationPrincipal MemberSecurityDTO member) {
+        if (member == null)
+            return ResponseEntity.status(401).build();
+        List<ServerResponseDTO> list = serverService.getAllServers(member.getMno());
+        return ResponseEntity.ok(list);
+    }
+
+    // 서버 개설
     @PostMapping
     public ResponseEntity<ServerResponseDTO> createServer(
             @AuthenticationPrincipal MemberSecurityDTO member,
@@ -29,4 +55,37 @@ public class ServerController {
         ServerResponseDTO result = serverService.createServer(req, member.getMno());
         return ResponseEntity.ok(result);
     }
+
+    // 서버 참여
+    @PostMapping("/{serverId}/join")
+    public ResponseEntity<Void> joinServer(
+            @AuthenticationPrincipal MemberSecurityDTO member,
+            @PathVariable Long serverId) {
+        if (member == null)
+            return ResponseEntity.status(401).build();
+        serverService.joinServer(serverId, member.getMno());
+        return ResponseEntity.ok().build();
+    }
+
+    // 서버 삭제
+    @DeleteMapping("/{serverId}")
+    public ResponseEntity<Void> deleteServer(
+            @AuthenticationPrincipal MemberSecurityDTO member,
+            @PathVariable Long serverId) {
+        if (member == null)
+            return ResponseEntity.status(401).build();
+        serverService.deleteServer(serverId, member.getMno());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{serverId}/channels")
+    public ResponseEntity<List<ChatRoomResponseDTO>> getChannelsByServer(
+            @PathVariable Long serverId,
+            @AuthenticationPrincipal MemberSecurityDTO member) {
+        if (member == null)
+            return ResponseEntity.status(401).build();
+        List<ChatRoomResponseDTO> list = serverService.getChannelsByServer(serverId);
+        return ResponseEntity.ok(list);
+    }
+
 }

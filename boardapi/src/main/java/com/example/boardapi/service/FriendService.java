@@ -61,9 +61,9 @@ public class FriendService {
     }
 
     // 내 친구(수락된 친구) 목록
-    public List<FriendDTO.Response> getFriends(Long myId) {
+    public List<FriendDTO.SimpleResponse> getFriends(Long myId) {
         List<Friend> friends = friendRepository.findAcceptedFriends(FriendStatus.ACCEPTED, myId);
-        return friends.stream().map(FriendDTO.Response::from).toList();
+        return friends.stream().map(f -> FriendDTO.SimpleResponse.from(f, myId)).toList();
     }
 
     // 친구 신청 거절 (필요하면)
