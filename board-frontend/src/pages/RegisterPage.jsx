@@ -283,4 +283,5 @@ return (
   </div>
 );
 }
+
 export default RegisterPage;

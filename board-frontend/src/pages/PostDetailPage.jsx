@@ -127,4 +127,5 @@ const PostDetailPage = ({ name }) => {
   );
 };
 
+
 export default PostDetailPage;
