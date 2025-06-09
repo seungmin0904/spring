@@ -1,6 +1,9 @@
 package com.example.boardapi.dto;
 
 import com.example.boardapi.entity.Friend;
+import com.example.boardapi.entity.FriendStatus;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
@@ -35,4 +38,12 @@ public class FriendDTO {
             return dto;
         }
     }
+
+    // 상태 응답
+    @Data
+    @AllArgsConstructor
+    public static class StatusResponse {
+        private FriendStatus status;
+    }
+
 }

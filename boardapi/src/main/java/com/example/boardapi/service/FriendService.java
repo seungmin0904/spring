@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -78,5 +79,14 @@ public class FriendService {
 
         friend.setStatus(FriendStatus.REJECTED);
         friendRepository.save(friend);
+    }
+
+    // 상대와 나의 관계 상태 조회
+    public FriendStatus getStatus(Long myId, Long targetId) {
+        // 자기 자신이면 친구관계 없음 처리
+        if (myId.equals(targetId))
+            return FriendStatus.NONE;
+        Optional<Friend> relation = friendRepository.findRelation(myId, targetId);
+        return relation.map(Friend::getStatus).orElse(FriendStatus.NONE);
     }
 }

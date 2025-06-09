@@ -1,6 +1,7 @@
 package com.example.boardapi.controller;
 
 import com.example.boardapi.dto.FriendDTO;
+import com.example.boardapi.entity.FriendStatus;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.FriendService;
 import lombok.RequiredArgsConstructor;
@@ -44,4 +45,12 @@ public class FriendController {
         return friendService.getFriends(member.getMno());
     }
 
+    // 관계 상태 조회 (친구추가 식별용)
+    @GetMapping("/status/{targetId}")
+    public FriendDTO.StatusResponse getStatus(
+            @PathVariable Long targetId,
+            @AuthenticationPrincipal MemberSecurityDTO principal) {
+        FriendStatus status = friendService.getStatus(principal.getMno(), targetId);
+        return new FriendDTO.StatusResponse(status);
+    }
 }
