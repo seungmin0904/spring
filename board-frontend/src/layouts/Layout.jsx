@@ -4,7 +4,7 @@ import Sidebar1 from "./Sidebar1";
 import Sidebar2 from "./Sidebar2";
 import Sidebar3 from "./Sidebar3";
 import Sidebar4 from "./Sidebar4";
-import Navbar from "@/components/ui/Navbar";
+import { Outlet } from "react-router-dom";
 
 export default function MainLayout() {
   const [selectedDM, setSelectedDM] = useState(false);
@@ -54,8 +54,7 @@ export default function MainLayout() {
 
   return (
     <div className="flex h-screen w-screen">
-       <Navbar />
-       <div className="flex h-full w-full pt-16">
+       
       <Sidebar1
         onSelectDM={handleSelectDM}
         onSelectServer={handleSelectServer}
@@ -63,7 +62,8 @@ export default function MainLayout() {
       <Sidebar2 dmMode={selectedDM} serverId={selectedServerId} onSelectChannel={handleSelectChannel}/>
       <Sidebar3 dmMode={selectedDM} serverId={selectedServerId} roomId={selectedRoomId}/>
       <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId}/>
+      <Outlet />
       </div>
-      </div>
+      
   );
 }

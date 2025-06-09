@@ -12,6 +12,18 @@ import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
 import Layout from "@/layouts/Layout";
 import axiosInstance from "@/lib/axiosInstance";
+import Navbar from "@/components/ui/Navbar";
+
+function RootLayout({ onLogout }) {
+  return (
+    <div>
+      <Navbar onLogout={onLogout} />
+      <div className="pt-16 h-[calc(100vh-4rem)]">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [token, setToken] = useState(null);
@@ -47,24 +59,25 @@ function App() {
     setName(null);
   };
 
-  return (
+    return (
     <ChatProvider>
       <ThemeProvider>
         <UserContext.Provider value={{ name, setName }}>
           <BrowserRouter>
             <Routes>
-              {/* 메인 레이아웃 라우트 */}
-              <Route path="/" element={<Layout onLogout={handleLogout} />}>
-                <Route index element={<HomePage />} />
+              {/* 네비바 + Outlet 구조 */}
+              <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
+                {/* "/" => 디스코드 UI */}
+                <Route index element={<Layout />} />
+                {/* 게시판/마이페이지 등 */}
                 <Route path="posts" element={<PostListPage />} />
                 <Route path="posts/new" element={<PostFormPage />} />
                 <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
                 <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="mypage" element={<MyPage />} />
-                {/* 여기에 추가적으로 필요한 라우트 */}
               </Route>
-              {/* 로그인은 네비바 없는 단독 라우트 */}
+              {/* 로그인은 네비바 없는 단독 */}
               <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
             </Routes>
           </BrowserRouter>
@@ -73,5 +86,6 @@ function App() {
     </ChatProvider>
   );
 }
+
 
 export default App;

@@ -34,7 +34,7 @@ import { motion } from "framer-motion";
       {isLoggedIn ? (
         <>
           <Link to="/mypage" className="hover:underline">마이페이지</Link>
-          <button onClick={handleLogout} className="hover:underline">로그아웃</button>
+          <button onClick={handleLogout} className="hover:underline bg-transparent border-none outline-none">로그아웃</button>
         </>
       ) : (
         <>
