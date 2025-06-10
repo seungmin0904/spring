@@ -1,10 +1,14 @@
 package com.example.boardapi.dto;
 
+import java.time.LocalDateTime;
+
 import com.example.boardapi.entity.Friend;
 import com.example.boardapi.entity.FriendStatus;
+import com.example.boardapi.entity.Member;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 
 @Data
 public class FriendDTO {
@@ -36,6 +40,28 @@ public class FriendDTO {
                 dto.setProfile(f.getMemberA().getProfile());
             }
             return dto;
+        }
+    }
+
+    // 친구 신청 요청 응답
+    @Getter
+    @AllArgsConstructor
+    public static class RequestResponse {
+        private Long requestId;
+        private Long requesterId;
+        private String requesterNickname;
+        private Long receiverId;
+        private String receiverNickname;
+        private LocalDateTime requestTime;
+
+        public static RequestResponse from(Friend friend) {
+            return new RequestResponse(
+                    friend.getId(),
+                    friend.getMemberA().getMno(),
+                    friend.getMemberA().getName(),
+                    friend.getMemberB().getMno(),
+                    friend.getMemberB().getName(),
+                    friend.getCreatedAt());
         }
     }
 

@@ -35,9 +35,9 @@ public class ChatRoom {
     @Column(nullable = false)
     private ChatRoomType roomType; // SERVER, DM
 
-    // 채널이 속한 서버 (N:1)
+    // 채널이 속한 서버 (N:1,1:1 db는 null허용 서비스에서 분기함)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "server_id", nullable = false)
+    @JoinColumn(name = "server_id", nullable = true)
     private Server server;
 
     // DM 참여자 정보 (ex. 1:1이라면 두 명의 Member 연관)

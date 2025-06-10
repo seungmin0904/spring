@@ -67,6 +67,7 @@ public class MemberController {
         }
 
         return ResponseEntity.ok(Map.of(
+                "id", authUser.getMno(),
                 "username", authUser.getUsername(),
                 "name", authUser.getName()));
     }

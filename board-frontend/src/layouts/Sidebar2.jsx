@@ -103,10 +103,15 @@ export default function Sidebar2({
               key={f.friendId}
               className="px-3 py-2 rounded flex items-center hover:bg-zinc-800 cursor-pointer transition"
               onClick={async () => {
+                // 로그 추가: 실제로 보내는 값 확인
+                console.log("DM방 생성 요청", {
+                  myId: currentUserId,
+                  friendId: f.memberId
+                });
                 try {
                   const res = await axios.post("/dm/room", {
                     myId: currentUserId,
-                    friendId: f.friendId
+                    friendId: f.memberId
                   });
                   const roomId = res.data.id;
                   onSelectDMRoom(roomId);

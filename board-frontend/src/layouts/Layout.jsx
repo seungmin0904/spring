@@ -4,6 +4,7 @@ import Sidebar1 from "./Sidebar1";
 import Sidebar2 from "./Sidebar2";
 import Sidebar3 from "./Sidebar3";
 import Sidebar4 from "./Sidebar4";
+import { useUser } from "@/context/UserContext";
 import { Outlet } from "react-router-dom";
 
 export default function MainLayout() {
@@ -11,6 +12,7 @@ export default function MainLayout() {
   const [selectedServerId, setSelectedServerId] = useState(null);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [friendMode, setFriendMode] = useState(false); // 친구 패널 3열 상태
+  const { user } = useUser();
 
   // 최초 마운트시 로컬스토리지에서 복원
   useEffect(() => {
@@ -18,6 +20,7 @@ export default function MainLayout() {
     const savedDM = localStorage.getItem("selectedDM");
     const savedRoomId = localStorage.getItem("selectedRoomId");
     const savedFriendMode = localStorage.getItem("friendMode");
+    
 
     if (savedDM === "true") {
       setSelectedDM(true);
@@ -86,6 +89,7 @@ export default function MainLayout() {
       <Sidebar2 
       dmMode={selectedDM} 
       serverId={selectedServerId}
+      currentUserId={user?.id}
       // DM 모드에서 친구버튼/DM목록 분기
       onSelectFriendPanel={handleSelectFriendPanel} // 친구패널 진입
       onSelectDMRoom={handleSelectDMRoom}           // DM방 진입 

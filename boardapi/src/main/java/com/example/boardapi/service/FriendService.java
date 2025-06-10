@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -88,5 +90,34 @@ public class FriendService {
             return FriendStatus.NONE;
         Optional<Friend> relation = friendRepository.findRelation(myId, targetId);
         return relation.map(Friend::getStatus).orElse(FriendStatus.NONE);
+    }
+
+    // 친구 삭제
+    @Transactional
+    public void deleteFriend(Long friendId, Long myId) {
+        Friend friend = friendRepository.findById(friendId)
+                .orElseThrow(() -> new IllegalArgumentException("친구 없음"));
+
+        // 내가 상대가 맞는지 검증 (memberA 또는 memberB가 나)
+        if (!friend.getMemberA().getMno().equals(myId) && !friend.getMemberB().getMno().equals(myId))
+            throw new IllegalStateException("삭제 권한 없음");
+
+        friendRepository.delete(friend);
+    }
+
+    // 내가 받은 친구 요청 목록
+    public List<FriendDTO.RequestResponse> getReceivedFriendRequests(Long memberId) {
+        List<Friend> receivedRequests = friendRepository.findByMemberBMnoAndStatus(memberId, FriendStatus.REQUESTED);
+        return receivedRequests.stream()
+                .map(FriendDTO.RequestResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    // 내가 보낸 친구 요청 목록
+    public List<FriendDTO.RequestResponse> getSentFriendRequests(Long memberId) {
+        List<Friend> sentRequests = friendRepository.findByMemberAMnoAndStatus(memberId, FriendStatus.REQUESTED);
+        return sentRequests.stream()
+                .map(FriendDTO.RequestResponse::from)
+                .collect(Collectors.toList());
     }
 }

@@ -53,4 +53,25 @@ public class FriendController {
         FriendStatus status = friendService.getStatus(principal.getMno(), targetId);
         return new FriendDTO.StatusResponse(status);
     }
+
+    // 5. 친구 삭제
+    @DeleteMapping("/{friendId}")
+    public void deleteFriend(@PathVariable Long friendId,
+            @AuthenticationPrincipal MemberSecurityDTO principal) {
+        friendService.deleteFriend(friendId, principal.getMno());
+    }
+
+    // 내가 받은 친구 요청 목록
+    @GetMapping("/requests/received")
+    public List<FriendDTO.RequestResponse> getReceivedFriendRequests(
+            @AuthenticationPrincipal MemberSecurityDTO principal) {
+        return friendService.getReceivedFriendRequests(principal.getMno());
+    }
+
+    // 내가 보낸 친구 요청 목록
+    @GetMapping("/requests/sent")
+    public List<FriendDTO.RequestResponse> getSentFriendRequests(
+            @AuthenticationPrincipal MemberSecurityDTO principal) {
+        return friendService.getSentFriendRequests(principal.getMno());
+    }
 }

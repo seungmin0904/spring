@@ -15,7 +15,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     // 내 모든 친구 (요청/수락 모두 포함)
     List<Friend> findByMemberAOrMemberB(Member memberA, Member memberB);
 
-    // “수락된” 친구만 (진짜 친구 목록)
+    // "수락된" 친구만 (진짜 친구 목록)
     List<Friend> findByStatusAndMemberAOrMemberB(FriendStatus status, Member memberA, Member memberB);
 
     // 두 사람의 친구관계(중복 검사)
@@ -30,6 +30,12 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
             "(f.memberA.mno = :mno1 AND f.memberB.mno = :mno2) OR " +
             "(f.memberA.mno = :mno2 AND f.memberB.mno = :mno1)")
     Optional<Friend> findRelation(@Param("mno1") Long mno1, @Param("mno2") Long mno2);
+
+    // 내가 보낸 친구신청
+    List<Friend> findByMemberAMnoAndStatus(Long memberAMno, FriendStatus status);
+
+    // 내가 받은 친구신청
+    List<Friend> findByMemberBMnoAndStatus(Long memberBMno, FriendStatus status);
 
     // 상태 기준(신청, 수락 등) 전체 조회 등 자유롭게 추가 가능함
 

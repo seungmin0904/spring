@@ -23,11 +23,16 @@ public class DmRoomService {
 
     // 1:1 DM방 생성 또는 조회
     public ChatRoom getOrCreateDmRoom(Long memberAId, Long memberBId) {
-        // 1:1 DM방 중복 체크 (자유롭게 구현)
-        ChatRoom dmRoom = chatRoomRepository.findDmRoomBetween(memberAId, memberBId)
+        if (memberAId == null || memberBId == null) {
+            throw new IllegalArgumentException("memberAId, memberBId는 null일 수 없습니다.");
+        }
+        Long minId = Math.min(memberAId, memberBId);
+        Long maxId = Math.max(memberAId, memberBId);
+
+        ChatRoom dmRoom = chatRoomRepository.findDmRoomBetween(minId, maxId)
                 .orElseGet(() -> {
                     ChatRoom room = ChatRoom.builder()
-                            .name("DM-" + memberAId + "-" + memberBId)
+                            .name("DM-" + minId + "-" + maxId)
                             .roomType(ChatRoomType.DM)
                             .type(ChannelType.TEXT)
                             .server(null)
@@ -35,9 +40,9 @@ public class DmRoomService {
                     chatRoomRepository.save(room);
 
                     ChatRoomMember m1 = ChatRoomMember.builder()
-                            .chatRoom(room).member(memberRepository.findById(memberAId).orElseThrow()).build();
+                            .chatRoom(room).member(memberRepository.findById(minId).orElseThrow()).build();
                     ChatRoomMember m2 = ChatRoomMember.builder()
-                            .chatRoom(room).member(memberRepository.findById(memberBId).orElseThrow()).build();
+                            .chatRoom(room).member(memberRepository.findById(maxId).orElseThrow()).build();
                     chatRoomMemberRepository.save(m1);
                     chatRoomMemberRepository.save(m2);
 

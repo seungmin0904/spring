@@ -27,14 +27,14 @@ function RootLayout({ onLogout }) {
 
 function App() {
   const [token, setToken] = useState(null);
-  const [name, setName] = useState(null);
+  const [user, setUser] = useState(null); // user: { id, name, ... }
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
-    const savedName = localStorage.getItem("name");
-    if (savedToken && savedName) {
+    const savedUser = localStorage.getItem("user");
+    if (savedToken && savedUser) {
       setToken(savedToken);
-      setName(savedName);
+      setUser(JSON.parse(savedUser));
     }
   }, []);
 
@@ -43,41 +43,38 @@ function App() {
       localStorage.setItem("token", token);
       setToken(token);
       axiosInstance.get("/members/me").then((res) => {
-        setName(res.data.name);
-        localStorage.setItem("name", res.data.name);
+        console.log("로그인 후 user 정보:", res.data);
+        setUser(res.data); // { id, name, ... }
+        localStorage.setItem("user", JSON.stringify(res.data));
       });
     } else {
       localStorage.clear();
       setToken(null);
-      setName(null);
+      setUser(null);
     }
   };
 
   const handleLogout = () => {
     localStorage.clear();
     setToken(null);
-    setName(null);
+    setUser(null);
   };
 
-    return (
+  return (
     <ChatProvider>
       <ThemeProvider>
-        <UserContext.Provider value={{ name, setName }}>
+        <UserContext.Provider value={{ user, setUser }}>
           <BrowserRouter>
             <Routes>
-              {/* 네비바 + Outlet 구조 */}
               <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
-                {/* "/" => 디스코드 UI */}
                 <Route index element={<Layout />} />
-                {/* 게시판/마이페이지 등 */}
                 <Route path="posts" element={<PostListPage />} />
                 <Route path="posts/new" element={<PostFormPage />} />
-                <Route path="posts/:bno" element={<PostDetailPage name={name} />} />
+                <Route path="posts/:bno" element={<PostDetailPage name={user?.name} />} />
                 <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
                 <Route path="register" element={<RegisterPage />} />
                 <Route path="mypage" element={<MyPage />} />
               </Route>
-              {/* 로그인은 네비바 없는 단독 */}
               <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
             </Routes>
           </BrowserRouter>
