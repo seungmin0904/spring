@@ -3,6 +3,7 @@ package com.example.boardapi.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.example.boardapi.entity.ChannelType;
 import com.example.boardapi.entity.ChatRoom;
 import com.example.boardapi.entity.ChatRoomMember;
 import com.example.boardapi.entity.ChatRoomType;
@@ -28,6 +29,8 @@ public class DmRoomService {
                     ChatRoom room = ChatRoom.builder()
                             .name("DM-" + memberAId + "-" + memberBId)
                             .roomType(ChatRoomType.DM)
+                            .type(ChannelType.TEXT)
+                            .server(null)
                             .build();
                     chatRoomRepository.save(room);
 

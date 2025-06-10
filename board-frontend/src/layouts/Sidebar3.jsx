@@ -1,10 +1,15 @@
 import ChatRoom from "@/components/room/ChatRoom";
 import { useContext } from "react";
 import { UserContext } from "@/context/UserContext";
+import FriendPanel from "@/components/room/FriendPanel";
 
-export default function Sidebar3({ dmMode, serverId, roomId }) {
+export default function Sidebar3({ dmMode, serverId, roomId ,friendMode}) {
   const token = localStorage.getItem("token");
   const { name } = useContext(UserContext);
+
+  if (dmMode && friendMode) {
+    return <FriendPanel />;
+  }
 
   if (!roomId) {
     return (

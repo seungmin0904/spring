@@ -1,5 +1,6 @@
 package com.example.boardapi.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByUsername(String username); // 중복 체크용
 
     Optional<Member> findByname(String name); // 마이페이지 닉네임 변경용
-    
+
     boolean existsByname(String name);
+
+    // 완전 일치 검색
+    List<Member> findAllByName(String name);
+
+    // 부분 일치 검색
+    List<Member> findByNameContainingIgnoreCase(String name);
 }

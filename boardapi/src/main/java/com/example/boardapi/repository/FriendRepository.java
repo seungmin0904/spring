@@ -25,5 +25,10 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     @Query("SELECT f FROM Friend f WHERE f.status = :status AND (f.memberA.id = :myId OR f.memberB.id = :myId)")
     List<Friend> findAcceptedFriends(@Param("status") FriendStatus status, @Param("myId") Long myId);
 
-    // 상태 기준(신청, 수락 등) 전체 조회 등 자유롭게 추가 가능
+    // 모든 유저와 나의 관계 상태 조회
+    @Query("SELECT f FROM Friend f WHERE " +
+            "(f.memberA.mno = :mno1 AND f.memberB.mno = :mno2) OR " +
+            "(f.memberA.mno = :mno2 AND f.memberB.mno = :mno1)")
+    Optional<Friend> findRelation(@Param("mno1") Long mno1, @Param("mno2") Long mno2);
 }
+// 상태 기준(신청, 수락 등) 전체 조회 등 자유롭게 추가 가능
