@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import FriendDropdown from "@/components/FriendDropdown";
+import FriendDropdown from "@/components/common/UserDropdown";
 
 export default function UserList({ users }) {
   const [dropdown, setDropdown] = useState(null);

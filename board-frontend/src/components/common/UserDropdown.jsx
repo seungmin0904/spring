@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "@/components/lib/axiosInstance"; 
+import axios from "@/lib/axiosInstance"; 
 
 export default function FriendDropdown({ userId, userName, x, y, onClose }) {
   const [status, setStatus] = useState("LOADING");
@@ -10,7 +10,7 @@ export default function FriendDropdown({ userId, userName, x, y, onClose }) {
   useEffect(() => {
     let ignore = false;
     setStatus("LOADING");
-    axios.get(`/api/friends/status/${userId}`)
+    axios.get(`/friends/status/${userId}`)
       .then(res => {
         if (!ignore) setStatus(res.data.status);
       })
@@ -25,7 +25,7 @@ export default function FriendDropdown({ userId, userName, x, y, onClose }) {
     setLoading(true);
     setErr(null);
     try {
-      await axios.post("/api/friends", { targetMemberId: userId });
+      await axios.post("/friends", { targetMemberId: userId });
       setStatus("REQUESTED");
     } catch (e) {
       setErr("신청 실패");
