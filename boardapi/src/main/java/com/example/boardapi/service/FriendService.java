@@ -34,33 +34,66 @@ public class FriendService {
         Member you = memberRepository.findById(targetId)
                 .orElseThrow(() -> new IllegalArgumentException("상대 없음"));
 
-        // (a,b) 또는 (b,a) 둘 다 체크(중복/역방향)
-        if (friendRepository.findByMemberAAndMemberB(me, you).isPresent() ||
-                friendRepository.findByMemberAAndMemberB(you, me).isPresent())
-            throw new IllegalStateException("이미 친구 신청 중/수락됨");
+        // 현재 방향 확인
+        Optional<Friend> existing = friendRepository.findByMemberAAndMemberB(me, you);
+        if (existing.isPresent()) {
+            Friend f = existing.get();
+            if (f.getStatus() == FriendStatus.REJECTED) {
+                f.setStatus(FriendStatus.REQUESTED);
+                f.setCreatedAt(LocalDateTime.now());
+                f.setMemberA(me);
+                f.setMemberB(you);
+            } else {
+                throw new IllegalStateException("이미 친구 신청 중/수락됨");
+            }
+        } else {
+            // 역방향 확인
+            Optional<Friend> reverse = friendRepository.findByMemberAAndMemberB(you, me);
+            if (reverse.isPresent()) {
+                Friend f = reverse.get();
+                if (f.getStatus() == FriendStatus.REJECTED) {
+                    f.setStatus(FriendStatus.REQUESTED);
+                    f.setCreatedAt(LocalDateTime.now());
+                    f.setMemberA(me);
+                    f.setMemberB(you);
+                } else {
+                    throw new IllegalStateException("이미 친구 신청 중/수락됨");
+                }
+            } else {
+                // 새로운 친구 신청
+                Friend friend = Friend.builder()
+                        .memberA(me)
+                        .memberB(you)
+                        .status(FriendStatus.REQUESTED)
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                friendRepository.save(friend);
+            }
+        }
 
-        // 신규 요청
-        Friend friend = Friend.builder()
-                .memberA(me)
-                .memberB(you)
-                .status(FriendStatus.REQUESTED)
-                .createdAt(LocalDateTime.now())
-                .build();
-        friendRepository.save(friend);
+        // 반대방향 REJECTED 정리
+        friendRepository.findByMemberAAndMemberB(you, me)
+                .filter(f -> f.getStatus() == FriendStatus.REJECTED)
+                .ifPresent(friendRepository::delete);
     }
 
-    // 친구 수락
     @Transactional
     public void acceptFriend(Long friendId, Long myId) {
         Friend friend = friendRepository.findById(friendId)
                 .orElseThrow(() -> new IllegalArgumentException("친구 요청 없음"));
 
-        // 내가 상대가 맞는지 검증 (memberB가 나)
+        // 내가 요청 받은 대상이 맞는지 확인
         if (!friend.getMemberB().getMno().equals(myId))
             throw new IllegalStateException("수락 권한 없음");
 
+        // 상태 변경
         friend.setStatus(FriendStatus.ACCEPTED);
         friendRepository.save(friend);
+
+        // 반대방향 REJECTED 기록 제거
+        friendRepository.findByMemberAAndMemberB(friend.getMemberB(), friend.getMemberA())
+                .filter(f -> f.getStatus() == FriendStatus.REJECTED)
+                .ifPresent(friendRepository::delete);
     }
 
     // 내 친구(수락된 친구) 목록

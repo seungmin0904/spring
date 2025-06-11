@@ -52,7 +52,13 @@ export default function FriendPanel() {
           r.mno === id || r.id === id || r.memberId === id
         );
         if (newFriend) {
-          setFriends(f => [...f, newFriend]);
+          setSentRequests(prev => [
+            ...prev,
+            {
+              requestId: id,
+              receiverNickname: newFriend.name,
+            },
+          ]);
         }
         setShowAdd(false);
         setSearch("");
