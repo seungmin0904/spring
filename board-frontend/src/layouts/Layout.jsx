@@ -6,6 +6,9 @@ import Sidebar3 from "./Sidebar3";
 import Sidebar4 from "./Sidebar4";
 import { useUser } from "@/context/UserContext";
 import { Outlet } from "react-router-dom";
+import NotificationCenter from "@/components/notification/NotificationCenter";
+import { RealtimeProvider } from "@/context/RealtimeContext"; 
+
 
 export default function MainLayout() {
   const [selectedDM, setSelectedDM] = useState(false);
@@ -80,29 +83,47 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex h-screen w-screen">
-       
-      <Sidebar1
-        onSelectDM={handleSelectDM}
-        onSelectServer={handleSelectServer}
-      />
-      <Sidebar2 
-      dmMode={selectedDM} 
-      serverId={selectedServerId}
-      currentUserId={user?.id}
-      // DM 모드에서 친구버튼/DM목록 분기
-      onSelectFriendPanel={handleSelectFriendPanel} // 친구패널 진입
-      onSelectDMRoom={handleSelectDMRoom}           // DM방 진입 
-      onSelectChannel={handleSelectChannel}/>
-      <Sidebar3 
-      dmMode={selectedDM} 
-      serverId={selectedServerId} 
-      roomId={selectedRoomId}
-      friendMode={friendMode}
-      />
-      <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId}/>
-      <Outlet />
+    <RealtimeProvider token={user?.token}>
+    <div className="flex flex-col h-screen w-screen">
+      {/* 헤더 + NotificationCenter */}
+      <header className="bg-white shadow shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            {/* 기존 헤더 좌측/로고/유저정보 등 추가 가능 */}
+            <div className="flex-1" />
+            <NotificationCenter />
+          </div>
+        </div>
+      </header>
+
+      {/* 본문 구조 */}
+      <div className="flex flex-1 min-h-0">
+        {/* 4열 디스코드 구조 */}
+        <Sidebar1
+          onSelectDM={handleSelectDM}
+          onSelectServer={handleSelectServer}
+        />
+        <Sidebar2
+          dmMode={selectedDM}
+          serverId={selectedServerId}
+          currentUserId={user?.id}
+          onSelectFriendPanel={handleSelectFriendPanel}
+          onSelectDMRoom={handleSelectDMRoom}
+          onSelectChannel={handleSelectChannel}
+        />
+        <Sidebar3
+          dmMode={selectedDM}
+          serverId={selectedServerId}
+          roomId={selectedRoomId}
+          friendMode={friendMode}
+        />
+        <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
+        {/* 라우팅 메인 */}
+        <div className="flex-1 min-w-0">
+          <Outlet />
+        </div>
       </div>
-      
+    </div>
+    </RealtimeProvider>
   );
 }

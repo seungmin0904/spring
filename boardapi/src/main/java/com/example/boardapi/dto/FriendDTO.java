@@ -25,20 +25,22 @@ public class FriendDTO {
         private Long memberId; // 상대방 PK
         private String name; // 상대방 이름
         private String profile; // (프로필 경로 등)
+        private String username;
         // 필요하면 status 등도 추가
 
         public static SimpleResponse from(Friend f, Long myId) {
             SimpleResponse dto = new SimpleResponse();
             dto.setFriendId(f.getId());
+            Member target;
             if (f.getMemberA().getMno().equals(myId)) {
-                dto.setMemberId(f.getMemberB().getMno());
-                dto.setName(f.getMemberB().getName());
-                dto.setProfile(f.getMemberB().getProfile());
+                target = f.getMemberB();
             } else {
-                dto.setMemberId(f.getMemberA().getMno());
-                dto.setName(f.getMemberA().getName());
-                dto.setProfile(f.getMemberA().getProfile());
+                target = f.getMemberA();
             }
+            dto.setMemberId(target.getMno());
+            dto.setName(target.getName());
+            dto.setProfile(target.getProfile());
+            dto.setUsername(target.getUsername()); // ← username 값 세팅
             return dto;
         }
     }
@@ -50,8 +52,10 @@ public class FriendDTO {
         private Long requestId;
         private Long requesterId;
         private String requesterNickname;
+        private String requesterUsername;
         private Long receiverId;
         private String receiverNickname;
+        private String receiverUsername;
         private LocalDateTime requestTime;
 
         public static RequestResponse from(Friend friend) {
@@ -59,8 +63,10 @@ public class FriendDTO {
                     friend.getId(),
                     friend.getMemberA().getMno(),
                     friend.getMemberA().getName(),
+                    friend.getMemberA().getUsername(),
                     friend.getMemberB().getMno(),
                     friend.getMemberB().getName(),
+                    friend.getMemberB().getUsername(),
                     friend.getCreatedAt());
         }
     }

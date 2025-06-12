@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 import UserItemWithDropdown from "@/components/common/UserItemWithDropdown";
+import { useRealtime } from "@/context/RealtimeContext";
 
 export default function FriendPanel() {
   const [friends, setFriends] = useState([]);
@@ -9,9 +10,15 @@ export default function FriendPanel() {
   const [search, setSearch] = useState("");
   const [result, setResult] = useState([]);
   const [adding, setAdding] = useState(false);
-
+  const { state } = useRealtime();
   const [receivedRequests, setReceivedRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
+
+  //디버깅 로그
+  useEffect(() => {
+    console.log('Online Users:', Array.from(state.onlineUsers));
+    console.log('Friends:', friends);
+  }, [state.onlineUsers, friends]);
 
   // 친구 목록 불러오기
   useEffect(() => {
@@ -179,24 +186,39 @@ const handleDelete = (friendId) => {
       <div className="flex-1 overflow-y-auto p-4">
         <div className="text-zinc-400 text-sm mb-2">친구 목록</div>
         {friends.length === 0 && <div className="text-zinc-400 text-center py-10">친구 없음</div>}
-       {friends.map(f => (
-  <div key={f.friendId || f.mno} className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800">
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center">
-        {f?.name?.[0] || "?"}
+        {friends.map(f => (
+          <div key={f.friendId} className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center">
+                {f?.name?.[0] || "?"}
+              </div>
+              <div>
+                <div className="text-white font-semibold">{f.name}</div>
+                <div className="text-zinc-400 text-xs">
+                  {state.onlineUsers.has(f.username) ? (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                      온라인
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-gray-500 rounded-full mr-1"></span>
+                      오프라인
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => handleDelete(f.friendId)}
+              className="bg-red-600 text-white rounded px-2 py-1 text-sm hover:bg-red-700 transition"
+            >
+              삭제
+            </button>
+          </div>
+        ))}
       </div>
-      <div>
-        <div className="text-white font-semibold">{f.name}</div>
-        <div className="text-zinc-400 text-xs">오프라인</div>
-      </div>
-    </div>
-    <button
-      onClick={() => handleDelete(f.friendId)}
-      className="bg-red-600 text-white rounded px-2 py-1 text-sm hover:bg-red-700 transition"
-    >삭제</button>
-  </div>
-))}
-      </div>
+      
 
       {/* 검색 모달 */}
       {showAdd && (

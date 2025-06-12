@@ -19,35 +19,11 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     private final JwtUtil jwtUtil;
 
     @Override
-    public boolean beforeHandshake(ServerHttpRequest request,
-            ServerHttpResponse response,
-            WebSocketHandler wsHandler,
-            Map<String, Object> attributes) throws Exception {
-
-        String query = request.getURI().getQuery();
-        if (query != null && query.contains("token=")) {
-            String token = query.split("token=")[1];
-
-            // JWT 검증
-            String username = jwtUtil.validateAndGetUsername(token);
-            if (username != null) {
-                // JWT에서 추가로 닉네임 같은 부가 정보 꺼낼 수 있음
-                String name = jwtUtil.parseClaims(token).get("name", String.class);
-
-                // 세션에 사용자 정보 저장
-                attributes.put("username", username);
-                attributes.put("nickname", name);
-
-                log.info("WebSocket 연결 성공! 사용자: {} (닉네임: {})", username, name);
-                return true;
-            } else {
-                log.warn("WebSocket 연결 거부 - JWT 검증 실패");
-                return false;
-            }
-        }
-        log.warn("WebSocket 연결 거부 - JWT 없음");
-        return false;
-
+    public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
+            WebSocketHandler wsHandler, Map<String, Object> attributes) {
+        // 외부 브로커(RabbitMQ 등) 환경에서는 이 부분이 무의미함
+        // attributes.put("username", ...); // 삭제 또는 주석 처리
+        return true;
     }
 
     @Override
