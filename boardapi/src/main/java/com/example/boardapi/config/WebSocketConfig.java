@@ -1,39 +1,78 @@
 package com.example.boardapi.config;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
-import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
-import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-
-import com.example.boardapi.websoket.JwtHandshakeInterceptor;
+import com.example.boardapi.websocket.JwtHandshakeInterceptor;
+import com.example.boardapi.security.util.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.config.ChannelRegistration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
+import org.springframework.web.socket.config.annotation.*;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
+    private final JwtHandshakeInterceptor handshakeInterceptor;
+    private final JwtTokenProvider jwtTokenProvider;
 
+    // 1) SockJS 엔드포인트에 HandshakeInterceptor 등록
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-chat")
+        registry
+                .addEndpoint("/ws-chat")
+                .addInterceptors(handshakeInterceptor) // ← 여기
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(jwtHandshakeInterceptor) // JWT 인증 인터셉터
                 .withSockJS();
     }
 
+    // 2) 브로커 설정
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableStompBrokerRelay("/topic", "/queue") // 채팅방 등 메시지 송신용
-                .setRelayHost("localhost") // Redis 호스트
-                .setRelayPort(61613) // Redis STOMP 포트
-                .setClientLogin("guest") // Redis나 RabbitMQ 브로커 계정
-                .setClientPasscode("guest"); // Redis나 RabbitMQ 브로커 계정
-
-        registry.setApplicationDestinationPrefixes("/app"); // 클라이언트 전송 prefix
+        registry.enableStompBrokerRelay("/topic", "/queue")
+                .setRelayHost("localhost")
+                .setRelayPort(61613)
+                .setClientLogin("guest")
+                .setClientPasscode("guest");
+        registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
+    }
+
+    // 3) CONNECT 프레임에 대한 JWT 검사용 ChannelInterceptor 등록
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(jwtChannelInterceptor());
+    }
+
+    @Bean
+    public ChannelInterceptor jwtChannelInterceptor() {
+        return new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                var accessor = MessageHeaderAccessor
+                        .getAccessor(message, StompHeaderAccessor.class);
+
+                if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    String bearer = accessor.getFirstNativeHeader("Authorization");
+                    if (bearer == null || !bearer.startsWith("Bearer ")) {
+                        throw new IllegalArgumentException("Missing or invalid Authorization header");
+                    }
+                    String token = bearer.substring(7);
+                    if (!jwtTokenProvider.validateToken(token)) {
+                        throw new IllegalArgumentException("Invalid JWT token");
+                    }
+                    accessor.setUser(jwtTokenProvider.getAuthentication(token));
+                }
+                return message;
+            }
+        };
     }
 }

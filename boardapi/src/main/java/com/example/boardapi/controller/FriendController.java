@@ -4,11 +4,15 @@ import com.example.boardapi.dto.FriendDTO;
 import com.example.boardapi.entity.FriendStatus;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.FriendService;
+import com.example.boardapi.service.UserStatusService;
+
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -17,6 +21,7 @@ import java.util.List;
 public class FriendController {
 
     private final FriendService friendService;
+    private final UserStatusService userStatusService;
 
     // 1. 친구 신청
     @PostMapping
@@ -74,4 +79,12 @@ public class FriendController {
             @AuthenticationPrincipal MemberSecurityDTO principal) {
         return friendService.getSentFriendRequests(principal.getMno());
     }
+
+    @GetMapping("/online")
+    public ResponseEntity<List<String>> getOnlineFriends(Principal principal) {
+        String me = principal.getName();
+        List<String> onlineFriends = userStatusService.getOnlineFriendUsernames(me);
+        return ResponseEntity.ok(onlineFriends);
+    }
+
 }

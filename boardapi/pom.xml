@@ -30,6 +30,13 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+  <!-- 웹소켓, STOMP, 메시지 브로커(예: @MessageMapping) 등
+"Spring Messaging"에서 메시지 프레임워크 전용 메시지 타입
+@MessageMapping 메서드의 파라미터로 받으려면 필요 -->
+  <dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-messaging</artifactId>
+</dependency>
 <!--초대코드 의존성-->
   <dependency>
     <groupId>org.apache.commons</groupId>

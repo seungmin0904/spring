@@ -1,68 +1,68 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 
 export const useWebSocket = (token) => {
   const stompRef = useRef(null);
-  const subscriptions = useRef(new Map());
+  const [connected, setConnected] = useState(false);
 
   const connect = useCallback(() => {
-    if (!token) return () => {};
-
-    const socket = new SockJS('http://localhost:8080/ws');
+    if (!token) {
+      console.log('WS 📡 no token, skipping connect');
+      return () => {};
+    }
+    console.log('WS 🚀 connecting with token…');
+    const socket = new SockJS(`http://localhost:8080/ws-chat?token=${token}`);
     const client = Stomp.over(socket);
+    client.debug = () => {}; // 로그 비활성화
 
-    // 반드시 헤더로 Authorization 전달
-    client.connect(
-      { Authorization: `Bearer ${token}` },
-      () => {
-        console.log('WebSocket Connected');
-        stompRef.current = client;
-      }
-    );
+    
+client.connect(
+  { Authorization: `Bearer ${token}` },   // ← 여기
+  () => {
+    console.log('✅ WS connected');
+    stompRef.current = client;
+    setConnected(true);
+  },
+  (err) => {
+    console.error('❌ WS connection error:', err);
+    setConnected(false);
+  }
+);
 
     return () => {
       if (stompRef.current) {
-        stompRef.current.disconnect();
+        stompRef.current.disconnect(() => {
+          console.log('🛑 WS disconnected');
+          setConnected(false);
+        });
       }
     };
   }, [token]);
 
-  const subscribe = useCallback((topic, callback) => {
-    if (!stompRef.current) return;
-
-    const subscription = stompRef.current.subscribe(topic, (message) => {
-      const payload = JSON.parse(message.body);
-      callback(payload);
-    });
-
-    subscriptions.current.set(topic, subscription);
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const unsubscribe = useCallback((topic) => {
-    const subscription = subscriptions.current.get(topic);
-    if (subscription) {
-      subscription.unsubscribe();
-      subscriptions.current.delete(topic);
-    }
-  }, []);
-
-  useEffect(() => {
-    const cleanup = connect(() => {
-      // 여기서 subscribe
-      subscribe('/topic/online-users', (msg) => {
-        console.log("Received online-users", msg);
-        // ...setOnlineUsers 등
+  // topic 구독 helper
+  const subscribe = useCallback(
+    (topic, callback) => {
+      if (!stompRef.current || !connected) {
+        console.warn(`⛔ Cannot subscribe to ${topic} – not connected`);
+        return { unsubscribe: () => {} };
+      }
+      const sub = stompRef.current.subscribe(topic, (msg) => {
+        callback(JSON.parse(msg.body));
       });
-    });
+      return sub;
+    },
+    [connected]
+  );
 
-    return () => {
-      cleanup();
-      subscriptions.current.forEach((subscription) => subscription.unsubscribe());
-      subscriptions.current.clear();
-    };
-  }, [connect]);
+  // mount 시 connect(), unmount 시 cleanup()
+  useEffect(() => {
+    console.log("▶️ useWebSocket token:", token);
+    if (!token) return;           // ← token 유무 체크
+    const cleanup = connect();    // token 이 있을 때만 connect
+    return () => cleanup();
+  }, [token, connect]);
+  
 
-  return { subscribe, unsubscribe };
+  return { connected, subscribe };
 };

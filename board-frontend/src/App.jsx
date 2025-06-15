@@ -38,21 +38,18 @@ function App() {
     }
   }, []);
 
-  const handleLogin = (token) => {
-    if (token) {
-      localStorage.setItem("token", token);
-      setToken(token);
-      axiosInstance.get("/members/me").then((res) => {
-        console.log("로그인 후 user 정보:", res.data);
-        setUser(res.data); // { id, name, ... }
-        localStorage.setItem("user", JSON.stringify(res.data));
-      });
-    } else {
-      localStorage.clear();
-      setToken(null);
-      setUser(null);
-    }
+
+  const handleLogin = tok => {
+    localStorage.setItem("token", tok);
+    setToken(tok);
+    axiosInstance.get("/members/me").then(res => {
+      // res.data 에 토큰 합치기!
+      const full = { ...res.data, token: tok };
+      localStorage.setItem("user", JSON.stringify(full));
+      setUser(full);
+    });
   };
+
 
   const handleLogout = () => {
     localStorage.clear();

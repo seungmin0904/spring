@@ -22,6 +22,23 @@ public class FriendService {
 
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
+    private final MemberService memberService;
+
+    public List<String> getFriendUsernames(String username) {
+        Member me = memberService.getByUsername(username); // 사용자 조회
+        Long myId = me.getMno(); // 또는 me.getId()
+
+        List<Friend> friends = friendRepository.findAcceptedFriends(FriendStatus.ACCEPTED, myId);
+
+        return friends.stream()
+                .map(friend -> {
+                    Member other = friend.getMemberA().getMno().equals(myId)
+                            ? friend.getMemberB()
+                            : friend.getMemberA();
+                    return other.getUsername(); // 상대방 username 추출
+                })
+                .collect(Collectors.toList());
+    }
 
     // 친구 신청 (중복/역방향까지 체크)
     @Transactional

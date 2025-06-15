@@ -20,7 +20,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import com.example.boardapi.filter.JwtFilter;
 import com.example.boardapi.security.custom.CustomUserDetailsService;
 import com.example.boardapi.security.custom.JwtAuthenticationEntryPoint;
-import com.example.boardapi.security.util.JwtUtil;
+import com.example.boardapi.security.util.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtUtil jwtUtil;
+    private final JwtTokenProvider jwtUtil;
     private final CustomUserDetailsService userDetailsService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
@@ -40,6 +40,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // CSRF 비활성화 (REST API용)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
+                        // WebSocket/STOMP endpoints
+                        .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
+
                         .requestMatchers("/api/members/register", "/api/members/login", "/error").permitAll() // 회원가입/로그인
                                                                                                               // 허용
                         .requestMatchers(HttpMethod.PUT, "/api/members/password/reset", "/api/members/password")
@@ -97,7 +100,7 @@ public class SecurityConfig {
     // jwtFilter 주입용
     @Bean
     public JwtFilter jwtFilter() {
-        return new JwtFilter(jwtUtil, userDetailsService);
+        return new JwtFilter(jwtUtil);
     }
 
     // 주입용

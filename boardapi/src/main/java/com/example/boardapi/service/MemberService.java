@@ -7,7 +7,7 @@ import com.example.boardapi.entity.Member;
 import com.example.boardapi.mapper.MemberMapper;
 import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
-import com.example.boardapi.security.util.JwtUtil;
+import com.example.boardapi.security.util.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +33,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final MemberRepository memberRepository;
     private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 회원가입: 이메일(=username)로 중복 체크, name(아이디/닉네임)은 별도 중복 체크
     public MemberResponseDTO register(MemberRequestDTO dto) {

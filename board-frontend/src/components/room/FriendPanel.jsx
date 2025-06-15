@@ -14,18 +14,15 @@ export default function FriendPanel() {
   const [receivedRequests, setReceivedRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
 
-  //디버깅 로그
   useEffect(() => {
     console.log('Online Users:', Array.from(state.onlineUsers));
     console.log('Friends:', friends);
   }, [state.onlineUsers, friends]);
 
-  // 친구 목록 불러오기
   useEffect(() => {
     axios.get("/friends").then(res => setFriends(res.data || []));
   }, []);
 
-  // 친구 요청 목록 불러오기
   useEffect(() => {
     axios.get("/friends/requests/received")
       .then(res => setReceivedRequests(res.data || []));
@@ -33,7 +30,6 @@ export default function FriendPanel() {
       .then(res => setSentRequests(res.data || []));
   }, []);
 
-  // 검색 처리
   const handleSearch = () => {
     if (!search.trim()) return;
     setResult([]);
@@ -46,13 +42,11 @@ export default function FriendPanel() {
       .finally(() => setAdding(false));
   };
 
-  // 친구 추가
   const handleAdd = (id) => {
     if (!id) {
       console.error("targetMemberId is null or undefined");
       return;
     }
-
     axios.post("/friends", { targetMemberId: id })
       .then(() => {
         const newFriend = result.find(r =>
@@ -73,21 +67,17 @@ export default function FriendPanel() {
       });
   };
 
-  // 1. 친구 삭제 핸들러 함수 추가 (기존 state 선언부 아래에 추가)
-const handleDelete = (friendId) => {
-  if (!window.confirm("정말 이 친구를 삭제하시겠습니까?")) return;
-  
-  axios.delete(`/friends/${friendId}`)
-    .then(() => {
-      // 친구 목록에서 삭제된 친구 제거
-      setFriends(f => f.filter(friend => friend.friendId !== friendId));
-    })
-    .catch(err => {
-      console.error("친구 삭제 실패", err);
-      alert("친구 삭제에 실패했습니다.");
-    });
-};
-
+  const handleDelete = (friendId) => {
+    if (!window.confirm("정말 이 친구를 삭제하시겠습니까?")) return;
+    axios.delete(`/friends/${friendId}`)
+      .then(() => {
+        setFriends(f => f.filter(friend => friend.friendId !== friendId));
+      })
+      .catch(err => {
+        console.error("친구 삭제 실패", err);
+        alert("친구 삭제에 실패했습니다.");
+      });
+  };
 
   const handleAccept = (friendId) => {
     axios.post(`/friends/${friendId}/accept`)
@@ -97,7 +87,8 @@ const handleDelete = (friendId) => {
           setFriends(f => [...f, {
             friendId: acceptedRequest.requestId,
             memberId: acceptedRequest.requesterId,
-            name: acceptedRequest.requesterNickname
+            name: acceptedRequest.requesterNickname,
+            username: acceptedRequest.username || acceptedRequest.requesterUsername
           }]);
         }
         setReceivedRequests(r => r.filter(req => req.requestId !== friendId));
@@ -128,7 +119,6 @@ const handleDelete = (friendId) => {
         >유저 검색</button>
       </div>
 
-      {/* 받은 요청 */}
       {receivedRequests.length > 0 && (
         <div className="p-4 border-b border-zinc-800">
           <div className="text-zinc-400 text-sm mb-2">받은 친구 요청</div>
@@ -158,7 +148,6 @@ const handleDelete = (friendId) => {
         </div>
       )}
 
-      {/* 보낸 요청 */}
       {sentRequests.length > 0 && (
         <div className="p-4 border-b border-zinc-800">
           <div className="text-zinc-400 text-sm mb-2">보낸 친구 요청</div>
@@ -182,7 +171,6 @@ const handleDelete = (friendId) => {
         </div>
       )}
 
-      {/* 친구 목록 */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="text-zinc-400 text-sm mb-2">친구 목록</div>
         {friends.length === 0 && <div className="text-zinc-400 text-center py-10">친구 없음</div>}
@@ -218,9 +206,7 @@ const handleDelete = (friendId) => {
           </div>
         ))}
       </div>
-      
 
-      {/* 검색 모달 */}
       {showAdd && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-zinc-900 rounded p-6 w-80 flex flex-col gap-3">
@@ -252,11 +238,9 @@ const handleDelete = (friendId) => {
                       <button
                         onClick={() => handleAdd(userId)}
                         className="bg-green-600 text-white rounded px-2 py-1"
-                      >
-                        추가
-                      </button>
+                      >추가</button>
                     }
-                    />
+                  />
                 );
               })}
             </div>

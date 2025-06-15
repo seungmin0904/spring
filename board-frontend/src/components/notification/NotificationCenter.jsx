@@ -9,9 +9,8 @@ export default function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const { state } = useRealtime();
-  const { subscribe } = useWebSocket();
+  const { subscribe, connected } = useWebSocket();
 
-  // 알림 목록 조회
   const fetchNotifications = async () => {
     try {
       const response = await axios.get('/notifications');
@@ -21,7 +20,6 @@ export default function NotificationCenter() {
     }
   };
 
-  // 읽지 않은 알림 개수 조회
   const fetchUnreadCount = async () => {
     try {
       const response = await axios.get('/notifications/unread/count');
@@ -31,16 +29,11 @@ export default function NotificationCenter() {
     }
   };
 
-  // 알림 읽음 처리
   const markAsRead = async (notificationId) => {
     try {
       await axios.put(`/notifications/${notificationId}/read`);
       setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isRead: true }
-            : notification
-        )
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
@@ -48,13 +41,10 @@ export default function NotificationCenter() {
     }
   };
 
-  // 모든 알림 읽음 처리
   const markAllAsRead = async () => {
     try {
       await axios.put('/notifications/read-all');
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, isRead: true }))
-      );
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error('모든 알림 읽음 처리 실패:', error);
@@ -64,15 +54,20 @@ export default function NotificationCenter() {
   useEffect(() => {
     fetchNotifications();
     fetchUnreadCount();
+  }, []);
 
-    // WebSocket 구독
+  useEffect(() => {
+    if (!connected) return;
+
     const subscription = subscribe('/user/queue/notifications.*', (message) => {
       setNotifications(prev => [message, ...prev]);
       setUnreadCount(prev => prev + 1);
     });
 
-    return () => subscription?.unsubscribe();
-  }, [subscribe]);
+    return () => {
+      subscription?.unsubscribe?.();
+    };
+  }, [subscribe, connected]);
 
   return (
     <div className="relative">
@@ -90,42 +85,36 @@ export default function NotificationCenter() {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50">
-          <div className="p-4 border-b">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">알림</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  모두 읽음 처리
-                </button>
-              )}
-            </div>
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="text-lg font-semibold">알림</h3>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                모두 읽음 처리
+              </button>
+            )}
           </div>
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                알림이 없습니다
-              </div>
+              <div className="p-4 text-center text-gray-500">알림이 없습니다</div>
             ) : (
-              notifications.map((notification) => (
+              notifications.map((n) => (
                 <div
-                  key={notification.id}
-                  className={`p-4 border-b hover:bg-gray-50 ${
-                    !notification.isRead ? 'bg-blue-50' : ''
-                  }`}
+                  key={n.id}
+                  className={`p-4 border-b hover:bg-gray-50 ${!n.isRead ? 'bg-blue-50' : ''}`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm">{notification.message}</p>
+                      <p className="text-sm">{n.message}</p>
                       <span className="text-xs text-gray-500">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {new Date(n.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    {!notification.isRead && (
+                    {!n.isRead && (
                       <button
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={() => markAsRead(n.id)}
                         className="text-gray-400 hover:text-gray-600"
                       >
                         <Check className="w-4 h-4" />

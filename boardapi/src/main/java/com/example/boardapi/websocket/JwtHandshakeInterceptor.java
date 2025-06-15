@@ -1,0 +1,64 @@
+package com.example.boardapi.websocket;
+
+import com.example.boardapi.security.util.JwtTokenProvider;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.WebSocketHandler;
+import org.springframework.web.socket.server.HandshakeInterceptor;
+
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Map;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class JwtHandshakeInterceptor implements HandshakeInterceptor {
+
+    private final JwtTokenProvider jwtUtil;
+
+    @Override
+    public boolean beforeHandshake(ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Map<String, Object> attributes) {
+        try {
+            URI uri = request.getURI();
+            String query = uri.getQuery();
+            if (query == null || !query.contains("token=")) {
+                log.warn("Missing token");
+                return false;
+            }
+            String token = Arrays.stream(query.split("&"))
+                    .filter(p -> p.startsWith("token="))
+                    .map(p -> p.substring("token=".length()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (token == null || !jwtUtil.validateToken(token)) {
+                log.warn("Invalid token");
+                return false;
+            }
+
+            String username = jwtUtil.validateAndGetUsername(token);
+            attributes.put("username", username);
+            log.info("Handshake OK for {}", username);
+            return true;
+        } catch (Exception e) {
+            log.error("Handshake error", e);
+            return false;
+        }
+    }
+
+    @Override
+    public void afterHandshake(ServerHttpRequest request,
+            ServerHttpResponse response,
+            WebSocketHandler wsHandler,
+            Exception ex) {
+        // no-op
+    }
+
+}

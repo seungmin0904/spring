@@ -1,6 +1,6 @@
-// board-frontend/src/context/RealtimeContext.jsx
 import { createContext, useContext, useReducer, useEffect } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
+import axios from '@/lib/axiosInstance';
 
 const RealtimeContext = createContext();
 
@@ -14,26 +14,15 @@ const initialState = {
 function realtimeReducer(state, action) {
   switch (action.type) {
     case 'SET_ONLINE_USERS':
-      return {
-        ...state,
-        onlineUsers: new Set(action.payload)
-      };
-    case 'USER_STATUS_CHANGE':
-      const newOnlineUsers = new Set(state.onlineUsers);
-      if (action.payload.status === 'ONLINE') {
-        newOnlineUsers.add(action.payload.username);
-      } else if (action.payload.status === 'OFFLINE') {
-        newOnlineUsers.delete(action.payload.username);
-      }
-      return {
-        ...state,
-        onlineUsers: newOnlineUsers
-      };
+      return { ...state, onlineUsers: new Set(action.payload) };
+    case 'USER_STATUS_CHANGE': {
+      const newSet = new Set(state.onlineUsers);
+      if (action.payload.status === 'ONLINE') newSet.add(action.payload.username);
+      else if (action.payload.status === 'OFFLINE') newSet.delete(action.payload.username);
+      return { ...state, onlineUsers: newSet };
+    }
     case 'ADD_NOTIFICATION':
-      return {
-        ...state,
-        notifications: [...state.notifications, action.payload],
-      };
+      return { ...state, notifications: [...state.notifications, action.payload] };
     case 'TYPING_STATUS':
       return {
         ...state,
@@ -42,43 +31,54 @@ function realtimeReducer(state, action) {
           action.payload.isTyping
         ),
       };
-    // ... 기타 액션들
     default:
       return state;
   }
 }
 
+function getUsernameFromToken(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.sub;
+  } catch {
+    return null;
+  }
+}
+
 export function RealtimeProvider({ children, token }) {
   const [state, dispatch] = useReducer(realtimeReducer, initialState);
-  const { subscribe } = useWebSocket(token);
+  const { connected, subscribe } = useWebSocket(token);
 
+  // 1) 최초 HTTP 스냅샷
   useEffect(() => {
-    // 사용자 상태 구독
-    const userStatusSub = subscribe('/topic/user.*', (message) => {
-      console.log('User status change:', message);
-      dispatch({ type: 'USER_STATUS_CHANGE', payload: message });
-    });
+    if (!connected) return;
+    axios
+      .get('/friends/online', { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        const list = Array.isArray(res.data) ? res.data : [];
+        dispatch({ type: 'SET_ONLINE_USERS', payload: list });
+      })
+      .catch(console.error);
+  }, [connected, token]);
 
-    // 온라인 사용자 목록 구독
-    const onlineUsersSub = subscribe('/topic/online-users', (message) => {
-      console.log('Online users update:', message);
-      dispatch({ 
-        type: 'SET_ONLINE_USERS', 
-        payload: message 
-      });
-    });
+  // 2) WebSocket 실시간 구독
+  useEffect(() => {
+    if (!connected) return;
+    const username = getUsernameFromToken(token);
+    if (!username) return;
 
-    // 알림 구독
-    const notificationSub = subscribe('/user/queue/notifications.*', (message) => {
-      dispatch({ type: 'ADD_NOTIFICATION', payload: message });
+    const subStatus = subscribe(`/topic/online-users.${username}`, ev => {
+      dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
+    });
+    const subNoti = subscribe('/user/queue/notifications.*', msg => {
+      dispatch({ type: 'ADD_NOTIFICATION', payload: msg });
     });
 
     return () => {
-      userStatusSub?.unsubscribe();
-      onlineUsersSub?.unsubscribe();
-      notificationSub?.unsubscribe();
+      subStatus.unsubscribe();
+      subNoti.unsubscribe();
     };
-  }, [subscribe]);
+  }, [connected, subscribe, token]);
 
   return (
     <RealtimeContext.Provider value={{ state, dispatch }}>

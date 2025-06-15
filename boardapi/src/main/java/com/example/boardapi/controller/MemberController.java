@@ -8,7 +8,7 @@ import com.example.boardapi.entity.Member;
 import com.example.boardapi.repository.EmailVerificationTokenRepository;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.security.service.SecurityService;
-import com.example.boardapi.security.util.JwtUtil;
+import com.example.boardapi.security.util.JwtTokenProvider;
 import com.example.boardapi.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class MemberController {
 
     private final SecurityService securityService;
     private final MemberService memberService;
-    private final JwtUtil jwtUtil;
+    private final JwtTokenProvider jwtUtil;
     private final EmailVerificationTokenRepository tokenRepository;
 
     // 회원가입 (POST /api/members/register)

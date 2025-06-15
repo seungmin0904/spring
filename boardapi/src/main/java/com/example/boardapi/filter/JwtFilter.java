@@ -2,22 +2,21 @@ package com.example.boardapi.filter;
 
 import java.io.IOException;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.lang.NonNull;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.boardapi.security.custom.CustomUserDetailsService;
-import com.example.boardapi.security.util.JwtUtil;
+import com.example.boardapi.security.util.JwtTokenProvider;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,37 +25,41 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
-                String uri = request.getRequestURI();
-                 if (uri.equals("/api/members/login") || uri.equals("/api/members/register")) {
-                    filterChain.doFilter(request, response);
-                    return;
-                  }
-                String authHeader = request.getHeader("Authorization");
 
+        String uri = request.getRequestURI();
+        if ("/api/members/login".equals(uri) || "/api/members/register".equals(uri)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-           try {
-    String username = jwtUtil.validateAndGetUsername(token);
-    var userDetails = userDetailsService.loadUserByUsername(username);
-
-    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-        userDetails, null, userDetails.getAuthorities());
-    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-    SecurityContextHolder.getContext().setAuthentication(authToken);
-
-} catch (Exception e) {
-    log.warn("❌ JWT 예외 발생: {}", e.getMessage());
-}
+            if (jwtTokenProvider.validateToken(token)) {
+                // JwtTokenProvider가 반환하는 Authentication은 UsernamePasswordAuthenticationToken
+                var auth = jwtTokenProvider.getAuthentication(token);
+                // AbstractAuthenticationToken 으로 캐스팅 후 setDetails 호출
+                if (auth instanceof AbstractAuthenticationToken aat) {
+                    aat.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(aat);
+                } else {
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } else {
+                log.warn("❌ Invalid or expired JWT for URI {}: {}", uri, token);
+            }
         }
-           filterChain.doFilter(request, response);
-     }
-  }
+
+        filterChain.doFilter(request, response);
+    }
+
+}

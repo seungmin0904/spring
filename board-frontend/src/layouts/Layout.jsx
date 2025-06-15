@@ -1,129 +1,105 @@
-// src/components/layout/MainLayout.jsx
-import { useState, useEffect } from "react";
-import Sidebar1 from "./Sidebar1";
-import Sidebar2 from "./Sidebar2";
-import Sidebar3 from "./Sidebar3";
-import Sidebar4 from "./Sidebar4";
-import { useUser } from "@/context/UserContext";
-import { Outlet } from "react-router-dom";
-import NotificationCenter from "@/components/notification/NotificationCenter";
-import { RealtimeProvider } from "@/context/RealtimeContext"; 
-
+import { useState, useEffect } from 'react';
+import { Outlet } from 'react-router-dom';
+import Sidebar1 from './Sidebar1';
+import Sidebar2 from './Sidebar2';
+import Sidebar3 from './Sidebar3';
+import Sidebar4 from './Sidebar4';
+import NotificationCenter from '@/components/notification/NotificationCenter';
+import { RealtimeProvider } from '@/context/RealtimeContext';
+import { useUser } from '@/context/UserContext';
 
 export default function MainLayout() {
   const [selectedDM, setSelectedDM] = useState(false);
   const [selectedServerId, setSelectedServerId] = useState(null);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
-  const [friendMode, setFriendMode] = useState(false); // 친구 패널 3열 상태
+  const [friendMode, setFriendMode] = useState(false);
   const { user } = useUser();
-
-  // 최초 마운트시 로컬스토리지에서 복원
+  console.log("▶️ MainLayout user:", user);
+  console.log("▶️ MainLayout token:", user?.token);
+  // 로컬스토리지에서 이전 선택 복원
   useEffect(() => {
-    const savedServerId = localStorage.getItem("selectedServerId");
-    const savedDM = localStorage.getItem("selectedDM");
-    const savedRoomId = localStorage.getItem("selectedRoomId");
-    const savedFriendMode = localStorage.getItem("friendMode");
-    
-
-    if (savedDM === "true") {
-      setSelectedDM(true);
-      setSelectedServerId(null);
-    } else if (savedServerId) {
-      setSelectedServerId(Number(savedServerId));
-      setSelectedDM(false);
-    }
-    if (savedRoomId) {
-      setSelectedRoomId(Number(savedRoomId));
-    }
-    setFriendMode(savedFriendMode === "true");
+    const sd = localStorage.getItem('selectedDM') === 'true';
+    setSelectedDM(sd);
+    setSelectedServerId(sd ? null : Number(localStorage.getItem('selectedServerId')));
+    setSelectedRoomId(Number(localStorage.getItem('selectedRoomId')));
+    setFriendMode(localStorage.getItem('friendMode') === 'true');
   }, []);
 
-  // --- 저장 ---
+  // DM/서버/채널/친구 패널 선택 핸들러들
   function handleSelectDM() {
     setSelectedDM(true);
     setSelectedServerId(null);
     setSelectedRoomId(null);
     setFriendMode(false);
-
-    localStorage.setItem("selectedDM", "true");
-    localStorage.removeItem("selectedServerId");
-    localStorage.removeItem("selectedRoomId");
-    localStorage.setItem("friendMode", "false");
+    localStorage.setItem('selectedDM', 'true');
+    localStorage.removeItem('selectedServerId');
+    localStorage.removeItem('selectedRoomId');
+    localStorage.setItem('friendMode', 'false');
   }
   function handleSelectServer(id) {
     setSelectedDM(false);
     setSelectedServerId(id);
     setSelectedRoomId(null);
     setFriendMode(false);
-
-    localStorage.setItem("selectedServerId", id);
-    localStorage.setItem("selectedDM", "false");
-    localStorage.removeItem("selectedRoomId");
-    localStorage.setItem("friendMode", "false");
+    localStorage.setItem('selectedDM', 'false');
+    localStorage.setItem('selectedServerId', String(id));
+    localStorage.removeItem('selectedRoomId');
+    localStorage.setItem('friendMode', 'false');
   }
   function handleSelectChannel(id) {
     setSelectedRoomId(id);
     setFriendMode(false);
-    localStorage.setItem("selectedRoomId", id);
-    localStorage.setItem("friendMode", "false");
+    localStorage.setItem('selectedRoomId', String(id));
+    localStorage.setItem('friendMode', 'false');
   }
-  // --- DM에서 친구버튼 클릭 (3열에 친구패널)
   function handleSelectFriendPanel() {
     setSelectedRoomId(null);
     setFriendMode(true);
-    localStorage.removeItem("selectedRoomId");
-    localStorage.setItem("friendMode", "true");
+    localStorage.removeItem('selectedRoomId');
+    localStorage.setItem('friendMode', 'true');
   }
-  // --- DM목록에서 유저 클릭(3열에 DM채팅)
   function handleSelectDMRoom(id) {
     setSelectedRoomId(id);
     setFriendMode(false);
-    localStorage.setItem("selectedRoomId", id);
-    localStorage.setItem("friendMode", "false");
+    localStorage.setItem('selectedRoomId', String(id));
+    localStorage.setItem('friendMode', 'false');
   }
+  
+  if (!user) return null;
 
   return (
+    // ① token 은 RealtimeContext 내에서 localStorage.getItem('token') 으로 꺼내므로
+    //    MainLayout 에서는 그냥 RealtimeProvider 로 감싸주기만 하면 됩니다.
     <RealtimeProvider token={user?.token}>
-    <div className="flex flex-col h-screen w-screen">
-      {/* 헤더 + NotificationCenter */}
-      <header className="bg-white shadow shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            {/* 기존 헤더 좌측/로고/유저정보 등 추가 가능 */}
+      <div className="flex flex-col h-screen w-screen">
+        <header className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex-1" />
             <NotificationCenter />
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* 본문 구조 */}
-      <div className="flex flex-1 min-h-0">
-        {/* 4열 디스코드 구조 */}
-        <Sidebar1
-          onSelectDM={handleSelectDM}
-          onSelectServer={handleSelectServer}
-        />
-        <Sidebar2
-          dmMode={selectedDM}
-          serverId={selectedServerId}
-          currentUserId={user?.id}
-          onSelectFriendPanel={handleSelectFriendPanel}
-          onSelectDMRoom={handleSelectDMRoom}
-          onSelectChannel={handleSelectChannel}
-        />
-        <Sidebar3
-          dmMode={selectedDM}
-          serverId={selectedServerId}
-          roomId={selectedRoomId}
-          friendMode={friendMode}
-        />
-        <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
-        {/* 라우팅 메인 */}
-        <div className="flex-1 min-w-0">
-          <Outlet />
+        <div className="flex flex-1 min-h-0">
+          <Sidebar1 onSelectDM={handleSelectDM} onSelectServer={handleSelectServer} />
+          <Sidebar2
+            dmMode={selectedDM}
+            serverId={selectedServerId}
+            onSelectFriendPanel={handleSelectFriendPanel}
+            onSelectDMRoom={handleSelectDMRoom}
+            onSelectChannel={handleSelectChannel}
+          />
+          <Sidebar3
+            dmMode={selectedDM}
+            serverId={selectedServerId}
+            roomId={selectedRoomId}
+            friendMode={friendMode}
+          />
+          <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
+          <div className="flex-1 min-w-0">
+            <Outlet />
+          </div>
         </div>
       </div>
-    </div>
     </RealtimeProvider>
   );
 }
