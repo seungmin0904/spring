@@ -1,15 +1,18 @@
 package com.example.boardapi.controller;
 
+import java.util.Map;
+
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
 import com.example.boardapi.dto.ChatMessageDTO;
-import com.example.boardapi.entity.ChatMessageEntity;
+import com.example.boardapi.security.util.JwtTokenProvider;
 import com.example.boardapi.service.ChatMessageService;
 
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,7 @@ public class ChatWebSocketController {
 
     private final ChatMessageService chatMessageService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @MessageMapping("/chat.send/{roomId}")
     public void sendMessage(@DestinationVariable Long roomId,
@@ -46,5 +50,15 @@ public class ChatWebSocketController {
 
         // 명시적으로 동적 경로로 메시지 전송
         messagingTemplate.convertAndSend("/topic/chatroom." + roomId, responseMessage);
+    }
+
+    @MessageMapping("/auth")
+    public void authenticate(@Payload Map<String, String> payload, StompHeaderAccessor accessor) {
+        String token = payload.get("token");
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            Authentication auth = jwtTokenProvider.getAuthentication(token);
+            accessor.setUser(auth);
+            accessor.getSessionAttributes().put("username", auth.getName());
+        }
     }
 }

@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
+import { useUser } from "@/context/UserContext";
 
 export default function Sidebar2({
   dmMode,
   serverId,
-  currentUserId, // 추가: 본인 ID
   onSelectFriendPanel,
   onSelectDMRoom,
   onSelectChannel
 }) {
+  const { user } = useUser();           
+  const currentUserId = user?.id;
+
   const [friends, setFriends] = useState([]);
   const [channels, setChannels] = useState([]);
   const [showCreate, setShowCreate] = useState(false);

@@ -34,9 +34,10 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-        String username = (String) accessor.getSessionAttributes().get("username");
+        Principal user = accessor.getUser();
 
-        if (username != null) {
+        if (user != null) {
+            String username = user.getName();
             userStatusService.markOffline(username);
         }
     }

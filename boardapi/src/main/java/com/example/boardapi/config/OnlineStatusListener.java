@@ -17,7 +17,7 @@ public class OnlineStatusListener {
 
     private final SimpMessagingTemplate simpMessagingTemplate;
 
-    @RabbitListener(queues = "status.queue")
+    @RabbitListener(queues = "presence.queue")
     public void handleStatusChange(StatusChangeEvent event) {
         log.info("📡 Received status event: {}", event);
 

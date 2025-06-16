@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안씀
                 .authorizeHttpRequests(auth -> auth
                         // WebSocket/STOMP endpoints
-                        .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
+                        .requestMatchers("/ws-chat/**", "/app/**", "/topic/**").permitAll()
 
                         .requestMatchers("/api/members/register", "/api/members/login", "/error").permitAll() // 회원가입/로그인
                                                                                                               // 허용

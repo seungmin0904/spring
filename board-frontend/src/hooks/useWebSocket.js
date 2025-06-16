@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 
-export const useWebSocket = (token) => {
+export const useWebSocket = (token,onConnect) => {
   const stompRef = useRef(null);
   const [connected, setConnected] = useState(false);
 
@@ -11,21 +10,23 @@ export const useWebSocket = (token) => {
       console.log('WS 📡 no token, skipping connect');
       return () => {};
     }
-    console.log('WS 🚀 connecting with token…');
-    const socket = new SockJS(`http://localhost:8080/ws-chat?token=${token}`);
+
+    console.log('WS 🚀 connecting with token via WebSocket…');
+    
+    // ✅ SockJS 제거, 표준 WebSocket 사용
+    const socket = new WebSocket("ws://localhost:8080/ws-chat");
     const client = Stomp.over(socket);
     client.debug = () => {}; // 로그 비활성화
 
-    
-client.connect(
-  { Authorization: `Bearer ${token}` },   // ← 여기
+   client.connect(
+  { Authorization: `Bearer ${token}` },
   () => {
-    console.log('✅ WS connected');
     stompRef.current = client;
     setConnected(true);
+    onConnect?.(); // ⬅️ 안전하게 호출
   },
   (err) => {
-    console.error('❌ WS connection error:', err);
+    console.error("❌ WS connection error:", err);
     setConnected(false);
   }
 );
@@ -40,7 +41,6 @@ client.connect(
     };
   }, [token]);
 
-  // topic 구독 helper
   const subscribe = useCallback(
     (topic, callback) => {
       if (!stompRef.current || !connected) {
@@ -55,14 +55,11 @@ client.connect(
     [connected]
   );
 
-  // mount 시 connect(), unmount 시 cleanup()
   useEffect(() => {
-    console.log("▶️ useWebSocket token:", token);
-    if (!token) return;           // ← token 유무 체크
-    const cleanup = connect();    // token 이 있을 때만 connect
+    if (!token) return;
+    const cleanup = connect();
     return () => cleanup();
   }, [token, connect]);
-  
 
   return { connected, subscribe };
 };

@@ -4,6 +4,7 @@ import axios from "@/lib/axiosInstance";
 import UserItemWithDropdown from "@/components/common/UserItemWithDropdown";
 import { useRealtime } from "@/context/RealtimeContext";
 
+
 export default function FriendPanel() {
   const [friends, setFriends] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -13,9 +14,11 @@ export default function FriendPanel() {
   const { state } = useRealtime();
   const [receivedRequests, setReceivedRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
+  
 
   useEffect(() => {
     console.log('Online Users:', Array.from(state.onlineUsers));
+    console.log(state);
     console.log('Friends:', friends);
   }, [state.onlineUsers, friends]);
 

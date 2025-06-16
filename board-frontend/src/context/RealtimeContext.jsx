@@ -1,6 +1,7 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { useState, createContext, useContext, useReducer, useEffect } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
-import axios from '@/lib/axiosInstance';
+import axiosInstance from '@/lib/axiosInstance';
+import { useUser } from './UserContext';
 
 const RealtimeContext = createContext();
 
@@ -36,49 +37,68 @@ function realtimeReducer(state, action) {
   }
 }
 
-function getUsernameFromToken(token) {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.sub;
-  } catch {
-    return null;
-  }
-}
-
 export function RealtimeProvider({ children, token }) {
   const [state, dispatch] = useReducer(realtimeReducer, initialState);
-  const { connected, subscribe } = useWebSocket(token);
+  const [ready, setReady] = useState(false);
 
-  // 1) 최초 HTTP 스냅샷
+  const { connected, subscribe } = useWebSocket(token, () => {
+    console.log('🟢 WebSocket connected → setReady(true)');
+    setReady(true);
+  });
+
+  const { user } = useUser();
+  const username = user?.username;
+
+  console.log("🟥 RealtimeProvider Mounted");
+  console.log("🟦 WebSocket connected:", connected);
+  console.log("🟨 Ready:", ready);
+  console.log("🟪 Token:", token);
+  console.log("🟧 Username:", username);
+
   useEffect(() => {
-    if (!connected) return;
-    axios
-      .get('/friends/online', { headers: { Authorization: `Bearer ${token}` } })
+    console.log("🔁 useEffect [connected, ready] 실행됨");
+    if (!connected || !ready) {
+      console.log("⛔ useEffect 차단됨: connected or ready false");
+      return;
+    }
+
+    console.log("🟡 /friends/online 요청 시작");
+
+    axiosInstance.get('/friends/online')
       .then(res => {
-        const list = Array.isArray(res.data) ? res.data : [];
-        dispatch({ type: 'SET_ONLINE_USERS', payload: list });
+        console.log("✅ /friends/online 응답:", res.data);
+        dispatch({ type: 'SET_ONLINE_USERS', payload: res.data || [] });
       })
-      .catch(console.error);
-  }, [connected, token]);
+      .catch(err => {
+        console.error("❌ /friends/online 실패:", err);
+      });
+  }, [connected, ready]);
 
-  // 2) WebSocket 실시간 구독
   useEffect(() => {
-    if (!connected) return;
-    const username = getUsernameFromToken(token);
-    if (!username) return;
+    console.log("🔁 useEffect [connected, ready, username] 실행됨");
+    if (!connected || !ready || !username) {
+      console.log("⛔ subscribe 차단됨: connected/ready/username 누락");
+      return;
+    }
+
+    console.log("📡 WebSocket 구독 시작:", username);
 
     const subStatus = subscribe(`/topic/online-users.${username}`, ev => {
+      console.log("📥 상태 변경 수신:", ev);
       dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
     });
-    const subNoti = subscribe('/user/queue/notifications.*', msg => {
+
+    const subNoti = subscribe(`/user/queue/notifications.${username}`, msg => {
+      console.log("📥 알림 수신:", msg);
       dispatch({ type: 'ADD_NOTIFICATION', payload: msg });
     });
 
     return () => {
+      console.log("🧹 WebSocket 구독 해제");
       subStatus.unsubscribe();
       subNoti.unsubscribe();
     };
-  }, [connected, subscribe, token]);
+  }, [connected, ready, subscribe, username]);
 
   return (
     <RealtimeContext.Provider value={{ state, dispatch }}>

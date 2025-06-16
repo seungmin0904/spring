@@ -82,9 +82,15 @@ public class FriendController {
 
     @GetMapping("/online")
     public ResponseEntity<List<String>> getOnlineFriends(Principal principal) {
+        if (principal == null) {
+            System.out.println("❌ Principal is null");
+            return ResponseEntity.ok(List.of());
+        }
+
         String me = principal.getName();
+        System.out.println("✅ Online Friends 요청자: " + me);
+
         List<String> onlineFriends = userStatusService.getOnlineFriendUsernames(me);
         return ResponseEntity.ok(onlineFriends);
     }
-
 }

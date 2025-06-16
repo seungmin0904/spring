@@ -87,6 +87,7 @@ public class MemberService {
         memberRepository.save(member);
     }
 
+    @Transactional(readOnly = true)
     public Member getByUsername(String username) {
         log.debug("getByUsername 호출됨, username={}", username);
         return memberRepository.findByUsername(username)

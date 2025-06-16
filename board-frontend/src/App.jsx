@@ -1,8 +1,13 @@
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+// ✅ App.jsx
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { UserContext } from "@/context/UserContext";
 import { ChatProvider } from "@/context/ChatContext";
+import { RealtimeProvider } from "@/context/RealtimeContext";
+
+import RootLayout from "@/layouts/RootLayout";
+import Layout from "@/layouts/Layout";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import PostListPage from "@/pages/PostListPage";
@@ -10,46 +15,41 @@ import PostDetailPage from "@/pages/PostDetailPage";
 import PostFormPage from "@/pages/PostFormPage";
 import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
-import Layout from "@/layouts/Layout";
 import axiosInstance from "@/lib/axiosInstance";
-import Navbar from "@/components/ui/Navbar";
-
-function RootLayout({ onLogout }) {
-  return (
-    <div>
-      <Navbar onLogout={onLogout} />
-      <div className="pt-16 h-[calc(100vh-4rem)]">
-        <Outlet />
-      </div>
-    </div>
-  );
-}
 
 function App() {
   const [token, setToken] = useState(null);
-  const [user, setUser] = useState(null); // user: { id, name, ... }
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // ✅ 로딩 상태 추가
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
+    const savedUserRaw = localStorage.getItem("user");
 
+    if (savedToken && savedUserRaw) {
+      try {
+        const parsedUser = JSON.parse(savedUserRaw);
+        setToken(savedToken);
+        setUser(parsedUser);
+      } catch (err) {
+        console.error("❌ Failed to parse savedUser:", err);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+
+    setIsLoading(false); // ✅ 무조건 마지막에 false 설정
+  }, []);
 
   const handleLogin = tok => {
     localStorage.setItem("token", tok);
     setToken(tok);
     axiosInstance.get("/members/me").then(res => {
-      // res.data 에 토큰 합치기!
       const full = { ...res.data, token: tok };
       localStorage.setItem("user", JSON.stringify(full));
       setUser(full);
     });
   };
-
 
   const handleLogout = () => {
     localStorage.clear();
@@ -57,29 +57,34 @@ function App() {
     setUser(null);
   };
 
+  // ✅ 수정: 무한 Loading 방지
+  if (isLoading) return <div>Loading...</div>;
+  
+
   return (
     <ChatProvider>
       <ThemeProvider>
         <UserContext.Provider value={{ user, setUser }}>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
-                <Route index element={<Layout />} />
-                <Route path="posts" element={<PostListPage />} />
-                <Route path="posts/new" element={<PostFormPage />} />
-                <Route path="posts/:bno" element={<PostDetailPage name={user?.name} />} />
-                <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
-                <Route path="register" element={<RegisterPage />} />
-                <Route path="mypage" element={<MyPage />} />
-              </Route>
-              <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-            </Routes>
-          </BrowserRouter>
+          <RealtimeProvider token={token}>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
+                  <Route index element={<Layout />} />
+                  <Route path="posts" element={<PostListPage />} />
+                  <Route path="posts/new" element={<PostFormPage />} />
+                  <Route path="posts/:bno" element={<PostDetailPage name={user?.name} />} />
+                  <Route path="posts/:bno/edit" element={<PostFormPage isEdit={true} />} />
+                  <Route path="register" element={<RegisterPage />} />
+                  <Route path="mypage" element={<MyPage />} />
+                </Route>
+                <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+              </Routes>
+            </BrowserRouter>
+          </RealtimeProvider>
         </UserContext.Provider>
       </ThemeProvider>
     </ChatProvider>
   );
 }
-
 
 export default App;

@@ -24,6 +24,7 @@ public class FriendService {
     private final MemberRepository memberRepository;
     private final MemberService memberService;
 
+    @Transactional(readOnly = true)
     public List<String> getFriendUsernames(String username) {
         Member me = memberService.getByUsername(username); // 사용자 조회
         Long myId = me.getMno(); // 또는 me.getId()

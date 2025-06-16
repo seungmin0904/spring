@@ -42,7 +42,7 @@ public class UserStatusService {
         // 1) Redis에 TTL 기반 키 저장
         String key = "user:status:" + username;
         redisTemplate.opsForValue().set(key, "ONLINE", TTL_SECONDS, TimeUnit.SECONDS);
-
+        redisTemplate.opsForSet().add("online_users", username);
         // 2) RabbitMQ로 ONLINE 이벤트 발행
         eventPublisher.publishOnline(username);
 
@@ -56,7 +56,7 @@ public class UserStatusService {
         // 1) Redis 키 삭제 (또는 만료)
         String key = "user:status:" + username;
         redisTemplate.delete(key);
-
+        redisTemplate.opsForSet().remove("online_users", username);
         // 2) RabbitMQ로 OFFLINE 이벤트 발행
         eventPublisher.publishOffline(username);
 

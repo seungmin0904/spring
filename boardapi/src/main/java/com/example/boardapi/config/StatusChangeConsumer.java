@@ -17,7 +17,7 @@ public class StatusChangeConsumer {
     private final SimpMessagingTemplate messagingTemplate;
     private final FriendService friendService;
 
-    @RabbitListener(queues = "status.queue")
+    @RabbitListener(queues = "presence.queue")
     public void handleStatusChange(StatusChangeEvent event) {
         List<String> friendUsernames = friendService.getFriendUsernames(event.getUsername());
         for (String friend : friendUsernames) {
