@@ -3,7 +3,8 @@ import { useContext } from "react";
 import { UserContext } from "@/context/UserContext";
 import FriendPanel from "@/components/room/FriendPanel";
 
-export default function Sidebar3({ dmMode, serverId, roomId ,friendMode}) {
+
+export default function Sidebar3({ dmMode, serverId, roomId, friendMode, subscribe, send, currentUser }) {
   const token = localStorage.getItem("token");
   const { name } = useContext(UserContext);
 
@@ -18,9 +19,16 @@ export default function Sidebar3({ dmMode, serverId, roomId ,friendMode}) {
       </div>
     );
   }
+
   return (
     <div className="flex-1 bg-[#313338] h-full">
-      <ChatRoom roomId={roomId} token={token} currentUser={{ name }} />
+      <ChatRoom
+        roomId={roomId}
+        token={token}
+        currentUser={{ name: currentUser?.name || "알 수 없음" }}
+        subscribe={subscribe}
+        send={send}
+      />
     </div>
   );
 }

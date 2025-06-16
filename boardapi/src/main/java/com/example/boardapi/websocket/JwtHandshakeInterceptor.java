@@ -1,5 +1,7 @@
 package com.example.boardapi.websocket;
 
+import com.example.boardapi.entity.Member;
+import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.security.util.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import java.util.Map;
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final JwtTokenProvider jwtUtil;
+    private final MemberRepository memberRepository;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request,
@@ -44,7 +47,13 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             }
 
             String username = jwtUtil.validateAndGetUsername(token);
+            String nickname = memberRepository.findByUsername(username)
+
+                    .map((Member m) -> m.getName())
+                    .orElse("알 수 없음");
+
             attributes.put("username", username);
+            attributes.put("nickname", nickname);
             log.info("Handshake OK for {}", username);
             return true;
         } catch (Exception e) {

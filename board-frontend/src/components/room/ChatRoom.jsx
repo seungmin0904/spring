@@ -1,23 +1,16 @@
-import { useEffect, useRef, useState } from "react";
-import SockJS from "sockjs-client";
-import Stomp from "stompjs";
-import axios from "@/lib/axiosInstance";
+import { useEffect, useState } from "react";
+import axios from "@/lib/axiosInstance"; 
 
-export default function ChatRoom({ roomId, token, currentUser }) {
-  const [messageMap, setMessageMap] = useState({}); // { [roomId]: messages[] }
+export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
+  const [messageMap, setMessageMap] = useState({});
   const [input, setInput] = useState("");
-  const stompRef = useRef(null);
-  const subscriptionRef = useRef(null);
-
-  // 현재 roomId 메시지
   const messages = messageMap[roomId] || [];
 
-  // 메시지 로딩 (방 진입시)
+  // 메시지 로딩
   useEffect(() => {
     if (!roomId) return;
-    // 이미 메모리에 있으면 fetch 안 함
     if (messageMap[roomId]) return;
-  
+
     axios.get(`/chat/${roomId}`)
       .then(res => {
         setMessageMap(prev => ({
@@ -32,58 +25,27 @@ export default function ChatRoom({ roomId, token, currentUser }) {
         }));
       });
   }, [roomId]);
-  
-  // 소켓 연결 및 구독
+
+  // 구독
   useEffect(() => {
-    if (!roomId || !token) return;
-    const socket = new SockJS(`http://localhost:8080/ws-chat?token=${token}`);
-    const client = Stomp.over(socket);
-    stompRef.current = client;
-
-    let connected = false;
-
-    client.connect({}, () => {
-      connected = true;
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-      }
-      subscriptionRef.current = client.subscribe(`/topic/chatroom.${roomId}`, msg => {
-        const payload = JSON.parse(msg.body);
-        setMessageMap(prev => ({
-          ...prev,
-          [roomId]: [...(prev[roomId] || []), payload]
-        }));
-      });
+    if (!roomId) return;
+    const sub = subscribe(`/topic/chatroom.${roomId}`, payload => {
+      setMessageMap(prev => ({
+        ...prev,
+        [roomId]: [...(prev[roomId] || []), payload]
+      }));
     });
-
     return () => {
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
-      if (connected && stompRef.current && stompRef.current.connected) {
-        stompRef.current.disconnect();
-      }
+      sub?.unsubscribe?.();
     };
-  }, [roomId, token]);
+  }, [roomId, subscribe]);
 
   function sendMessage() {
     if (!input.trim()) return;
-    if (stompRef.current && stompRef.current.connected) {
-      stompRef.current.send(
-        `/app/chat.send/${roomId}`,
-        {},
-        JSON.stringify({
-          message: input,
-        })
-      );
-      setInput("");
-      // (선택) 로컬 메시지에도 바로 반영하려면 아래 코드도 추가
-      // setMessageMap(prev => ({
-      //   ...prev,
-      //   [roomId]: [...(prev[roomId] || []), { sender: currentUser?.name, message: input }]
-      // }));
-    }
+    send(`/app/chat.send/${roomId}`, {
+      message: input,
+    });
+    setInput("");
   }
 
   return (

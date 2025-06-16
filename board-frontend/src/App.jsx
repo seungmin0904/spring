@@ -5,7 +5,6 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { UserContext } from "@/context/UserContext";
 import { ChatProvider } from "@/context/ChatContext";
 import { RealtimeProvider } from "@/context/RealtimeContext";
-
 import RootLayout from "@/layouts/RootLayout";
 import Layout from "@/layouts/Layout";
 import HomePage from "@/pages/HomePage";
@@ -41,20 +40,28 @@ function App() {
     setIsLoading(false); // ✅ 무조건 마지막에 false 설정
   }, []);
 
-  const handleLogin = tok => {
-    localStorage.setItem("token", tok);
-    setToken(tok);
-    axiosInstance.get("/members/me").then(res => {
-      const full = { ...res.data, token: tok };
+  const handleLogin = async (token) => {
+    try {
+      localStorage.setItem("token", token);
+      setToken(token);
+  
+      const res = await axiosInstance.get("/members/me");
+      const full = { ...res.data, token };
       localStorage.setItem("user", JSON.stringify(full));
       setUser(full);
-    });
+  
+      // ✅ 여기서 navigate 실행되도록
+      window.location.href = "/";
+    } catch (e) {
+      console.error("로그인 처리 중 오류", e);
+    }
   };
 
   const handleLogout = () => {
     localStorage.clear();
     setToken(null);
     setUser(null);
+    window.location.href = "/login";
   };
 
   // ✅ 수정: 무한 Loading 방지

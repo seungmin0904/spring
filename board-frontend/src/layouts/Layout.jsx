@@ -7,6 +7,9 @@ import Sidebar4 from './Sidebar4';
 import NotificationCenter from '@/components/notification/NotificationCenter';
 import { RealtimeProvider } from '@/context/RealtimeContext';
 import { useUser } from '@/context/UserContext';
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useNavigate } from "react-router-dom";
+
 
 export default function MainLayout() {
   const [selectedDM, setSelectedDM] = useState(false);
@@ -14,6 +17,8 @@ export default function MainLayout() {
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [friendMode, setFriendMode] = useState(false);
   const { user } = useUser();
+  const { subscribe, send, connected } = useWebSocket(user?.token);
+
   console.log("▶️ MainLayout user:", user);
   console.log("▶️ MainLayout token:", user?.token);
   // 로컬스토리지에서 이전 선택 복원
@@ -65,7 +70,6 @@ export default function MainLayout() {
     localStorage.setItem('friendMode', 'false');
   }
   
-  if (!user) return null;
 
   return (
     // ① token 은 RealtimeContext 내에서 localStorage.getItem('token') 으로 꺼내므로
@@ -91,7 +95,11 @@ export default function MainLayout() {
             dmMode={selectedDM}
             serverId={selectedServerId}
             roomId={selectedRoomId}
-            friendMode={friendMode}
+          friendMode={friendMode}
+          subscribe={subscribe}
+          send={send}
+          currentUser={user}
+  
           />
           <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
           <div className="flex-1 min-w-0">

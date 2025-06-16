@@ -1,6 +1,8 @@
 package com.example.boardapi.config;
 
 import com.example.boardapi.websocket.JwtHandshakeInterceptor;
+import com.example.boardapi.entity.Member;
+import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.security.util.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtHandshakeInterceptor handshakeInterceptor;
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
     // 1) SockJS 엔드포인트에 HandshakeInterceptor 등록
     @Override
@@ -74,8 +77,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         if (!jwtTokenProvider.validateToken(token)) {
                             throw new IllegalArgumentException("Invalid JWT token");
                         }
-
+                        String username = jwtTokenProvider.validateAndGetUsername(token);
                         accessor.setUser(jwtTokenProvider.getAuthentication(token));
+                        accessor.getSessionAttributes().put("username", username);
+                        accessor.getSessionAttributes().put("nickname",
+                                memberRepository.findByUsername(username)
+                                        .map(Member::getName)
+                                        .orElse("알 수 없음"));
 
                     } catch (Exception e) {
                         log.error("❌ STOMP CONNECT 인증 실패: {}", e.getMessage(), e);
