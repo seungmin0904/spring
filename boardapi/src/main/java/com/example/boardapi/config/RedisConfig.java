@@ -1,6 +1,5 @@
 package com.example.boardapi.config;
 
-import com.example.boardapi.listener.RedisKeyExpirationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -28,13 +27,17 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean
-    public RedisMessageListenerContainer keyExpirationListenerContainer(
-            RedisConnectionFactory cf,
-            RedisKeyExpirationListener listener) {
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-        container.setConnectionFactory(cf);
-        container.addMessageListener(listener, new PatternTopic("__keyevent@*__:expired"));
-        return container;
-    }
+    /*
+     * @Bean
+     * public RedisMessageListenerContainer keyExpirationListenerContainer(
+     * RedisConnectionFactory cf,
+     * RedisKeyExpirationListener listener) {
+     * RedisMessageListenerContainer container = new
+     * RedisMessageListenerContainer();
+     * container.setConnectionFactory(cf);
+     * container.addMessageListener(listener, new
+     * PatternTopic("__keyevent@*__:expired"));
+     * return container;
+     * }
+     */
 }
