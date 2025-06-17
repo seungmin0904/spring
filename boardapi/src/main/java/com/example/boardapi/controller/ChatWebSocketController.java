@@ -61,5 +61,7 @@ public class ChatWebSocketController {
             accessor.setUser(auth);
             accessor.getSessionAttributes().put("username", auth.getName());
         }
+
     }
+
 }

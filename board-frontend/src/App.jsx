@@ -7,7 +7,6 @@ import { ChatProvider } from "@/context/ChatContext";
 import { RealtimeProvider } from "@/context/RealtimeContext";
 import RootLayout from "@/layouts/RootLayout";
 import Layout from "@/layouts/Layout";
-import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import PostListPage from "@/pages/PostListPage";
 import PostDetailPage from "@/pages/PostDetailPage";
