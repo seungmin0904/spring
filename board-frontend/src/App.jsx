@@ -16,14 +16,15 @@ import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
 import axiosInstance from "@/lib/axiosInstance";
 import { useWebSocket } from "@/hooks/useWebSocket";
-
+import { WebSocketContext } from "@/context/WebSocketContext";
 
 function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // ✅ 로딩 상태 추가
-  const { disconnect } = useWebSocket(token);
+  const [isLoading, setIsLoading] = useState(true);
 
+  const ws = useWebSocket(token); // ✅ 단일 생성
+  console.log("🧩 WebSocket Hook Created"); 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUserRaw = localStorage.getItem("user");
@@ -39,21 +40,19 @@ function App() {
         localStorage.removeItem("user");
       }
     }
-
-    setIsLoading(false); // ✅ 무조건 마지막에 false 설정
+    setIsLoading(false);
   }, []);
 
   const handleLogin = async (token) => {
     try {
       localStorage.setItem("token", token);
       setToken(token);
-  
+
       const res = await axiosInstance.get("/members/me");
       const full = { ...res.data, token };
       localStorage.setItem("user", JSON.stringify(full));
       setUser(full);
-  
-      // ✅ 여기서 navigate 실행되도록
+
       window.location.href = "/";
     } catch (e) {
       console.error("로그인 처리 중 오류", e);
@@ -61,22 +60,21 @@ function App() {
   };
 
   const handleLogout = () => {
-    disconnect();
+    ws.disconnect(); // ✅ 위에서 생성한 ws 활용
     localStorage.clear();
     setToken(null);
     setUser(null);
     window.location.href = "/login";
   };
 
-  // ✅ 수정: 무한 Loading 방지
   if (isLoading) return <div>Loading...</div>;
-  
 
   return (
+    <WebSocketContext.Provider value={ws}>
     <ChatProvider>
       <ThemeProvider>
         <UserContext.Provider value={{ user, setUser }}>
-          <RealtimeProvider token={token}>
+          <RealtimeProvider socket={ws}> {/* ✅ ws 주입 */}
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<RootLayout onLogout={handleLogout} />}>
@@ -95,6 +93,7 @@ function App() {
         </UserContext.Provider>
       </ThemeProvider>
     </ChatProvider>
+    </WebSocketContext.Provider>
   );
 }
 

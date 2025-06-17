@@ -26,7 +26,7 @@ public class WebSocketEventListener {
         String sessionId = accessor.getSessionId();
         if (user != null) {
             String username = user.getName();
-            log.info("[CONNECTED] user: {}", username, sessionId);
+            log.info("[CONNECTED] user: {},{}", username, sessionId);
         }
 
     }
@@ -39,7 +39,7 @@ public class WebSocketEventListener {
 
         if (user != null) {
             String username = user.getName();
-            log.info("[DISCONNECTED] user: {}", username, sessionId);
+            log.info("[DISCONNECTED] user: {},{}", username, sessionId);
         }
     }
 }

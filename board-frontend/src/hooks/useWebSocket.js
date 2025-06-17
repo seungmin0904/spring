@@ -1,37 +1,48 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+// ✅ src/hooks/useWebSocket.js
+import { useRef, useState, useCallback } from 'react';
 import Stomp from 'stompjs';
 
 export const useWebSocket = (token, onConnect) => {
   const stompRef = useRef(null);
   const [connected, setConnected] = useState(false);
+  const connectedOnce = useRef(false);
 
-  const connect = useCallback(() => {
-    if (!token) return;
+  const connect = useCallback((tokenArg, callback) => {
+    const authToken = tokenArg || token;
+    if (!authToken) return;
 
-    // ✅ 중복 연결 방지
     if (stompRef.current && stompRef.current.connected) {
-      console.log("⚠️ WebSocket already connected");
+      console.log('⚠️ WebSocket already connected');
       return;
     }
+
+    if (connectedOnce.current) {
+      console.log('⚠️ connect() already called once – skipping');
+      return;
+    }
+
+    connectedOnce.current = true;
 
     const socket = new WebSocket("ws://localhost:8080/ws-chat");
     const client = Stomp.over(socket);
     client.debug = () => {};
 
     client.connect(
-      { Authorization: "Bearer " + localStorage.getItem("token") },
+      { Authorization: "Bearer " + authToken },
       () => {
         stompRef.current = client;
         setConnected(true);
         console.log("✅ WebSocket connected");
         onConnect?.();
+        callback?.();
       },
       err => {
         console.error("❌ WebSocket connection error:", err);
         setConnected(false);
+        connectedOnce.current = false;
       }
     );
-  }, [token]);
+  }, [token, onConnect]);
 
   const disconnect = useCallback(() => {
     if (stompRef.current && stompRef.current.connected) {
@@ -39,6 +50,7 @@ export const useWebSocket = (token, onConnect) => {
         console.log("🔌 WebSocket disconnected");
         setConnected(false);
         stompRef.current = null;
+        connectedOnce.current = false;
       });
     }
   }, []);
@@ -72,16 +84,11 @@ export const useWebSocket = (token, onConnect) => {
     }
   }, [connected]);
 
-  useEffect(() => {
-    if (token) connect();
-    return () => disconnect(); // cleanup on unmount
-  }, [token, connect, disconnect]);
-
   return {
     connected,
     subscribe,
     send,
     connect,
-    disconnect, // 👉 외부에서 로그아웃 시 호출용
+    disconnect,
   };
 };

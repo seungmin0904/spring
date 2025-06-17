@@ -6,7 +6,7 @@ import Sidebar3 from './Sidebar3';
 import Sidebar4 from './Sidebar4';
 import NotificationCenter from '@/components/notification/NotificationCenter';
 import { useUser } from '@/context/UserContext';
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useSocket } from "@/context/WebSocketContext";
 
 
 export default function MainLayout() {
@@ -15,7 +15,7 @@ export default function MainLayout() {
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [friendMode, setFriendMode] = useState(false);
   const { user } = useUser();
-  const { subscribe, send, connected } = useWebSocket(user?.token);
+  const { subscribe, send, connected } = useSocket(user?.token);
 
   console.log("▶️ MainLayout user:", user);
   console.log("▶️ MainLayout token:", user?.token);

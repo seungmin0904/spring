@@ -108,15 +108,15 @@ public class UserStatusService {
 
         // 서버 실행 시 online_users, session 초기화
 
-        // @PostConstruct
-        // public void clearOnlineUsersAtStartup() {
+        @PostConstruct
+        public void clearOnlineUsersAtStartup() {
 
-        // redisTemplate.delete("online_users");
-        // // 모든 세션 키 삭제
-        // Set<String> keys = redisTemplate.keys("user:*:sessions");
-        // if (keys != null && !keys.isEmpty()) {
-        // redisTemplate.delete(keys);
-        // }
-        // log.info("🧹 Redis 초기화: online_users 및 user:*:sessions 삭제 완료");
-        // }
+                redisTemplate.delete("online_users");
+                // 모든 세션 키 삭제
+                Set<String> keys = redisTemplate.keys("user:*:sessions");
+                if (keys != null && !keys.isEmpty()) {
+                        redisTemplate.delete(keys);
+                }
+                log.info("🧹 Redis 초기화: online_users 및 user:*:sessions 삭제 완료");
+        }
 }
