@@ -8,6 +8,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -24,65 +25,98 @@ import com.example.boardapi.messaging.EventPublisher;
 import com.example.boardapi.repository.FriendRepository;
 import com.example.boardapi.repository.MemberRepository;
 
+import jakarta.annotation.PostConstruct;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserStatusService {
 
-    private final RedisTemplate<String, String> redisTemplate;
-    private final EventPublisher eventPublisher;
-    private final SimpMessagingTemplate messagingTemplate;
-    private final FriendRepository friendRepository;
-    private final MemberRepository memberRepository;
+        private final RedisTemplate<String, String> redisTemplate;
+        private final EventPublisher eventPublisher;
+        private final SimpMessagingTemplate messagingTemplate;
+        private final FriendRepository friendRepository;
+        private final MemberRepository memberRepository;
 
-    public void markOnline(String username) {
-        log.info("markOnline: {}", username);
+        public void markOnline(String username, String sessionId) {
+                String sessionsKey = "user:" + username + ":sessions";
+                redisTemplate.opsForSet().add(sessionsKey, sessionId);
+                Long count = redisTemplate.opsForSet().size(sessionsKey);
 
-        // ✅ online_users 세트에 기록만 남기기
-        redisTemplate.opsForSet().add("online_users", username);
+                // 디버깅 로그
+                log.info("🟢 Connected: user={}, sessionId={}, count={}", username, sessionId, count);
 
-        // ✅ RabbitMQ + WebSocket로 상태 브로드캐스트
-        eventPublisher.publishOnline(username);
-        messagingTemplate.convertAndSend("/topic/online-users",
-                new StatusChangeEvent(username, UserStatus.ONLINE));
-    }
+                if (count == 1) {
+                        redisTemplate.opsForSet().add("online_users", username);
 
-    public void markOffline(String username) {
-        log.info("markOffline: {}", username);
+                        // 상태 브로드캐스트
+                        eventPublisher.publishOnline(username);
+                        messagingTemplate.convertAndSend("/topic/online-users",
+                                        new StatusChangeEvent(username, UserStatus.ONLINE));
 
-        // ✅ online_users 세트에서 제거
-        redisTemplate.opsForSet().remove("online_users", username);
+                        // 친구에게만 전송
+                        for (String friend : getFriendUsernames(username)) {
+                                messagingTemplate.convertAndSendToUser(friend, "/queue/status",
+                                                Map.of("username", username, "status", "ONLINE"));
+                        }
+                }
+        }
 
-        // ✅ RabbitMQ + WebSocket로 상태 브로드캐스트
-        eventPublisher.publishOffline(username);
-        messagingTemplate.convertAndSend("/topic/online-users",
-                new StatusChangeEvent(username, UserStatus.OFFLINE));
-    }
+        public void markOffline(String username, String sessionId) {
+                String sessionsKey = "user:" + username + ":sessions";
+                redisTemplate.opsForSet().remove(sessionsKey, sessionId);
+                Long remaining = redisTemplate.opsForSet().size(sessionsKey);
 
-    public List<String> getOnlineFriendUsernames(String myUsername) {
-        Member me = memberRepository.findByUsername(myUsername)
-                .orElseThrow(() -> new UsernameNotFoundException(myUsername));
+                // 디버깅 로그
+                log.info("❌ Disconnect: user={}, sessionId={}, remaining={}", username, sessionId, remaining);
 
-        List<Friend> accepted = friendRepository.findAcceptedFriends(FriendStatus.ACCEPTED, me.getMno());
+                if (remaining == null || remaining == 0) {
+                        redisTemplate.delete(sessionsKey);
+                        redisTemplate.opsForSet().remove("online_users", username);
 
-        List<String> allFriends = accepted.stream()
-                .map(f -> f.getMemberA().getMno().equals(me.getMno()) ? f.getMemberB().getUsername()
-                        : f.getMemberA().getUsername())
-                .collect(Collectors.toList());
+                        // 상태 브로드캐스트
+                        eventPublisher.publishOffline(username);
+                        messagingTemplate.convertAndSend("/topic/online-users",
+                                        new StatusChangeEvent(username, UserStatus.OFFLINE));
 
-        Set<String> online = redisTemplate.opsForSet().members("online_users");
-        return allFriends.stream().filter(online::contains).collect(Collectors.toList());
-    }
+                        // 친구에게만 전송
+                        for (String friend : getFriendUsernames(username)) {
+                                messagingTemplate.convertAndSendToUser(friend, "/queue/status",
+                                                Map.of("username", username, "status", "OFFLINE"));
+                        }
+                }
+        }
 
-    public List<String> getFriendUsernames(String myUsername) {
-        Member me = memberRepository.findByUsername(myUsername)
-                .orElseThrow(() -> new UsernameNotFoundException(myUsername));
+        public List<String> getOnlineFriendUsernames(String myUsername) {
+                Long myId = memberRepository.findByUsername(myUsername)
+                                .orElseThrow(() -> new UsernameNotFoundException(myUsername))
+                                .getMno();
 
-        List<Friend> accepted = friendRepository.findAcceptedFriends(FriendStatus.ACCEPTED, me.getMno());
+                List<String> allFriends = friendRepository.findFriendUsernamesByStatusAndMyId(FriendStatus.ACCEPTED,
+                                myId);
+                Set<String> online = redisTemplate.opsForSet().members("online_users");
+                return allFriends.stream().filter(online::contains).collect(Collectors.toList());
+        }
 
-        return accepted.stream()
-                .map(f -> f.getMemberA().getMno().equals(me.getMno()) ? f.getMemberB().getUsername()
-                        : f.getMemberA().getUsername())
-                .collect(Collectors.toList());
-    }
+        public List<String> getFriendUsernames(String myUsername) {
+                Long myId = memberRepository.findByUsername(myUsername)
+                                .orElseThrow(() -> new UsernameNotFoundException(myUsername))
+                                .getMno();
+
+                return friendRepository.findFriendUsernamesByStatusAndMyId(FriendStatus.ACCEPTED, myId);
+        }
+
+        // 서버 실행 시 online_users, session 초기화
+
+        // @PostConstruct
+        // public void clearOnlineUsersAtStartup() {
+
+        // redisTemplate.delete("online_users");
+        // // 모든 세션 키 삭제
+        // Set<String> keys = redisTemplate.keys("user:*:sessions");
+        // if (keys != null && !keys.isEmpty()) {
+        // redisTemplate.delete(keys);
+        // }
+        // log.info("🧹 Redis 초기화: online_users 및 user:*:sessions 삭제 완료");
+        // }
 }

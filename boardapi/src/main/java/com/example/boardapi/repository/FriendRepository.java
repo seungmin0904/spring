@@ -37,6 +37,16 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     // 내가 받은 친구신청
     List<Friend> findByMemberBMnoAndStatus(Long memberBMno, FriendStatus status);
 
+    @Query("""
+            SELECT CASE
+              WHEN f.memberA.mno = :myId THEN f.memberB.username
+              ELSE f.memberA.username
+            END
+            FROM Friend f
+            WHERE f.status = :status AND (f.memberA.mno = :myId OR f.memberB.mno = :myId)
+            """)
+    List<String> findFriendUsernamesByStatusAndMyId(@Param("status") FriendStatus status, @Param("myId") Long myId);
+
     // 상태 기준(신청, 수락 등) 전체 조회 등 자유롭게 추가 가능함
 
 }

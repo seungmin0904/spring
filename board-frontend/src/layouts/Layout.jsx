@@ -5,10 +5,8 @@ import Sidebar2 from './Sidebar2';
 import Sidebar3 from './Sidebar3';
 import Sidebar4 from './Sidebar4';
 import NotificationCenter from '@/components/notification/NotificationCenter';
-import { RealtimeProvider } from '@/context/RealtimeContext';
 import { useUser } from '@/context/UserContext';
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { useNavigate } from "react-router-dom";
 
 
 export default function MainLayout() {

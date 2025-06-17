@@ -15,11 +15,14 @@ import PostFormPage from "@/pages/PostFormPage";
 import RegisterPage from "@/pages/RegisterPage";
 import MyPage from "@/pages/MyPage";
 import axiosInstance from "@/lib/axiosInstance";
+import { useWebSocket } from "@/hooks/useWebSocket";
+
 
 function App() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // ✅ 로딩 상태 추가
+  const { disconnect } = useWebSocket(token);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
@@ -58,6 +61,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    disconnect();
     localStorage.clear();
     setToken(null);
     setUser(null);

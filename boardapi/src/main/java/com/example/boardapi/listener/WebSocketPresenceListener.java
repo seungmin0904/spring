@@ -1,7 +1,9 @@
 package com.example.boardapi.listener;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
@@ -15,7 +17,9 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 import com.example.boardapi.service.UserStatusService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class WebSocketPresenceListener {
@@ -30,42 +34,22 @@ public class WebSocketPresenceListener {
         StompHeaderAccessor sha = StompHeaderAccessor.wrap(ev.getMessage());
         String user = sha.getUser().getName();
         String sessionId = sha.getSessionId();
-        String sessionsKey = "user:" + user + ":sessions";
 
-        redis.opsForSet().add(sessionsKey, sessionId);
-        Long cnt = redis.opsForSet().size(sessionsKey);
+        userStatusService.markOnline(user, sessionId); // ✅ 위임
 
-        if (cnt != null && cnt == 1) {
-            redis.opsForSet().add("online_users", user);
-
-            // 친구에게만 상태 전파
-            List<String> friends = userStatusService.getFriendUsernames(user);
-            for (String friend : friends) {
-                broker.convertAndSendToUser(friend, "/queue/status",
-                        Map.of("username", user, "status", "ONLINE"));
-            }
-        }
     }
 
     @EventListener
     public void onDisconnected(SessionDisconnectEvent ev) {
         StompHeaderAccessor sha = StompHeaderAccessor.wrap(ev.getMessage());
+        if (sha.getUser() == null) {
+            log.warn("❌ 사용자 정보 없음. Disconnect 무시");
+            return;
+        }
+
         String user = sha.getUser().getName();
         String sessionId = sha.getSessionId();
-        String sessionsKey = "user:" + user + ":sessions";
 
-        redis.opsForSet().remove(sessionsKey, sessionId);
-        Long cnt = redis.opsForSet().size(sessionsKey);
-
-        if (cnt == null || cnt == 0) {
-            redis.opsForSet().remove("online_users", user);
-
-            // 친구에게만 상태 전파
-            List<String> friends = userStatusService.getFriendUsernames(user);
-            for (String friend : friends) {
-                broker.convertAndSendToUser(friend, "/queue/status",
-                        Map.of("username", user, "status", "OFFLINE"));
-            }
-        }
+        userStatusService.markOffline(user, sessionId); // ✅ 위임
     }
 }

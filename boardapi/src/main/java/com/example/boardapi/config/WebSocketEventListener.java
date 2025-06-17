@@ -23,10 +23,10 @@ public class WebSocketEventListener {
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         Principal user = accessor.getUser();
+        String sessionId = accessor.getSessionId();
         if (user != null) {
             String username = user.getName();
-            log.info("[CONNECTED] user: {}", username);
-            userStatusService.markOnline(username);
+            log.info("[CONNECTED] user: {}", username, sessionId);
         }
 
     }
@@ -35,10 +35,11 @@ public class WebSocketEventListener {
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         Principal user = accessor.getUser();
+        String sessionId = accessor.getSessionId();
 
         if (user != null) {
             String username = user.getName();
-            userStatusService.markOffline(username);
+            log.info("[DISCONNECTED] user: {}", username, sessionId);
         }
     }
 }
