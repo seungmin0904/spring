@@ -23,7 +23,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   const ws = useWebSocket(token); // ✅ 단일 생성
-  console.log("🧩 WebSocket Hook Created"); 
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUserRaw = localStorage.getItem("user");

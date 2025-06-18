@@ -1,9 +1,9 @@
 package com.example.boardapi.config;
 
-import com.example.boardapi.websocket.JwtHandshakeInterceptor;
 import com.example.boardapi.entity.Member;
 import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.security.util.JwtTokenProvider;
+import com.example.boardapi.websocket.StompPrincipal;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +26,9 @@ import org.springframework.web.socket.config.annotation.*;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final JwtHandshakeInterceptor handshakeInterceptor;
     private final JwtTokenProvider jwtTokenProvider;
     private final MemberRepository memberRepository;
 
-    // 1) SockJS 엔드포인트에 HandshakeInterceptor 등록
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry
@@ -68,17 +66,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
                     try {
+                        accessor.setLeaveMutable(true);
+
                         String bearer = accessor.getFirstNativeHeader("Authorization");
                         if (bearer == null || !bearer.startsWith("Bearer ")) {
                             throw new IllegalArgumentException("Missing or invalid Authorization header");
                         }
+                        log.info("Authorization Header: {}", bearer);
 
                         String token = bearer.substring(7);
                         if (!jwtTokenProvider.validateToken(token)) {
                             throw new IllegalArgumentException("Invalid JWT token");
                         }
                         String username = jwtTokenProvider.validateAndGetUsername(token);
-                        accessor.setUser(jwtTokenProvider.getAuthentication(token));
+                        String sessionId = accessor.getSessionId();
+
+                        accessor.setUser(new StompPrincipal(username, sessionId));
                         accessor.getSessionAttributes().put("username", username);
                         accessor.getSessionAttributes().put("nickname",
                                 memberRepository.findByUsername(username)

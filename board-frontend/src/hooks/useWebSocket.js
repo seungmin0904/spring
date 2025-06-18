@@ -1,11 +1,16 @@
 // ✅ src/hooks/useWebSocket.js
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import Stomp from 'stompjs';
 
 export const useWebSocket = (token, onConnect) => {
   const stompRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const connectedOnce = useRef(false);
+ const tokenRef = useRef(token);
+
+ useEffect(() => {
+    tokenRef.current = token; // ✅ 항상 최신 토큰 유지
+  }, [token]);
 
   const connect = useCallback((tokenArg, callback) => {
     const authToken = tokenArg || token;
@@ -42,7 +47,18 @@ export const useWebSocket = (token, onConnect) => {
         connectedOnce.current = false;
       }
     );
-  }, [token, onConnect]);
+  }, [onConnect]);
+
+   useEffect(() => {
+  if (!connected && tokenRef.current) {
+    const timeout = setTimeout(() => {
+      console.warn("🔁 Trying to reconnect WebSocket...");
+      connect(tokenRef.current);
+    }, 3000); // 3초마다 재연결 시도
+
+    return () => clearTimeout(timeout);
+  }
+}, [connected, connect]);
 
   const disconnect = useCallback(() => {
     if (stompRef.current && stompRef.current.connected) {

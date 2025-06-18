@@ -42,14 +42,21 @@ public class WebSocketPresenceListener {
     @EventListener
     public void onDisconnected(SessionDisconnectEvent ev) {
         StompHeaderAccessor sha = StompHeaderAccessor.wrap(ev.getMessage());
-        if (sha.getUser() == null) {
-            log.warn("❌ 사용자 정보 없음. Disconnect 무시");
+        String sessionId = sha.getSessionId();
+        Principal principal = sha.getUser();
+
+        if (principal != null) {
+            String username = principal.getName();
+            userStatusService.markOffline(username, sessionId);
             return;
         }
 
-        String user = sha.getUser().getName();
-        String sessionId = sha.getSessionId();
-
-        userStatusService.markOffline(user, sessionId); // ✅ 위임
+        // 💡 fallback: sessionAttributes에서 username 수동 복원
+        Map<String, Object> sessionAttributes = sha.getSessionAttributes();
+        if (sessionAttributes != null && sessionAttributes.containsKey("username")) {
+            String username = (String) sessionAttributes.get("username");
+            userStatusService.markOffline(username, sessionId);
+            return;
+        }
     }
 }

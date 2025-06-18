@@ -1,8 +1,8 @@
-
 // src/context/RealtimeContext.jsx
 import { useState, createContext, useContext, useReducer, useEffect } from 'react';
 import axiosInstance from '@/lib/axiosInstance';
 import { useUser } from './UserContext';
+import { usePing } from '@/hooks/usePing';
 
 const RealtimeContext = createContext();
 
@@ -46,6 +46,7 @@ export function RealtimeProvider({ children, socket }) {
   const token = user?.token;
 
   const { connected, subscribe, connect, disconnect } = socket;
+  usePing();
 
   useEffect(() => {
     if (token) {
@@ -64,6 +65,8 @@ export function RealtimeProvider({ children, socket }) {
   useEffect(() => {
     if (!connected || !ready) return;
 
+   
+    
     axiosInstance.get('/friends/online')
       .then(res => {
         dispatch({ type: 'SET_ONLINE_USERS', payload: res.data || [] });
