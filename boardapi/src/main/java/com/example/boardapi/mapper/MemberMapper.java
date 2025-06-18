@@ -4,8 +4,9 @@ import com.example.boardapi.dto.MemberRequestDTO;
 import com.example.boardapi.dto.MemberResponseDTO;
 import com.example.boardapi.entity.Member;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
+
 public class MemberMapper {
-    
+
     // DTO → Entity
     public static Member toEntity(MemberRequestDTO dto) {
         return Member.builder()
@@ -20,12 +21,13 @@ public class MemberMapper {
     public static MemberResponseDTO toDTO(Member member) {
         return MemberResponseDTO.builder()
                 .mno(member.getMno())
+                .memberId(member.getMno())
                 .username(member.getUsername())
                 .name(member.getName())
                 .build();
     }
 
-     // MemberSecurityDTO → Member 변환 추가
+    // MemberSecurityDTO → Member 변환 추가
     public static Member toEntity(MemberSecurityDTO dto) {
         return Member.builder()
                 .username(dto.getUsername())

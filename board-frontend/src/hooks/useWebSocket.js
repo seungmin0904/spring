@@ -42,7 +42,7 @@ export const useWebSocket = (token, onConnect) => {
         callback?.();
       },
       err => {
-        console.error("❌ WebSocket connection error:", err);
+        console.error("❌ 백그라운드 사용으로 연결 끊김", err);
         setConnected(false);
         connectedOnce.current = false;
       }
@@ -52,7 +52,7 @@ export const useWebSocket = (token, onConnect) => {
    useEffect(() => {
   if (!connected && tokenRef.current) {
     const timeout = setTimeout(() => {
-      console.warn("🔁 Trying to reconnect WebSocket...");
+      console.warn("WebSocket 재연결 시도");
       connect(tokenRef.current);
     }, 3000); // 3초마다 재연결 시도
 
@@ -63,7 +63,7 @@ export const useWebSocket = (token, onConnect) => {
   const disconnect = useCallback(() => {
     if (stompRef.current && stompRef.current.connected) {
       stompRef.current.disconnect(() => {
-        console.log("🔌 WebSocket disconnected");
+        console.log("🔌 WebSocket 연결 종료 됨");
         setConnected(false);
         stompRef.current = null;
         connectedOnce.current = false;
