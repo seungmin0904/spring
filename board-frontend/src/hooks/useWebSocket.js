@@ -21,13 +21,6 @@ export const useWebSocket = (token, onConnect) => {
       return;
     }
 
-    if (connectedOnce.current) {
-      console.log('⚠️ connect() already called once – skipping');
-      return;
-    }
-
-    connectedOnce.current = true;
-
     const socket = new WebSocket("ws://localhost:8080/ws-chat");
     const client = Stomp.over(socket);
     client.debug = () => {};
