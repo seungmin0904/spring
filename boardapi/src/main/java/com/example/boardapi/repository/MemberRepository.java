@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.example.boardapi.entity.Member;
 
@@ -23,4 +25,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     // 부분 일치 검색
     List<Member> findByNameContainingIgnoreCase(String name);
+
+    @Query("SELECT m.username FROM Member m WHERE m.id = :id")
+    String findUsernameById(@Param("id") Long id);
 }

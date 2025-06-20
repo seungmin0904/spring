@@ -1,6 +1,7 @@
 package com.example.boardapi.controller;
 
 import com.example.boardapi.dto.FriendDTO;
+import com.example.boardapi.entity.Friend;
 import com.example.boardapi.entity.FriendStatus;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.FriendService;
@@ -9,6 +10,7 @@ import com.example.boardapi.service.UserStatusService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -61,9 +63,23 @@ public class FriendController {
 
     // 5. 친구 삭제
     @DeleteMapping("/{friendId}")
-    public void deleteFriend(@PathVariable Long friendId,
+    public ResponseEntity<Void> deleteFriend(@PathVariable Long friendId,
             @AuthenticationPrincipal MemberSecurityDTO principal) {
-        friendService.deleteFriend(friendId, principal.getMno());
+        Long myId = principal.getMno();
+
+        Friend friend = friendService.getFriendOrThrow(friendId);
+
+        if (friend.getStatus() == FriendStatus.REQUESTED &&
+                friend.getMemberA().getMno().equals(myId)) {
+            // 👉 내가 보낸 친구 요청이라면 → 친구 요청 취소
+            friendService.cancelFriendRequest(friendId, myId);
+        } else {
+            // 👉 수락된 친구거나 받은 요청일 경우 → 일반 친구 삭제
+            friendService.deleteFriend(friendId, myId);
+        }
+
+        return ResponseEntity.noContent().build();
+
     }
 
     // 내가 받은 친구 요청 목록

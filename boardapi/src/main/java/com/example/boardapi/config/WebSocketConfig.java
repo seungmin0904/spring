@@ -82,6 +82,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         String sessionId = accessor.getSessionId();
 
                         accessor.setUser(new StompPrincipal(username, sessionId));
+                        log.info("✅ 연결된 사용자: {}", username, sessionId);
                         accessor.getSessionAttributes().put("username", username);
                         accessor.getSessionAttributes().put("nickname",
                                 memberRepository.findByUsername(username)
