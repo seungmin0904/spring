@@ -26,7 +26,8 @@ const LoginPage = ({ onLogin }) => {
         localStorage.setItem("token", result.token);
         localStorage.setItem("username", result.username); // 이메일
         localStorage.setItem("name", result.name);         // 닉네임
-
+        localStorage.setItem("refresh_token", response.data.refreshToken);
+        
         toast({
           title: "로그인 성공 🎉",
           description: `${result.name}님 환영합니다!`,

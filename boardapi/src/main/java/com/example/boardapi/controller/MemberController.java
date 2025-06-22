@@ -9,6 +9,7 @@ import com.example.boardapi.repository.EmailVerificationTokenRepository;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.security.service.SecurityService;
 import com.example.boardapi.security.util.JwtTokenProvider;
+import com.example.boardapi.service.AuthService;
 import com.example.boardapi.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class MemberController {
     private final MemberService memberService;
     private final JwtTokenProvider jwtUtil;
     private final EmailVerificationTokenRepository tokenRepository;
+    private final AuthService authService;
 
     // 회원가입 (POST /api/members/register)
     @PostMapping("/register")
@@ -52,11 +54,26 @@ public class MemberController {
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO dto) {
         Member member = memberService.login(dto);
         String token = jwtUtil.generateToken(member.getUsername(), member.getName());
+        String refreshToken = jwtUtil.createRefreshToken(member.getUsername());
+
+        authService.saveRefreshToken(member.getUsername(), refreshToken);
 
         return ResponseEntity.ok(Map.of(
                 "token", token,
+                "refreshToken", refreshToken,
                 "username", member.getUsername(),
                 "name", member.getName()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@AuthenticationPrincipal MemberSecurityDTO member) {
+        if (member == null) {
+            return ResponseEntity.status(401).body("로그인이 필요합니다.");
+        }
+
+        memberService.logout(member.getUsername()); // Redis 토큰 삭제
+
+        return ResponseEntity.ok("로그아웃 되었습니다.");
     }
 
     // 회원정보

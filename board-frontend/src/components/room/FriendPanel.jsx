@@ -1,4 +1,4 @@
-// FriendPanel.jsx (수정본)
+// FriendPanel.jsx
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 import UserItemWithDropdown from "@/components/common/UserItemWithDropdown";
@@ -18,25 +18,45 @@ export default function FriendPanel() {
   }, [state.onlineUsers, friends]);
 
   useEffect(() => {
-    axios.get("/friends").then(res => {
-      dispatch({ type: "SET_FRIENDS", payload: res.data || [] });
-    });
+    const fetchFriends = async () => {
+      try {
+        const res = await axios.get("/friends");
+        dispatch({ type: "SET_FRIENDS", payload: res.data || [] });
+      } catch (err) {
+        console.error("❌ 친구 목록 불러오기 실패", err);
+      }
+    };
 
-    axios.get("/friends/requests/received").then(res => {
-      dispatch({ type: "SET_RECEIVED", payload: res.data || [] });
-    });
+    const fetchReceived = async () => {
+      try {
+        const res = await axios.get("/friends/requests/received");
+        dispatch({ type: "SET_RECEIVED", payload: res.data || [] });
+      } catch (err) {
+        console.error("❌ 받은 친구 요청 불러오기 실패", err);
+      }
+    };
 
-    axios.get("/friends/requests/sent").then(res => {
-      dispatch({ type: "SET_SENT", payload: res.data || [] });
-    });
-  }, []);
+    const fetchSent = async () => {
+      try {
+        const res = await axios.get("/friends/requests/sent");
+        dispatch({ type: "SET_SENT", payload: res.data || [] });
+      } catch (err) {
+        console.error("❌ 보낸 친구 요청 불러오기 실패", err);
+      }
+    };
+
+    fetchFriends();
+    fetchReceived();
+    fetchSent();
+  }, [dispatch]);
 
   const handleSearch = () => {
     if (!search.trim()) return;
     setResult([]);
     setAdding(true);
-    axios.get(`/members/search?name=${encodeURIComponent(search)}`)
-      .then(res => {
+    axios
+      .get(`/members/search?name=${encodeURIComponent(search)}`)
+      .then((res) => {
         setResult(res.data || []);
       })
       .finally(() => setAdding(false));
@@ -45,14 +65,19 @@ export default function FriendPanel() {
   const handleAdd = (id) => {
     if (!id) return;
     axios.post("/friends", { targetMemberId: id }).then(() => {
-      const newFriend = result.find(r => r.mno === id || r.id === id || r.memberId === id);
+      const newFriend = result.find(
+        (r) => r.mno === id || r.id === id || r.memberId === id
+      );
       if (newFriend) {
         dispatch({
           type: "SET_SENT",
-          payload: [...state.sentRequests, {
-            requestId: id,
-            receiverNickname: newFriend.name
-          }]
+          payload: [
+            ...state.sentRequests,
+            {
+              requestId: id,
+              receiverNickname: newFriend.name,
+            },
+          ],
         });
       }
       setShowAdd(false);
@@ -65,26 +90,24 @@ export default function FriendPanel() {
     if (!window.confirm("정말 이 친구를 삭제하시겠습니까?")) return;
     try {
       await axios.delete(`/friends/${friendId}`);
-  
-      // 1. Context 상태도 제거
       dispatch({
         type: "SET_FRIENDS",
-        payload: state.friends.filter(friend => friend.friendId !== friendId)
+        payload: state.friends.filter((f) => f.friendId !== friendId),
       });
-      
     } catch (err) {
       console.error("친구 삭제 실패", err);
       alert("친구 삭제에 실패했습니다.");
     }
   };
-  
 
   const handleAccept = async (friendId) => {
     try {
       await axios.post(`/friends/${friendId}/accept`);
       dispatch({
         type: "SET_RECEIVED",
-        payload: state.receivedRequests.filter(req => req.requestId !== friendId)
+        payload: state.receivedRequests.filter(
+          (req) => req.requestId !== friendId
+        ),
       });
     } catch (err) {
       console.error("❌ 친구 수락 실패", err);
@@ -95,7 +118,9 @@ export default function FriendPanel() {
     axios.post(`/friends/${friendId}/reject`).then(() => {
       dispatch({
         type: "SET_RECEIVED",
-        payload: state.receivedRequests.filter(req => req.requestId !== friendId)
+        payload: state.receivedRequests.filter(
+          (req) => req.requestId !== friendId
+        ),
       });
     });
   };
@@ -104,7 +129,9 @@ export default function FriendPanel() {
     axios.delete(`/friends/${friendId}`).then(() => {
       dispatch({
         type: "SET_SENT",
-        payload: state.sentRequests.filter(req => req.requestId !== friendId)
+        payload: state.sentRequests.filter(
+          (req) => req.requestId !== friendId
+        ),
       });
     });
   };
@@ -116,26 +143,43 @@ export default function FriendPanel() {
         <button
           onClick={() => setShowAdd(true)}
           className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition"
-        >유저 검색</button>
+        >
+          유저 검색
+        </button>
       </div>
 
       {state.receivedRequests.length > 0 && (
         <div className="p-4 border-b border-zinc-800">
           <div className="text-zinc-400 text-sm mb-2">받은 친구 요청</div>
-          {state.receivedRequests.map(req => (
-            <div key={req.requestId} className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800">
+          {state.receivedRequests.map((req) => (
+            <div
+              key={req.requestId}
+              className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
                   {req.requesterNickname?.[0] || "?"}
                 </div>
                 <div>
-                  <div className="text-white font-semibold">{req.requesterNickname}</div>
+                  <div className="text-white font-semibold">
+                    {req.requesterNickname}
+                  </div>
                   <div className="text-zinc-400 text-xs">친구 요청</div>
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => handleAccept(req.requestId)} className="bg-green-600 text-white rounded px-2 py-1 text-sm">수락</button>
-                <button onClick={() => handleReject(req.requestId)} className="bg-red-600 text-white rounded px-2 py-1 text-sm">거절</button>
+                <button
+                  onClick={() => handleAccept(req.requestId)}
+                  className="bg-green-600 text-white rounded px-2 py-1 text-sm"
+                >
+                  수락
+                </button>
+                <button
+                  onClick={() => handleReject(req.requestId)}
+                  className="bg-red-600 text-white rounded px-2 py-1 text-sm"
+                >
+                  거절
+                </button>
               </div>
             </div>
           ))}
@@ -145,18 +189,28 @@ export default function FriendPanel() {
       {state.sentRequests.length > 0 && (
         <div className="p-4 border-b border-zinc-800">
           <div className="text-zinc-400 text-sm mb-2">보낸 친구 요청</div>
-          {state.sentRequests.map(req => (
-            <div key={req.requestId} className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800">
+          {state.sentRequests.map((req) => (
+            <div
+              key={req.requestId}
+              className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
                   {req.receiverNickname?.[0] || "?"}
                 </div>
                 <div>
-                  <div className="text-white font-semibold">{req.receiverNickname}</div>
+                  <div className="text-white font-semibold">
+                    {req.receiverNickname}
+                  </div>
                   <div className="text-zinc-400 text-xs">요청 대기중</div>
                 </div>
               </div>
-              <button onClick={() => handleCancel(req.requestId)} className="bg-zinc-600 text-white rounded px-2 py-1 text-sm">취소</button>
+              <button
+                onClick={() => handleCancel(req.requestId)}
+                className="bg-zinc-600 text-white rounded px-2 py-1 text-sm"
+              >
+                취소
+              </button>
             </div>
           ))}
         </div>
@@ -164,9 +218,14 @@ export default function FriendPanel() {
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="text-zinc-400 text-sm mb-2">친구 목록</div>
-        {friends.length === 0 && <div className="text-zinc-400 text-center py-10">친구 없음</div>}
-        {friends.map(f => (
-          <div key={f.friendId} className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800">
+        {friends.length === 0 && (
+          <div className="text-zinc-400 text-center py-10">친구 없음</div>
+        )}
+        {friends.map((f) => (
+          <div
+            key={f.friendId}
+            className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800"
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center">
                 {f?.name?.[0] || "?"}
@@ -188,7 +247,12 @@ export default function FriendPanel() {
                 </div>
               </div>
             </div>
-            <button onClick={() => handleDelete(f.friendId)} className="bg-red-600 text-white rounded px-2 py-1 text-sm hover:bg-red-700 transition">삭제</button>
+            <button
+              onClick={() => handleDelete(f.friendId)}
+              className="bg-red-600 text-white rounded px-2 py-1 text-sm hover:bg-red-700 transition"
+            >
+              삭제
+            </button>
           </div>
         ))}
       </div>
@@ -196,32 +260,56 @@ export default function FriendPanel() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-zinc-900 rounded p-6 w-80 flex flex-col gap-3">
-            <div className="text-white font-bold mb-2">검색 할 유저 닉네임 입력</div>
+            <div className="text-white font-bold mb-2">
+              검색 할 유저 닉네임 입력
+            </div>
             <div className="flex gap-2">
               <input
                 className="flex-1 rounded p-2"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder="닉네임 입력"
-                onKeyDown={e => { if (e.key === "Enter") handleSearch(); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
               />
-              <button className="bg-blue-600 text-white rounded px-3 py-1" onClick={handleSearch} disabled={adding}>검색</button>
+              <button
+                className="bg-blue-600 text-white rounded px-3 py-1"
+                onClick={handleSearch}
+                disabled={adding}
+              >
+                검색
+              </button>
             </div>
-            {adding && <div className="text-zinc-400 text-sm">검색중...</div>}
+            {adding && (
+              <div className="text-zinc-400 text-sm">검색중...</div>
+            )}
             <div>
-              {result.map(user => {
+              {result.map((user) => {
                 const userId = user.mno || user.id || user.memberId;
                 if (!userId) return null;
                 return (
                   <UserItemWithDropdown
                     key={userId}
                     user={user}
-                    rightElement={<button onClick={() => handleAdd(userId)} className="bg-green-600 text-white rounded px-2 py-1">추가</button>}
+                    rightElement={
+                      <button
+                        onClick={() => handleAdd(userId)}
+                        className="bg-green-600 text-white rounded px-2 py-1"
+                      >
+                        추가
+                      </button>
+                    }
                   />
                 );
               })}
             </div>
-            <button onClick={() => setShowAdd(false)} className="bg-zinc-700 text-white rounded px-3 py-1 mt-2">닫기</button>
+            <button
+              onClick={() => setShowAdd(false)}
+              className="bg-zinc-700 text-white rounded px-3 py-1 mt-2"
+            >
+              닫기
+            </button>
           </div>
         </div>
       )}

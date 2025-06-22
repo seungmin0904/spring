@@ -3,18 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
 import { useTheme } from "@/context/ThemeContext";
 import { motion } from "framer-motion";
+import { useLogout } from "@/hooks/useLogout";
 
- const Navbar = ({onLogout}) => {
+const Navbar = () => {
+  const logout = useLogout();
   const { name } = useUser();
   const isLoggedIn = !!localStorage.getItem("token");
-  const navigate = useNavigate();
   const { dark, setDark } = useTheme();
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
-    onLogout?.();
-  };
 
    return (
     <nav className="fixed top-0 w-full z-50 bg-white dark:bg-[#18181b] text-black dark:text-white shadow-md">
@@ -34,7 +29,7 @@ import { motion } from "framer-motion";
       {isLoggedIn ? (
         <>
           <Link to="/mypage" className="hover:underline">마이페이지</Link>
-          <button onClick={handleLogout} className="hover:underline bg-transparent border-none outline-none">로그아웃</button>
+          <button onClick={logout} className="hover:underline bg-transparent border-none outline-none">로그아웃</button>
         </>
       ) : (
         <>

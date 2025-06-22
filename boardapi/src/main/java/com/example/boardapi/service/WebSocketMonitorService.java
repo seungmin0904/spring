@@ -12,9 +12,10 @@ import org.springframework.stereotype.Component;
 public class WebSocketMonitorService {
 
     private final SimpUserRegistry simpUserRegistry;
-
-    @Scheduled(fixedDelay = 10000)
-    public void checkConnectedUsers() {
-        simpUserRegistry.getUsers().forEach(user -> log.info("🧩 Connected WebSocket user: {}", user.getName()));
-    }
+    // 주기적으로 연결된 WebSocket 사용자 목록을 로깅
+    // @Scheduled(fixedDelay = 30000)
+    // public void checkConnectedUsers() {
+    // simpUserRegistry.getUsers().forEach(user -> log.info("🧩 Connected WebSocket
+    // user: {}", user.getName()));
+    // }
 }

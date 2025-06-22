@@ -8,13 +8,12 @@ import com.example.boardapi.service.FriendService;
 import com.example.boardapi.service.UserStatusService;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -25,87 +24,98 @@ public class FriendController {
     private final FriendService friendService;
     private final UserStatusService userStatusService;
 
-    // 1. 친구 신청
     @PostMapping
-    public void requestFriend(@RequestBody FriendDTO.Request dto,
+    public ResponseEntity<?> requestFriend(@RequestBody FriendDTO.Request dto,
             @AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
         friendService.requestFriend(principal.getMno(), dto.getTargetMemberId());
+        return ResponseEntity.ok().build();
     }
 
-    // 2. 친구 수락
     @PostMapping("/{friendId}/accept")
-    public void acceptFriend(@PathVariable Long friendId,
+    public ResponseEntity<?> acceptFriend(@PathVariable Long friendId,
             @AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
         friendService.acceptFriend(friendId, principal.getMno());
+        return ResponseEntity.ok().build();
     }
 
-    // 3. 친구 거절 (옵션)
     @PostMapping("/{friendId}/reject")
-    public void rejectFriend(@PathVariable Long friendId,
+    public ResponseEntity<?> rejectFriend(@PathVariable Long friendId,
             @AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
         friendService.rejectFriend(friendId, principal.getMno());
+        return ResponseEntity.ok().build();
     }
 
-    // 4. 내 친구 목록 (SimpleResponse로 변경)
     @GetMapping
-    public List<FriendDTO.SimpleResponse> getFriends(@AuthenticationPrincipal MemberSecurityDTO member) {
-        return friendService.getFriends(member.getMno());
+    public ResponseEntity<?> getFriends(@AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
+        List<FriendDTO.SimpleResponse> result = friendService.getFriends(principal.getMno());
+        return ResponseEntity.ok(result);
     }
 
-    // 관계 상태 조회 (친구추가 식별용)
     @GetMapping("/status/{targetId}")
-    public FriendDTO.StatusResponse getStatus(
-            @PathVariable Long targetId,
+    public ResponseEntity<?> getStatus(@PathVariable Long targetId,
             @AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
         FriendStatus status = friendService.getStatus(principal.getMno(), targetId);
-        return new FriendDTO.StatusResponse(status);
+        return ResponseEntity.ok(new FriendDTO.StatusResponse(status));
     }
 
-    // 5. 친구 삭제
     @DeleteMapping("/{friendId}")
-    public ResponseEntity<Void> deleteFriend(@PathVariable Long friendId,
+    public ResponseEntity<?> deleteFriend(@PathVariable Long friendId,
             @AuthenticationPrincipal MemberSecurityDTO principal) {
-        Long myId = principal.getMno();
+        if (principal == null)
+            return ResponseEntity.status(401).build();
 
+        Long myId = principal.getMno();
         Friend friend = friendService.getFriendOrThrow(friendId);
 
         if (friend.getStatus() == FriendStatus.REQUESTED &&
                 friend.getMemberA().getMno().equals(myId)) {
-            // 👉 내가 보낸 친구 요청이라면 → 친구 요청 취소
             friendService.cancelFriendRequest(friendId, myId);
         } else {
-            // 👉 수락된 친구거나 받은 요청일 경우 → 일반 친구 삭제
             friendService.deleteFriend(friendId, myId);
         }
 
         return ResponseEntity.noContent().build();
-
     }
 
-    // 내가 받은 친구 요청 목록
     @GetMapping("/requests/received")
-    public List<FriendDTO.RequestResponse> getReceivedFriendRequests(
-            @AuthenticationPrincipal MemberSecurityDTO principal) {
-        return friendService.getReceivedFriendRequests(principal.getMno());
+    public ResponseEntity<?> getReceivedFriendRequests(@AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
+        List<FriendDTO.RequestResponse> list = friendService.getReceivedFriendRequests(principal.getMno());
+        return ResponseEntity.ok(list);
     }
 
-    // 내가 보낸 친구 요청 목록
     @GetMapping("/requests/sent")
-    public List<FriendDTO.RequestResponse> getSentFriendRequests(
-            @AuthenticationPrincipal MemberSecurityDTO principal) {
-        return friendService.getSentFriendRequests(principal.getMno());
+    public ResponseEntity<?> getSentFriendRequests(@AuthenticationPrincipal MemberSecurityDTO principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
+
+        List<FriendDTO.RequestResponse> list = friendService.getSentFriendRequests(principal.getMno());
+        return ResponseEntity.ok(list);
     }
 
     @GetMapping("/online")
-    public ResponseEntity<List<String>> getOnlineFriends(Principal principal) {
-        if (principal == null) {
-            System.out.println("❌ Principal is null");
-            return ResponseEntity.ok(List.of());
-        }
+    public ResponseEntity<?> getOnlineFriends(Principal principal) {
+        if (principal == null)
+            return ResponseEntity.status(401).build();
 
         String me = principal.getName();
-        System.out.println("✅ Online Friends 요청자: " + me);
-
         List<String> onlineFriends = userStatusService.getOnlineFriendUsernames(me);
         return ResponseEntity.ok(onlineFriends);
     }

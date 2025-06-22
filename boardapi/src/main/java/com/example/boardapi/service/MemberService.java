@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final MemberRepository memberRepository;
     private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<String, String> redisTemplate;
 
     // 회원가입: 이메일(=username)로 중복 체크, name(아이디/닉네임)은 별도 중복 체크
     public MemberResponseDTO register(MemberRequestDTO dto) {
@@ -59,6 +60,13 @@ public class MemberService {
         // DB에서 username(닉네임)으로 조회
         return memberRepository.findByUsername(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException("회원 정보 없음"));
+    }
+
+    // 로그아웃 (Redis에서 refresh 토큰 삭제)
+    public void logout(String username) {
+        String key = "user:" + username + ":refresh";
+        redisTemplate.delete(key);
+        log.info("🔓 로그아웃 처리: {} → Redis 키 삭제: {}", username, key);
     }
 
     // 닉네임 중복검사 (회원가입 시)

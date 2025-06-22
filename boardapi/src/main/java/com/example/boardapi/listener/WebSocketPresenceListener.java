@@ -35,7 +35,7 @@ public class WebSocketPresenceListener {
         String user = sha.getUser().getName();
         String sessionId = sha.getSessionId();
 
-        userStatusService.markOnline(user, sessionId); // ✅ 위임
+        userStatusService.markOnline(user, sessionId); // 위임
 
     }
 

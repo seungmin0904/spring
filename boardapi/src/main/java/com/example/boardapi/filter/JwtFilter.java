@@ -35,31 +35,54 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String uri = request.getRequestURI();
-        if ("/api/members/login".equals(uri) || "/api/members/register".equals(uri)) {
+
+        // 퍼밋 경로는 토큰 검사 생략
+        if ("/api/members/login".equals(uri) || "/api/members/register".equals(uri) || "/auth/refresh".equals(uri)) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String authHeader = request.getHeader("Authorization");
+
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
             if (jwtTokenProvider.validateToken(token)) {
-                // JwtTokenProvider가 반환하는 Authentication은 UsernamePasswordAuthenticationToken
-                var auth = jwtTokenProvider.getAuthentication(token);
-                // AbstractAuthenticationToken 으로 캐스팅 후 setDetails 호출
-                if (auth instanceof AbstractAuthenticationToken aat) {
-                    aat.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(aat);
-                } else {
-                    SecurityContextHolder.getContext().setAuthentication(auth);
-                }
+                Authentication auth = jwtTokenProvider.getAuthentication(token);
+                setAuth(auth, request);
             } else {
-                log.warn("❌ Invalid or expired JWT for URI {}: {}", uri, token);
+                // 엑세스 토큰이 만료된 경우 리프레시 시도
+                String refreshHeader = request.getHeader("Authorization-Refresh");
+
+                if (refreshHeader != null && refreshHeader.startsWith("Bearer ")) {
+                    String refreshToken = refreshHeader.substring(7);
+
+                    if (jwtTokenProvider.validateRefreshToken(refreshToken)) {
+                        // 새 엑세스 토큰 발급
+                        String newAccessToken = jwtTokenProvider.generateAccessTokenFromRefresh(refreshToken);
+                        Authentication auth = jwtTokenProvider.getAuthentication(newAccessToken);
+                        setAuth(auth, request);
+
+                        // 응답 헤더에 새 엑세스 토큰 추가
+                        response.setHeader("Authorization", "Bearer " + newAccessToken);
+                    } else {
+                        log.warn("❌ Invalid Refresh Token for URI {}: {}", uri, refreshToken);
+                    }
+                } else {
+                    log.warn("❌ Invalid or expired JWT for URI {}: {}", uri, token);
+                }
             }
         }
 
         filterChain.doFilter(request, response);
     }
 
+    private void setAuth(Authentication auth, HttpServletRequest request) {
+        if (auth instanceof AbstractAuthenticationToken aat) {
+            aat.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(aat);
+        } else {
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+    }
 }
