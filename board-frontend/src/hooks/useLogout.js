@@ -1,16 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/lib/axiosInstance";
-import { useToast } from "@/hooks/use-toast"; // optional
+import { useToast } from "@/hooks/use-toast";
+import { useSocket } from "@/context/WebSocketContext"; //  WebSocketContext에서 공유된 인스턴스 사용
 
 export const useLogout = () => {
   const navigate = useNavigate();
-  const { toast } = useToast(); // optional
+  const { toast } = useToast();
+  const { disconnect } = useSocket(); //  진짜 연결된 WebSocket 인스턴스에서 disconnect 가져옴
 
   return async () => {
     try {
       await axiosInstance.post("/members/logout");
 
-      // 로컬 저장소 초기화
+      disconnect?.(); //  WebSocket 종료 → 서버에서 markOffline() → Redis 정리
+
       localStorage.removeItem("token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("username");

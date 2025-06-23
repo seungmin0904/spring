@@ -39,22 +39,30 @@ public class UserStatusService {
         private final MemberRepository memberRepository;
 
         public void markOnline(String username, String sessionId) {
-                String sessionsKey = "user:" + username + ":sessions";
-                redisTemplate.opsForSet().add(sessionsKey, sessionId);
-                Long count = redisTemplate.opsForSet().size(sessionsKey);
+                String sessionKey = "user:" + username + ":sessions";
 
-                // 디버깅 로그
-                log.info("🟢 Connected: user={}, sessionId={}, count={}", username, sessionId, count);
+                // Redis에 등록된 기존 세션들을 가져온다
+                Set<String> oldSessions = redisTemplate.opsForSet().members(sessionKey);
+                if (oldSessions != null) {
+                        for (String oldSession : oldSessions) {
+                                redisTemplate.opsForSet().remove(sessionKey, oldSession);
+                                log.info("♻️ 재연결: 이전 세션 {} 제거됨", oldSession);
+                        }
+                }
 
-                if (count == 1) {
-                        redisTemplate.opsForSet().add("online_users", username);
+                // 새 세션만 남도록 등록
+                redisTemplate.opsForSet().add(sessionKey, sessionId);
 
-                        // 상태 브로드캐스트
+                // online_users 등록 (이미 들어있어도 중복 안전)
+                redisTemplate.opsForSet().add("online_users", username);
+                log.info(" 최종 세션 등록: user={}, sessionId={}", username, sessionId);
+
+                // 최초 등록인 경우에만 브로드캐스트
+                if (oldSessions == null || oldSessions.isEmpty()) {
                         eventPublisher.publishOnline(username);
                         messagingTemplate.convertAndSend("/topic/online-users",
                                         new StatusChangeEvent(username, UserStatus.ONLINE));
 
-                        // 친구에게만 전송
                         for (String friend : getFriendUsernames(username)) {
                                 messagingTemplate.convertAndSendToUser(friend, "/queue/status",
                                                 Map.of("username", username, "status", "ONLINE"));

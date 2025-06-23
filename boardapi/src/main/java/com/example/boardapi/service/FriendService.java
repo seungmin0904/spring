@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class FriendService {
     private final FriendRepository friendRepository;
     private final MemberRepository memberRepository;
     private final MemberService memberService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
     @Qualifier("friendEventRedisTemplate")
@@ -131,6 +133,12 @@ public class FriendService {
                 FriendDTO.RequestResponse.from(friend));
         redisTemplate.convertAndSend(RedisChannelConstants.FRIEND_REQUEST_CHANNEL, toAccepter);
 
+        // 서버 연결끊김 대비 websoket 전송 보강
+        String requesterUsername = memberRepository.findUsernameById(friend.getMemberA().getMno());
+        String accepterUsername = memberRepository.findUsernameById(friend.getMemberB().getMno());
+
+        messagingTemplate.convertAndSendToUser(requesterUsername, "/queue/friend", toRequester);
+        messagingTemplate.convertAndSendToUser(accepterUsername, "/queue/friend", toAccepter);
         // 반대방향 REJECTED 기록 제거
         friendRepository.findByMemberAAndMemberB(friend.getMemberB(), friend.getMemberA())
                 .filter(f -> f.getStatus() == FriendStatus.REJECTED)
