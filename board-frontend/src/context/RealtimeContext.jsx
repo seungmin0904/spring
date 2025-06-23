@@ -85,6 +85,7 @@ export function RealtimeProvider({ children, socket }) {
       console.log("🟥 RealtimeProvider Mounted");
       connect(token, () => {
         console.log("🟢 WebSocket connected → setReady(true)");
+        initFriendState();
         setReady(true);
       });
     }

@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Stomp from 'stompjs';
-import refreshAxios from '@/lib/axiosInstance'; // refreshAxios 사용
+import refreshAxios from '@/lib/axiosInstance';
 
 export const useWebSocket = (token, onConnect) => {
   const stompRef = useRef(null);
@@ -46,10 +46,7 @@ export const useWebSocket = (token, onConnect) => {
       }
     } catch (err) {
       console.error("❌ Token refresh failed", err);
-      localStorage.removeItem("token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("username");
-      localStorage.removeItem("name");
+      localStorage.clear();
       window.location.href = "/login";
     }
     return null;
@@ -59,19 +56,21 @@ export const useWebSocket = (token, onConnect) => {
     let authToken = tokenArg || tokenRef.current;
     if (!authToken) return;
 
-    if (stompRef.current?.connected) {
-      console.log('⚠️ WebSocket already connected');
-      return;
+    // ✅ 기존 stomp 인스턴스 제거 (중복 방지)
+    if (stompRef.current) {
+      try {
+        stompRef.current.disconnect();
+      } catch (e) {
+        console.warn("⚠️ Disconnect error during cleanup", e);
+      }
+      stompRef.current = null;
     }
 
-    if (stompRef.current?.ws && stompRef.current.ws.readyState !== WebSocket.CLOSED) {
-      console.log("🧹 Closing previous WebSocket before reconnect");
-      stompRef.current.ws.close();
-    }
-
+    // ✅ 새로운 WebSocket + STOMP 생성
     const socket = new WebSocket("ws://localhost:8080/ws-chat");
     const client = Stomp.over(socket);
     client.debug = () => {};
+    stompRef.current = client;
 
     client.onWebSocketError = (e) => {
       console.error("❌ WebSocket Error", e);
@@ -89,7 +88,6 @@ export const useWebSocket = (token, onConnect) => {
       { Authorization: "Bearer " + authToken },
       () => {
         console.log("✅ WebSocket connected");
-        stompRef.current = client;
         setConnected(true);
         reconnectAttempt.current = 0;
         reconnectTimer.current = null;
@@ -114,6 +112,7 @@ export const useWebSocket = (token, onConnect) => {
       }
     );
   }, [onConnect]);
+  
 
   useEffect(() => {
     if (!tokenRef.current || reconnectTimer.current) return;
@@ -164,12 +163,18 @@ export const useWebSocket = (token, onConnect) => {
   }, [connected]);
 
   const send = useCallback((destination, body) => {
-    if (stompRef.current && connected) {
+    const socketReady =
+    stompRef.current?.ws && stompRef.current.ws.readyState === WebSocket.OPEN;
+
+    if (stompRef.current && connected && socketReady) {
       stompRef.current.send(destination, {}, JSON.stringify(body));
     } else {
-      console.warn("❌ Cannot send message – not connected");
-    }
-  }, [connected]);
+     console.warn("❌ Cannot send message – WebSocket not ready", {
+      connected,
+      readyState: stompRef.current?.ws?.readyState,
+    });
+  }
+}, [connected]);
 
   return {
     connected,
