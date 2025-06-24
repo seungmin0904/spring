@@ -4,7 +4,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 
-// ESM에서 __dirname 대체
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -32,9 +31,11 @@ export default defineConfig({
     global: 'globalThis',
   },
   server: {
+    host: true, // ✅ 모바일 접속 허용 추가
+    port: 5173, // (필요 시 명시적으로 작성)
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // 백엔드 포트에 맞게 수정
+        target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },

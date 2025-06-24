@@ -8,134 +8,218 @@ export default function useMediasoupClient() {
   const socketRef = useRef(null);
   const deviceRef = useRef(null);
   const sendTransportRef = useRef(null);
+  const recvTransportRef = useRef(null);
 
-  // 1. 소켓 연결 및 Device 준비
   useEffect(() => {
-    console.log("🧩 useEffect: Connecting to mediasoup server...");
     socketRef.current = io(SERVER_URL);
 
     socketRef.current.on('connect', async () => {
-      console.log('✅ Connected to mediasoup server:', socketRef.current.id);
+      console.log('✅ Connected to mediasoup server');
 
-      try {
-        const device = new mediasoupClient.Device();
-        deviceRef.current = device;
-        console.log("📱 mediasoup Device created");
+      const device = new mediasoupClient.Device();
+      deviceRef.current = device;
 
-        // 1-2. 서버로부터 RTP Capabilities 수신
-        socketRef.current.emit('getRtpCapabilities', async (rtpCapabilities) => {
-          try {
-            console.log("📡 Received RTP Capabilities:", rtpCapabilities);
-            await device.load({ routerRtpCapabilities: rtpCapabilities });
-            console.log('✅ Device loaded with RTP Capabilities');
-          } catch (err) {
-            console.error("❌ device.load() 실패:", err);
-          }
-        });
-      } catch (err) {
-        console.error("❌ Device 생성 실패:", err);
-      }
+      socketRef.current.emit('getRtpCapabilities', async (rtpCapabilities) => {
+        console.log("🎯 RTP Capabilities:", rtpCapabilities.codecs.map(c => c.mimeType));
+        await device.load({ routerRtpCapabilities: rtpCapabilities });
+        console.log('📡 Device loaded');
+      });
     });
 
-    socketRef.current.on('connect_error', (err) => {
-      console.error("❌ Socket connect_error:", err);
+    socketRef.current.on('newProducer', async ({ producerId }) => {
+      console.log("🎧 New producer detected:", producerId);
+      await consumeSpecificAudio(producerId);
     });
 
-    socketRef.current.on('disconnect', (reason) => {
-      console.warn("⚠️ Socket disconnected:", reason);
-    });
-
-    return () => {
-      console.log("🔌 Cleaning up socket connection");
-      socketRef.current.disconnect();
-    };
+    return () => socketRef.current.disconnect();
   }, []);
 
-  // 2. WebRTC Transport 생성 및 연결
   const createSendTransport = async () => {
-    console.log("🛠️ createSendTransport called");
-
-    if (!socketRef.current || !socketRef.current.connected) {
-      console.error("❌ socket not connected");
-      return;
-    }
-    if (!deviceRef.current) {
-      console.error("❌ deviceRef is null");
-      return;
-    }
-
     return new Promise((resolve, reject) => {
       socketRef.current.emit('createWebRtcTransport', { direction: 'send' }, async (params) => {
-        console.log("📡 createWebRtcTransport response:", params);
-        if (params.error) {
-          console.error('❌ Transport creation failed:', params.error);
-          reject(params.error);
-          return;
-        }
-
         try {
           const transport = deviceRef.current.createSendTransport(params);
           sendTransportRef.current = transport;
-          console.log("🚚 SendTransport created:", transport.id);
 
           transport.on('connect', ({ dtlsParameters }, callback, errback) => {
-            console.log("🔗 SendTransport connecting with DTLS:", dtlsParameters);
-            socketRef.current.emit('connectTransport', { transportId: transport.id, dtlsParameters }, (response) => {
-              console.log("✅ connectTransport response:", response);
-              if (response.error) {
-                console.error("❌ Transport connect error:", response.error);
-                errback(response.error);
-              } else {
-                callback();
-              }
+            socketRef.current.emit('connectTransport', { transportId: transport.id, dtlsParameters }, (res) => {
+              res.error ? errback(res.error) : callback();
             });
           });
 
           transport.on('produce', ({ kind, rtpParameters }, callback, errback) => {
-            console.log("📦 Producing track:", kind, rtpParameters);
             socketRef.current.emit('produce', { transportId: transport.id, kind, rtpParameters }, ({ id, error }) => {
-              if (error) {
-                console.error("❌ Produce error:", error);
-                errback(error);
-              } else {
-                console.log("✅ Producer created:", id);
-                callback({ id });
-              }
+              error ? errback(error) : callback({ id });
             });
           });
 
-          resolve(); // ✅ transport 생성 완료됨
+          resolve();
         } catch (err) {
-          console.error("❌ createSendTransport exception:", err);
           reject(err);
         }
       });
     });
   };
 
-  // 3. 오디오 트랙 전송
   const sendAudio = async () => {
     console.log("🎤 sendAudio called");
-
+  
     if (!sendTransportRef.current) {
-      console.error('❌ Transport not ready');
+      console.warn("❌ sendTransportRef is null");
       return;
     }
-
+  
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const track = stream.getAudioTracks()[0];
-      console.log("🎙️ Got local audio track:", track);
-
-      const producer = await sendTransportRef.current.produce({ track });
-      console.log("✅ Audio track sent. Producer ID:", producer.id);
+      console.log("🎙️ Got local audio track:", track.label);
+  
+      // 🔍 마이크 입력 볼륨 확인용 분석기 연결
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      source.connect(analyser);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+  
+      setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        console.log("🎙️ Mic volume level:", avg.toFixed(2));
+      }, 500);
+  
+      // ✅ 실제 송신
+      await sendTransportRef.current.produce({ track });
+      console.log("📤 Audio produced successfully");
     } catch (err) {
-      console.error("❌ Failed to get audio or produce track:", err);
+      console.error("❌ sendAudio error:", err);
     }
   };
+  
 
+  const createRecvTransport = async () => {
+    return new Promise((resolve, reject) => {
+      socketRef.current.emit('createWebRtcTransport', { direction: 'recv' }, async (params) => {
+        try {
+          const transport = deviceRef.current.createRecvTransport(params);
+          recvTransportRef.current = transport;
+
+          transport.on('connect', ({ dtlsParameters }, callback, errback) => {
+            socketRef.current.emit('connectTransport', { transportId: transport.id, dtlsParameters }, (res) => {
+              res.error ? errback(res.error) : callback();
+            });
+          });
+
+          // ✅ 기존 producer들 요청
+          socketRef.current.emit('getProducers', async (producerIds) => {
+            for (const producerId of producerIds) {
+              console.log("📦 Found existing producer:", producerId);
+              await consumeSpecificAudio(producerId);
+            }
+          });
+
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  };
+
+  const consumeSpecificAudio = async (producerId) => {
+    if (!recvTransportRef.current) {
+      console.warn("⚠️ recvTransportRef is null at consume time");
+      return;
+    }
+  
+    console.log("🔄 Attempting to consume audio from producer:", producerId);
+  
+    socketRef.current.emit(
+      'consume',
+      {
+        transportId: recvTransportRef.current.id,
+        producerId,
+      },
+      async (params) => {
+        if (params.error) return console.error("❌ consume error:", params.error);
+  
+        const { id, kind, rtpParameters } = params;
+  
+        console.log("🎧 Consumed codec mimeType:", rtpParameters.codecs?.[0]?.mimeType);
+  
+        try {
+          const consumer = await recvTransportRef.current.consume({
+            id,
+            producerId,
+            kind,
+            rtpParameters,
+          });
+  
+          console.log("👂 consumer.track:", consumer.track);
+          console.log("🎤 consumer.track.enabled:", consumer.track.enabled);
+  
+          const stream = new MediaStream();
+          stream.addTrack(consumer.track);
+  
+          console.log("📦 MediaStream tracks:", stream.getTracks());
+          console.log("🎧 stream.getAudioTracks():", stream.getAudioTracks());
+  
+          // ✅ GainNode로 볼륨 증폭 처리 + AudioContext 상태 확인
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          console.log("🔊 AudioContext state (초기):", audioContext.state);
+  
+          audioContext.onstatechange = () => {
+            console.log("📻 AudioContext state changed to:", audioContext.state);
+          };
+  
+          const source = audioContext.createMediaStreamSource(stream);
+          const gainNode = audioContext.createGain();
+          gainNode.gain.value = 3.0;
+  
+          source.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+  
+          try {
+            await audioContext.resume();
+            console.log("🟢 AudioContext resumed");
+          } catch (e) {
+            console.warn("❌ AudioContext resume 실패:", e);
+          }
+  
+          // 🔇 <audio>는 별도로 유지 (Autoplay 정책 대응 및 시각화용)
+          const audio = new Audio();
+          audio.srcObject = stream;
+          audio.autoplay = true;
+          audio.muted = false;
+          audio.volume = 1.0;
+  
+          document.body.appendChild(audio);
+  
+          audio.addEventListener("playing", () => {
+            console.log("🔈 actually playing");
+          });
+          audio.addEventListener("error", (e) => {
+            console.warn("❗ Audio playback error:", e);
+          });
+  
+          console.log("🔊 Audio element 상태:", audio);
+  
+          try {
+            await audio.play();
+            console.log("🔊 Audio playback started for producer:", producerId);
+          } catch (err) {
+            console.warn("🔇 Audio playback failed:", err);
+          }
+        } catch (err) {
+          console.error("❌ Failed to create consumer or audio:", err);
+        }
+      }
+    );
+  };
+  
   return {
     createSendTransport,
     sendAudio,
+    createRecvTransport,
+    consumeSpecificAudio,
   };
 }

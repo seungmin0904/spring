@@ -41,6 +41,19 @@ function App() {
     setIsLoading(false);
   }, []);
 
+  // useEffect(() => {
+  //   // ✅ 테스트용 오디오 엘리먼트 삽입 (자동 재생 확인용)
+  //   const testAudio = document.createElement('audio');
+  //   testAudio.src = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
+  //   testAudio.autoplay = true;
+  //   testAudio.controls = true;
+  //   testAudio.volume = 1.0;
+  //   testAudio.style.position = 'fixed';
+  //   testAudio.style.bottom = '10px';
+  //   testAudio.style.left = '10px';
+  //   document.body.appendChild(testAudio);
+  // }, []);
+
   const handleLogin = async (token) => {
     try {
       localStorage.setItem("token", token);

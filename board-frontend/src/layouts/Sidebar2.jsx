@@ -12,14 +12,18 @@ export default function Sidebar2({
 }) {
   const { user } = useUser();
   const currentUserId = user?.id;
-  const { createSendTransport, sendAudio } = useMediasoupClient();
+  const {
+    createSendTransport,
+    sendAudio,
+    createRecvTransport,
+    consumeSpecificAudio
+  } = useMediasoupClient();
 
   const [friends, setFriends] = useState([]);
   const [channels, setChannels] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState("TEXT");
-
   const [inviteCode, setInviteCode] = useState("");
   const [inviteChannelId, setInviteChannelId] = useState(null);
 
@@ -55,13 +59,12 @@ export default function Sidebar2({
         description: "",
         serverId,
         roomType: "SERVER",
-      })
-        .then(() => {
-          setShowCreate(false);
-          setNewName("");
-          setNewType("TEXT");
-          fetchChannels();
-        });
+      }).then(() => {
+        setShowCreate(false);
+        setNewName("");
+        setNewType("TEXT");
+        fetchChannels();
+      });
     }
   }
 
@@ -127,7 +130,6 @@ export default function Sidebar2({
     );
   }
 
-  // --- 서버 채널 모드 ---
   return (
     <div className="w-[260px] min-w-[200px] max-w-[320px] h-full bg-[#2b2d31] flex flex-col border-r border-[#232428]">
       <div className="flex-1 flex flex-col">
@@ -184,19 +186,19 @@ export default function Sidebar2({
             <li
               key={ch.id ?? `voicech-${i}`}
               className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-             onClick={async () => {
-              console.log("🔊 음성 채널 클릭:", ch.id);
-  if (onSelectChannel) onSelectChannel(ch.id);
-
-  // 음성 채널 입장 → Transport 생성 + Audio 송신
-  try {
-    await createSendTransport();
-    await sendAudio();
-    console.log("🎤 음성 채널 입장 완료:", ch.id);
-  } catch (err) {
-    console.error("❌ 음성 송신 실패:", err);
-  }
-}}
+              onClick={async () => {
+                console.log("🔊 음성 채널 클릭:", ch.id);
+                if (onSelectChannel) onSelectChannel(ch.id);
+                try {
+                  await createSendTransport();
+                  await sendAudio();
+                  await createRecvTransport();
+                  // consume은 newProducer 이벤트로 자동 처리
+                  console.log("🎤 음성 채널 입장 완료:", ch.id);
+                } catch (err) {
+                  console.error("❌ 음성 송수신 실패:", err);
+                }
+              }}
             >
               <span>🔊</span>
               <span className="flex-1">{ch?.name || "이름없음"}</span>
@@ -243,9 +245,7 @@ export default function Sidebar2({
                 {inviteCode}
               </div>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(inviteCode);
-                }}
+                onClick={() => navigator.clipboard.writeText(inviteCode)}
                 className="bg-blue-600 text-white rounded px-3 py-1 mb-2"
               >코드 복사</button>
               <button
