@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 import { useUser } from "@/context/UserContext";
+import useMediasoupClient from "@/hooks/useMediaSoupClient";
 
 export default function Sidebar2({
   dmMode,
@@ -9,8 +10,9 @@ export default function Sidebar2({
   onSelectDMRoom,
   onSelectChannel
 }) {
-  const { user } = useUser();           
+  const { user } = useUser();
   const currentUserId = user?.id;
+  const { createSendTransport, sendAudio } = useMediasoupClient();
 
   const [friends, setFriends] = useState([]);
   const [channels, setChannels] = useState([]);
@@ -81,12 +83,8 @@ export default function Sidebar2({
     setInviteChannelId(null);
   }
 
-  const textChannels = channels.filter(
-    ch => (ch?.type || '').toUpperCase().trim() === "TEXT"
-  );
-  const voiceChannels = channels.filter(
-    ch => (ch?.type || '').toUpperCase().trim() === "VOICE"
-  );
+  const textChannels = channels.filter(ch => (ch?.type || '').toUpperCase().trim() === "TEXT");
+  const voiceChannels = channels.filter(ch => (ch?.type || '').toUpperCase().trim() === "VOICE");
 
   if (dmMode) {
     return (
@@ -106,11 +104,6 @@ export default function Sidebar2({
               key={f.friendId}
               className="px-3 py-2 rounded flex items-center hover:bg-zinc-800 cursor-pointer transition"
               onClick={async () => {
-                // 로그 추가: 실제로 보내는 값 확인
-                console.log("DM방 생성 요청", {
-                  myId: currentUserId,
-                  friendId: f.memberId
-                });
                 try {
                   const res = await axios.post("/dm/room", {
                     myId: currentUserId,
@@ -172,6 +165,7 @@ export default function Sidebar2({
             </li>
           ))}
         </ul>
+
         {/* 음성 채널 */}
         <div className="flex items-center justify-between px-4 mt-2 mb-1">
           <span className="text-xs text-zinc-400 font-bold">음성 채널</span>
@@ -190,7 +184,19 @@ export default function Sidebar2({
             <li
               key={ch.id ?? `voicech-${i}`}
               className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-              onClick={() => onSelectChannel && onSelectChannel(ch.id)}
+             onClick={async () => {
+              console.log("🔊 음성 채널 클릭:", ch.id);
+  if (onSelectChannel) onSelectChannel(ch.id);
+
+  // 음성 채널 입장 → Transport 생성 + Audio 송신
+  try {
+    await createSendTransport();
+    await sendAudio();
+    console.log("🎤 음성 채널 입장 완료:", ch.id);
+  } catch (err) {
+    console.error("❌ 음성 송신 실패:", err);
+  }
+}}
             >
               <span>🔊</span>
               <span className="flex-1">{ch?.name || "이름없음"}</span>
@@ -202,6 +208,7 @@ export default function Sidebar2({
             </li>
           ))}
         </ul>
+
         {/* 채널 생성 모달 */}
         {showCreate && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40">
@@ -226,6 +233,7 @@ export default function Sidebar2({
             </div>
           </div>
         )}
+
         {/* 초대코드 모달 */}
         {inviteCode && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
