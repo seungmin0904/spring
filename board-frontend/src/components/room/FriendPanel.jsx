@@ -265,7 +265,7 @@ export default function FriendPanel() {
             </div>
             <div className="flex gap-2">
               <input
-                className="flex-1 rounded p-2"
+                className="flex-1 rounded p-2 text-white bg-zinc-800 placeholder-zinc-400"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="닉네임 입력"
