@@ -86,6 +86,7 @@ export function RealtimeProvider({ children, socket }) {
       connect(token, () => {
         console.log("🟢 WebSocket connected → setReady(true)");
         initFriendState();
+        subscribeAll();
         setReady(true);
       });
     }
@@ -95,27 +96,27 @@ export function RealtimeProvider({ children, socket }) {
     };
   }, [token]);
 
-  useEffect(() => {
-    if (!connected || !ready || !username) return;
-
+  function subscribeAll() {
+    if (!username) return;
+  
     const subStatus = subscribe(`/user/queue/status`, ev => {
       console.log("🟢 실시간 상태 수신:", ev);
       dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
     });
-
+  
     const subBroadcast = subscribe(`/topic/status`, ev => {
       console.log("📣 브로드캐스트 상태 수신:", ev);
       dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
     });
-
+  
     const subNoti = subscribe(`/user/queue/notifications.${username}`, msg => {
       dispatch({ type: 'ADD_NOTIFICATION', payload: msg });
     });
-
+  
     const subFriend = subscribe(`/user/queue/friend`, async payload => {
       try {
         const type = payload.type;
-
+  
         if (["REQUEST_RECEIVED", "REQUEST_CANCELLED", "REQUEST_ACCEPTED", "REQUEST_REJECTED"].includes(type)) {
           const [friendsRes, receivedRes, sentRes, onlineRes] = await Promise.all([
             axiosInstance.get("/friends"),
@@ -123,13 +124,13 @@ export function RealtimeProvider({ children, socket }) {
             axiosInstance.get("/friends/requests/sent"),
             axiosInstance.get("/friends/online"),
           ]);
-
+  
           dispatch({ type: "SET_FRIENDS", payload: friendsRes.data || [] });
           dispatch({ type: "SET_RECEIVED", payload: receivedRes.data || [] });
           dispatch({ type: "SET_SENT", payload: sentRes.data || [] });
           dispatch({ type: "SET_ONLINE_USERS", payload: onlineRes.data || [] });
         }
-
+  
         else if (type === "FRIEND_DELETED") {
           const friendId = payload.payload?.requestId;
           if (friendId) {
@@ -142,16 +143,15 @@ export function RealtimeProvider({ children, socket }) {
         console.error("❌ 친구 요청 WebSocket 처리 실패:", err);
       }
     });
-
-    initFriendState();
-
+  
+    // ✅ 언마운트 시 구독 해제용 반환
     return () => {
       subStatus.unsubscribe();
       subBroadcast.unsubscribe();
       subNoti.unsubscribe();
       subFriend.unsubscribe();
     };
-  }, [connected, ready, subscribe, username]);
+  }
 
   return (
     <RealtimeContext.Provider value={{ state, dispatch }}>

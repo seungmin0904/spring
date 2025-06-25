@@ -140,27 +140,40 @@ export const useWebSocket = (token, onConnect) => {
   }, []);
 
   const subscribe = useCallback((topic, callback) => {
-    if (!stompRef.current || !connected) {
-      console.warn(`⛔ Cannot subscribe to ${topic} – not connected`);
+    const client = stompRef.current;
+  
+    const wsReady =
+      client?.ws && client.ws.readyState === WebSocket.OPEN;
+  
+    if (!client || !client.connected || !wsReady) {
+      console.warn(`⛔ Cannot subscribe to ${topic} – WebSocket not fully open`, {
+        clientConnected: client?.connected,
+        wsReadyState: client?.ws?.readyState,
+      });
       return { unsubscribe: () => {} };
     }
-
-    const sub = stompRef.current.subscribe(topic, msg => {
-      callback(JSON.parse(msg.body));
-    });
-
-    return {
-      unsubscribe: () => {
-        try {
-          if (stompRef.current?.connected) {
-            sub.unsubscribe();
+  
+    try {
+      const sub = client.subscribe(topic, msg => {
+        callback(JSON.parse(msg.body));
+      });
+  
+      return {
+        unsubscribe: () => {
+          try {
+            if (client.connected) {
+              sub.unsubscribe();
+            }
+          } catch (e) {
+            console.warn("❗ unsubscribe failed", e);
           }
-        } catch (e) {
-          console.warn("❗ unsubscribe failed", e);
         }
-      }
-    };
-  }, [connected]);
+      };
+    } catch (e) {
+      console.error(`❌ Error subscribing to ${topic}:`, e);
+      return { unsubscribe: () => {} };
+    }
+  }, []);
 
   const send = useCallback((destination, body) => {
     const socketReady =
