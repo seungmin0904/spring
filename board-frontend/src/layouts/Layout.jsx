@@ -94,10 +94,9 @@ export default function MainLayout() {
   
           />
           <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
-          <div className="flex-1 min-w-0">
-            <Outlet />
+          
           </div>
         </div>
-      </div>
+      
   );
 }

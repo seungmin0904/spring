@@ -16,6 +16,8 @@ import MyPage from "@/pages/MyPage";
 import axiosInstance from "@/lib/axiosInstance";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketContext } from "@/context/WebSocketContext";
+import { Toaster } from "@/components/ui/toaster";
+
 
 function App() {
   const [token, setToken] = useState(null);
@@ -64,7 +66,7 @@ function App() {
       localStorage.setItem("user", JSON.stringify(full));
       setUser(full);
 
-      window.location.href = "/";
+      // window.location.href = "/";
     } catch (e) {
       console.error("로그인 처리 중 오류", e);
     }
@@ -86,6 +88,7 @@ function App() {
       <ThemeProvider>
         <UserContext.Provider value={{ user, setUser }}>
           <RealtimeProvider socket={ws}> {/* ✅ ws 주입 */}
+            <Toaster />
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<RootLayout onLogout={handleLogout} />}>

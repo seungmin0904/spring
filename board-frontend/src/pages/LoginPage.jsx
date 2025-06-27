@@ -34,7 +34,7 @@ const LoginPage = ({ onLogin }) => {
         });
 
         onLogin(result.token);
-        navigate("/");
+          navigate("/");    
       } else {
         throw new Error("서버가 사용자 정보를 반환하지 않았습니다.");
       }

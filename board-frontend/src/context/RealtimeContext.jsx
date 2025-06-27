@@ -3,6 +3,7 @@ import { useState, createContext, useContext, useReducer, useEffect } from 'reac
 import axiosInstance from '@/lib/axiosInstance';
 import { useUser } from './UserContext';
 import { usePing } from '@/hooks/usePing';
+import { useToast } from "@/hooks/use-toast";
 
 const RealtimeContext = createContext();
 
@@ -47,19 +48,19 @@ function realtimeReducer(state, action) {
         ...state,
         friends: state.friends.filter(f => f.friendId !== action.payload)
       };
-    default:
-      return state;
-  }
-}
-
-export function RealtimeProvider({ children, socket }) {
-  const [state, dispatch] = useReducer(realtimeReducer, initialState);
-  const [ready, setReady] = useState(false);
+      default:
+        return state;
+      }
+    }
+    
+    export function RealtimeProvider({ children, socket }) {
+      const [state, dispatch] = useReducer(realtimeReducer, initialState);
+      const [ready, setReady] = useState(false);
   const { user } = useUser();
   const username = user?.username;
   const token = user?.token;
-
   const { connected, subscribe, connect, disconnect } = socket;
+  const { toast } = useToast();
   usePing();
 
   const initFriendState = async () => {
@@ -98,11 +99,22 @@ export function RealtimeProvider({ children, socket }) {
 
   function subscribeAll() {
     if (!username) return;
-  
+    
+
     const subStatus = subscribe(`/user/queue/status`, ev => {
       console.log("🟢 실시간 상태 수신:", ev);
       dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
+       if (ev.username !== username) {
+        
+      toast({
+        title: ev.status === "ONLINE" ? "🔔 친구 접속" : "🔕 친구 퇴장",
+        description: `${ev.username}님이 ${ev.status} 상태가 되었습니다.`,
+      });
+    }
+  
     });
+
+    
   
     const subBroadcast = subscribe(`/topic/status`, ev => {
       console.log("📣 브로드캐스트 상태 수신:", ev);
