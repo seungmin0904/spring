@@ -81,7 +81,14 @@ export default function useMediasoupClient() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      
+      });
       const track = stream.getAudioTracks()[0];
       console.log("🎙️ Got local audio track:", track.label);
 
@@ -119,7 +126,7 @@ export default function useMediasoupClient() {
         try {
           const transport = deviceRef.current.createRecvTransport({
             ...params,
-            iceServers: params.iceServers
+            iceServers: []
           });
           recvTransportRef.current = transport;
 
@@ -192,12 +199,12 @@ export default function useMediasoupClient() {
             console.log("📻 AudioContext state changed to:", audioContext.state);
           };
 
-          const source = audioContext.createMediaStreamSource(stream);
-          const gainNode = audioContext.createGain();
-          gainNode.gain.value = 3.0;
+          // const source = audioContext.createMediaStreamSource(stream);
+          // const gainNode = audioContext.createGain();
+          // gainNode.gain.value = 3.0;
 
-          source.connect(gainNode);
-          gainNode.connect(audioContext.destination);
+          // source.connect(gainNode);
+          // gainNode.connect(audioContext.destination);
 
           try {
             await audioContext.resume();
@@ -210,7 +217,7 @@ export default function useMediasoupClient() {
           audio.srcObject = stream;
           audio.autoplay = true;
           audio.muted = false;
-          audio.volume = 1.0;
+          audio.volume = 0.8;
 
           document.body.appendChild(audio);
 
