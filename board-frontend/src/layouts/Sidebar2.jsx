@@ -26,6 +26,7 @@ export default function Sidebar2({
   const [newType, setNewType] = useState("TEXT");
   const [inviteCode, setInviteCode] = useState("");
   const [inviteChannelId, setInviteChannelId] = useState(null);
+  const [dmRooms, setDmRooms] = useState([]);
 
   useEffect(() => {
     if (dmMode) {
@@ -45,6 +46,17 @@ export default function Sidebar2({
       .then(res => setChannels(Array.isArray(res.data) ? res.data : []))
       .catch(() => setChannels([]));
   }
+
+  useEffect(() => {
+    if (dmMode && currentUserId) {
+      axios.get(`/dm/rooms/${currentUserId}`)
+        .then(res => {
+          setDmRooms(Array.isArray(res.data) ? res.data : []);
+        })
+        .catch(() => setDmRooms([]));
+    }
+  }, [dmMode, currentUserId]);
+  
 
   function handleCreateChannel() {
     if (!newName.trim()) return;
@@ -91,7 +103,7 @@ export default function Sidebar2({
 
   if (dmMode) {
     return (
-      <div className="flex flex-col h-full bg-[#232428]">
+      <div className="w-[260px] min-w-[200px] max-w-[320px] flex flex-col h-full bg-[#2b2d31] border-r border-[#232428]">
         <div className="border-b border-[#232428] p-2">
           <button
             className="w-full text-left px-3 py-2 rounded text-white bg-[#2b2d31] hover:bg-[#36393f] transition font-bold"
@@ -102,29 +114,19 @@ export default function Sidebar2({
         </div>
         <div className="text-xs text-zinc-400 px-4 py-3 font-bold">다이렉트 메시지</div>
         <ul className="px-2">
-          {friends.map((f) => (
-            <li
-              key={f.friendId}
-              className="px-3 py-2 rounded flex items-center hover:bg-zinc-800 cursor-pointer transition"
-              onClick={async () => {
-                try {
-                  const res = await axios.post("/dm/room", {
-                    myId: currentUserId,
-                    friendId: f.memberId
-                  });
-                  const roomId = res.data.id;
-                  onSelectDMRoom(roomId);
-                } catch (err) {
-                  console.error("DM방 요청 실패", err);
-                }
-              }}
-            >
-              <span className="w-8 h-8 rounded-full bg-[#232428] flex items-center justify-center mr-2">
-                {(f?.name && f.name[0]) || "?"}
-              </span>
-              <span className="text-base">{f?.name || "이름없음"}</span>
-            </li>
-          ))}
+        {dmRooms.map((room) => (
+  <li
+    key={room.id}
+    className="px-3 py-2 rounded flex items-center hover:bg-zinc-800 cursor-pointer transition"
+    onClick={() => onSelectDMRoom(room.id)}  // ✅ 클릭 시 해당 DM방 오픈
+          >         
+            {/* <span className="w-8 h-8 rounded-full bg-[#232428] flex items-center justify-center mr-2">
+              프로필or아이콘 자리
+            </span> */}
+
+    <span className="text-base">{room?.name || "이름없음"}</span>  
+  </li>
+))}
         </ul>
       </div>
     );

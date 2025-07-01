@@ -27,17 +27,15 @@ public class DmRoomController {
     // 1:1 DM방 생성 또는 조회
     @PostMapping("/room")
     public ChatRoomResponseDTO createOrGetDmRoom(@RequestBody DmRoomRequestDTO request) {
+        System.out.println("👉 DM 생성 요청: myId=" + request.getMyId() + ", friendId=" + request.getFriendId());
         ChatRoom room = dmRoomService.getOrCreateDmRoom(request.getMyId(), request.getFriendId());
-        return ChatRoomResponseDTO.from(room);
+        return ChatRoomResponseDTO.from(room, request.getMyId());
     }
 
     // 내가 속한 DM방 리스트
     @GetMapping("/rooms/{memberId}")
     public List<ChatRoomResponseDTO> getMyDmRooms(@PathVariable Long memberId) {
-        return dmRoomService.findMyDmRooms(memberId)
-                .stream()
-                .map(ChatRoomResponseDTO::from)
-                .collect(Collectors.toList());
+        return dmRoomService.findMyDmRooms(memberId);
     }
 
     // DM방 참여자 리스트

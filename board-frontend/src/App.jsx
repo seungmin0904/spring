@@ -25,6 +25,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   const ws = useWebSocket(token); // ✅ 단일 생성
+  // 로컬스토리지 복원
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUserRaw = localStorage.getItem("user");
@@ -34,8 +35,9 @@ function App() {
         const parsedUser = JSON.parse(savedUserRaw);
         setToken(savedToken);
         setUser(parsedUser);
+        console.log("✅ localStorage 복원 성공", parsedUser);
       } catch (err) {
-        console.error("❌ Failed to parse savedUser:", err);
+        console.error("❌ localStorage user 파싱 실패", err);
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       }

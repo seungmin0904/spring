@@ -8,7 +8,6 @@ import NotificationCenter from '@/components/notification/NotificationCenter';
 import { useUser } from '@/context/UserContext';
 import { useSocket } from "@/context/WebSocketContext";
 
-
 export default function MainLayout() {
   const [selectedDM, setSelectedDM] = useState(false);
   const [selectedServerId, setSelectedServerId] = useState(null);
@@ -19,6 +18,7 @@ export default function MainLayout() {
 
   console.log("▶️ MainLayout user:", user);
   console.log("▶️ MainLayout token:", user?.token);
+  
   // 로컬스토리지에서 이전 선택 복원
   useEffect(() => {
     const sd = localStorage.getItem('selectedDM') === 'true';
@@ -67,36 +67,31 @@ export default function MainLayout() {
     localStorage.setItem('selectedRoomId', String(id));
     localStorage.setItem('friendMode', 'false');
   }
-  
 
   return (
-    // ① token 은 RealtimeContext 내에서 localStorage.getItem('token') 으로 꺼내므로
-    //    MainLayout 에서는 그냥 RealtimeProvider 로 감싸주기만 하면 됩니다.
-      <div className="flex flex-col h-screen w-screen">
-       
+    <div className="fixed inset-0 flex flex-col pt-16">
+      <div className="flex flex-1 min-h-0">
+        <Sidebar1 onSelectDM={handleSelectDM} onSelectServer={handleSelectServer} />
+        <Sidebar2
+          dmMode={selectedDM}
+          serverId={selectedServerId}
+          onSelectFriendPanel={handleSelectFriendPanel}
+          onSelectDMRoom={handleSelectDMRoom}
+          onSelectChannel={handleSelectChannel}
+        />
         <div className="flex flex-1 min-h-0">
-          <Sidebar1 onSelectDM={handleSelectDM} onSelectServer={handleSelectServer} />
-          <Sidebar2
-            dmMode={selectedDM}
-            serverId={selectedServerId}
-            onSelectFriendPanel={handleSelectFriendPanel}
-            onSelectDMRoom={handleSelectDMRoom}
-            onSelectChannel={handleSelectChannel}
-          />
           <Sidebar3
             dmMode={selectedDM}
             serverId={selectedServerId}
             roomId={selectedRoomId}
-          friendMode={friendMode}
-          subscribe={subscribe}
-          send={send}
-          currentUser={user}
-  
+            friendMode={friendMode}
+            subscribe={subscribe}
+            send={send}
+            currentUser={user}
           />
-          <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
-          
-          </div>
         </div>
-      
+        <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />
+      </div>
+    </div>
   );
 }

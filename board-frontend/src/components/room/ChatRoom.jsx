@@ -1,10 +1,19 @@
-import { useEffect, useState } from "react";
-import axios from "@/lib/axiosInstance"; 
+import { useEffect, useRef, useState } from "react";
+import axios from "@/lib/axiosInstance";
 
 export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
   const [messageMap, setMessageMap] = useState({});
   const [input, setInput] = useState("");
   const messages = messageMap[roomId] || [];
+
+  const scrollRef = useRef(null);
+
+  // 새 메시지 올 때마다 자동 스크롤 아래로
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   // 메시지 로딩
   useEffect(() => {
@@ -35,9 +44,7 @@ export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
         [roomId]: [...(prev[roomId] || []), payload]
       }));
     });
-    return () => {
-      sub?.unsubscribe?.();
-    };
+    return () => sub?.unsubscribe?.();
   }, [roomId, subscribe]);
 
   function sendMessage() {
@@ -49,24 +56,34 @@ export default function ChatRoom({ roomId, currentUser, subscribe, send }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-2 bg-zinc-950">
+    <div className="w-full h-full flex flex-col min-h-0">
+      {/* 채팅 메시지 목록 (스크롤 가능 영역) */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 bg-[#313338] text-white min-h-0"
+        style={{ height: 0 }}
+      >
         {messages.map((msg, i) => (
-          <div key={i}>
-            {msg.sender && <span className="font-bold">{msg.sender}:</span>}{" "}
-            {msg.message}
+          <div key={i} className="mb-2">
+            {msg.sender && <span className="font-bold text-blue-400">{msg.sender}:</span>}{" "}
+            <span className="text-gray-200">{msg.message}</span>
           </div>
         ))}
       </div>
-      <div className="flex gap-2 p-2 bg-zinc-900 border-t border-zinc-700">
+
+      {/* 입력창 (하단 고정) */}
+      <div className="flex-shrink-0 flex gap-2 p-4 bg-[#2b2d31] border-t border-[#1e1f22]">
         <input
-          className="flex-1 bg-zinc-800 rounded p-2 text-white"
+          className="flex-1 bg-[#383a40] rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && sendMessage()}
-          placeholder="메시지 입력"
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="메시지 입력..."
         />
-        <button className="bg-blue-600 text-white rounded px-4" onClick={sendMessage}>
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-2 font-medium transition-colors"
+          onClick={sendMessage}
+        >
           전송
         </button>
       </div>

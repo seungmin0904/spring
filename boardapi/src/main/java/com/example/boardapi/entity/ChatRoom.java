@@ -41,7 +41,6 @@ public class ChatRoom {
     private Server server;
 
     // DM 참여자 정보 (ex. 1:1이라면 두 명의 Member 연관)
-    @ManyToMany
-    @JoinTable(name = "dm_members", joinColumns = @JoinColumn(name = "chat_room_id"), inverseJoinColumns = @JoinColumn(name = "member_id"))
-    private List<Member> members;
+    @OneToMany(mappedBy = "chatRoom")
+    private List<ChatRoomMember> members;
 }
