@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 import UserItemWithDropdown from "@/components/common/UserItemWithDropdown";
 import { useRealtime } from "@/context/RealtimeContext";
+import FriendDropdown from "@/components/common/UserDropdown";
 
 export default function FriendPanel() {
   const [showAdd, setShowAdd] = useState(false);
@@ -10,7 +11,19 @@ export default function FriendPanel() {
   const [result, setResult] = useState([]);
   const [adding, setAdding] = useState(false);
   const { state, dispatch } = useRealtime();
+  const [dropdownTarget, setDropdownTarget] = useState(null);
   const friends = state.friends || [];
+  // ✅ 우클릭 핸들러
+  const handleFriendRightClick = (e, friend) => {
+    e.preventDefault();
+    console.log("✅ 우클릭 시 friend 객체:", friend);
+    setDropdownTarget({
+      userId: friend.memberId,
+      userName: friend.name,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
 
   useEffect(() => {
     console.log("Online Users:", Array.from(state.onlineUsers));
@@ -224,6 +237,7 @@ export default function FriendPanel() {
         {friends.map((f) => (
           <div
             key={f.friendId}
+            onContextMenu={(e) => handleFriendRightClick(e, f)}
             className="flex items-center justify-between py-2 px-2 rounded hover:bg-zinc-800"
           >
             <div className="flex items-center gap-3">
@@ -256,6 +270,16 @@ export default function FriendPanel() {
           </div>
         ))}
       </div>
+       {/* ✅ 드롭다운 렌더링 */}
+       {dropdownTarget && (
+        <FriendDropdown
+          userId={dropdownTarget.userId}
+          userName={dropdownTarget.userName}
+          x={dropdownTarget.x}
+          y={dropdownTarget.y}
+          onClose={() => setDropdownTarget(null)}
+        />
+      )}
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">

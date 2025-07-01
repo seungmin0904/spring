@@ -25,6 +25,12 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   const ws = useWebSocket(token); // ✅ 단일 생성
+
+    // ✅ 다크모드 강제 적용 (시크릿 모드 대응)
+    useEffect(() => {
+      document.documentElement.classList.add('dark');
+    }, []);
+
   // 로컬스토리지 복원
   useEffect(() => {
     const savedToken = localStorage.getItem("token");

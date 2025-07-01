@@ -3,6 +3,7 @@ package com.example.boardapi.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -41,6 +42,7 @@ public class ChatRoom {
     private Server server;
 
     // DM 참여자 정보 (ex. 1:1이라면 두 명의 Member 연관)
-    @OneToMany(mappedBy = "chatRoom")
-    private List<ChatRoomMember> members;
+    @Builder.Default
+    @OneToMany(mappedBy = "chatRoom", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatRoomMember> members = new ArrayList<>();
 }

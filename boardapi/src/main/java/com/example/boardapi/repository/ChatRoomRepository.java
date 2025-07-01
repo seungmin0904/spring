@@ -18,8 +18,18 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     List<ChatRoom> findByRoomTypeAndMembersMemberMno(ChatRoomType roomType, Long memberId);
 
-    @Query("SELECT r FROM ChatRoom r JOIN ChatRoomMember m1 ON m1.chatRoom = r JOIN ChatRoomMember m2 ON m2.chatRoom = r WHERE r.roomType = 'DM' AND m1.member.id = :id1 AND m2.member.id = :id2")
-    Optional<ChatRoom> findDmRoomBetween(Long id1, Long id2);
+    @Query("""
+                SELECT r FROM ChatRoom r
+                JOIN ChatRoomMember m1 ON m1.chatRoom = r
+                JOIN ChatRoomMember m2 ON m2.chatRoom = r
+                WHERE r.roomType = 'DM'
+                AND (
+                    (m1.member.mno = :id1 AND m2.member.mno = :id2)
+                    OR
+                    (m1.member.mno = :id2 AND m2.member.mno = :id1)
+                )
+            """)
+    Optional<ChatRoom> findDmRoomBetween(@Param("id1") Long id1, @Param("id2") Long id2);
 
     List<ChatRoom> findByServer(Server server);
 

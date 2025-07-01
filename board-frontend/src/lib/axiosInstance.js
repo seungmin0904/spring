@@ -17,25 +17,25 @@ const refreshAxios = axios.create({
   },
 });
 
-// ✅ 상태 변수
+// 상태 변수
 let isRefreshing = false;
 let refreshSubscribers = [];
 
-// 🔧 최대 재시도 횟수
+// 최대 재시도 횟수
 const MAX_RETRY = 1;
 
-// ✅ 새로운 토큰으로 재시도 요청 실행
+// 새로운 토큰으로 재시도 요청 실행
 function onRefreshed(newToken) {
   refreshSubscribers.forEach((callback) => callback(newToken));
   refreshSubscribers = [];
 }
 
-// ✅ 재시도 콜백 등록
+// 재시도 콜백 등록
 function addRefreshSubscriber(callback) {
   refreshSubscribers.push(callback);
 }
 
-// ✅ 요청 인터셉터: AccessToken 자동 삽입
+// 요청 인터셉터: AccessToken 자동 삽입
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -44,7 +44,7 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ 응답 인터셉터: 401 → RefreshToken 사용하여 재발급
+// 응답 인터셉터: 401 → RefreshToken 사용하여 재발급
 axiosInstance.interceptors.response.use(
   (res) => res,
   async (err) => {
@@ -66,7 +66,7 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(err);
       }
 
-      // 🔁 이미 리프레시 중이면 큐에 추가
+      // 이미 리프레시 중이면 큐에 추가
       if (isRefreshing) {
         return new Promise((resolve) => {
           addRefreshSubscriber((newToken) => {
@@ -76,7 +76,7 @@ axiosInstance.interceptors.response.use(
         });
       }
 
-      // ✅ 최초 리프레시 시도
+      // 최초 리프레시 시도
       isRefreshing = true;
 
       try {
@@ -103,7 +103,7 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // ✅ 최대 재시도 초과
+    // 최대 재시도 초과
     if (originalConfig._retryCount >= MAX_RETRY) {
       console.warn("🚫 최대 재시도 횟수 초과, 세션 종료");
       clearSession();
@@ -114,7 +114,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// ✅ 세션 초기화 함수
+// 세션 초기화 함수
 function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("refresh_token");
@@ -122,7 +122,7 @@ function clearSession() {
   localStorage.removeItem("name");
 }
 
-// ✅ 로그인 페이지 이동 함수 (중복 이동 방지)
+// 로그인 페이지 이동 함수 (중복 이동 방지)
 function redirectToLogin() {
   if (window.location.pathname !== "/login") {
     window.location.replace("/login"); // replace → 히스토리 안 쌓임

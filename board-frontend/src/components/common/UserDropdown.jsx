@@ -50,6 +50,7 @@ export default function FriendDropdown({ userId, userName, x, y, onClose, onSele
         myId: myId,
         friendId: userId,
       });
+      console.log("DM 요청 → 내 ID:", myId, "상대 ID:", userId);
       const roomId = res.data.id;
       if (onSelectDMRoom) onSelectDMRoom(roomId);
       onClose();
