@@ -88,6 +88,7 @@ export default function MainLayout() {
             subscribe={subscribe}
             send={send}
             currentUser={user}
+            connected={connected}
           />
         </div>
         <Sidebar4 serverId={selectedServerId} roomId={selectedRoomId} />

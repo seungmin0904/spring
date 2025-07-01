@@ -56,7 +56,6 @@ export const useWebSocket = (token, onConnect) => {
     let authToken = tokenArg || tokenRef.current;
     if (!authToken) return;
 
-    // ✅ 기존 stomp 인스턴스 제거 (중복 방지)
     if (stompRef.current) {
       try {
         stompRef.current.disconnect();
@@ -66,7 +65,6 @@ export const useWebSocket = (token, onConnect) => {
       stompRef.current = null;
     }
 
-    // ✅ 새로운 WebSocket + STOMP 생성
     const socket = new WebSocket("ws://localhost:8080/ws-chat");
     const client = Stomp.over(socket);
     client.debug = () => {};
@@ -112,7 +110,6 @@ export const useWebSocket = (token, onConnect) => {
       }
     );
   }, [onConnect]);
-  
 
   useEffect(() => {
     if (!tokenRef.current || reconnectTimer.current) return;
@@ -141,53 +138,50 @@ export const useWebSocket = (token, onConnect) => {
 
   const subscribe = useCallback((topic, callback) => {
     const client = stompRef.current;
-  
-    const wsReady =
-      client?.ws && client.ws.readyState === WebSocket.OPEN;
-  
+    const wsReady = client?.ws && client.ws.readyState === WebSocket.OPEN;
+
     if (!client || !client.connected || !wsReady) {
       console.warn(`⛔ Cannot subscribe to ${topic} – WebSocket not fully open`, {
         clientConnected: client?.connected,
         wsReadyState: client?.ws?.readyState,
       });
-      return { unsubscribe: () => {} };
-    }
-  
-    try {
-      const sub = client.subscribe(topic, msg => {
-        callback(JSON.parse(msg.body));
-      });
-  
       return {
         unsubscribe: () => {
-          try {
-            if (client.connected) {
-              sub.unsubscribe();
-            }
-          } catch (e) {
-            console.warn("❗ unsubscribe failed", e);
-          }
+          console.warn(`⛔ Dummy unsubscribe for ${topic} (client not ready)`);
         }
       };
+    }
+
+    try {
+      const subscription = client.subscribe(topic, msg => {
+        console.log("🛬 수신 원본 메시지", msg.body);
+        callback(JSON.parse(msg.body));
+      });
+
+      return subscription;
     } catch (e) {
       console.error(`❌ Error subscribing to ${topic}:`, e);
-      return { unsubscribe: () => {} };
+      return {
+        unsubscribe: () => {
+          console.warn(`⛔ Dummy unsubscribe after subscribe error for ${topic}`);
+        }
+      };
     }
   }, []);
 
   const send = useCallback((destination, body) => {
     const socketReady =
-    stompRef.current?.ws && stompRef.current.ws.readyState === WebSocket.OPEN;
+      stompRef.current?.ws && stompRef.current.ws.readyState === WebSocket.OPEN;
 
     if (stompRef.current && connected && socketReady) {
       stompRef.current.send(destination, {}, JSON.stringify(body));
     } else {
-     console.warn("❌ Cannot send message – WebSocket not ready", {
-      connected,
-      readyState: stompRef.current?.ws?.readyState,
-    });
-  }
-}, [connected]);
+      console.warn("❌ Cannot send message – WebSocket not ready", {
+        connected,
+        readyState: stompRef.current?.ws?.readyState,
+      });
+    }
+  }, [connected]);
 
   return {
     connected,
