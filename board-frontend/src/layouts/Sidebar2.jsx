@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 import { useUser } from "@/context/UserContext";
 import useMediasoupClient from "@/hooks/useMediaSoupClient";
+import { useRealtime } from "@/context/RealtimeContext";
 
 export default function Sidebar2({
   dmMode,
@@ -26,7 +27,10 @@ export default function Sidebar2({
   const [newType, setNewType] = useState("TEXT");
   const [inviteCode, setInviteCode] = useState("");
   const [inviteChannelId, setInviteChannelId] = useState(null);
-  const [dmRooms, setDmRooms] = useState([]);
+  
+  // ✅ RealtimeContext에서 dmRooms와 refreshDmRooms 가져오기
+  const { state, dispatch, ready, refreshDmRooms } = useRealtime();
+  const dmRooms = state.dmRooms;
 
   useEffect(() => {
     if (dmMode) {
@@ -47,16 +51,26 @@ export default function Sidebar2({
       .catch(() => setChannels([]));
   }
 
+  // ✅ DM 모드일 때만 DM 목록 초기 로딩 (RealtimeContext에서 관리)
   useEffect(() => {
-    if (dmMode && currentUserId) {
-      axios.get(`/dm/rooms/${currentUserId}`)
-        .then(res => {
-          setDmRooms(Array.isArray(res.data) ? res.data : []);
-        })
-        .catch(() => setDmRooms([]));
+    if (dmMode && user?.id && ready) {
+      console.log("🔄 Sidebar2: DM 목록 초기 로드 시작");
+      // RealtimeContext에서 이미 로드했지만, 혹시 누락된 경우를 위해 추가 호출
+      if (dmRooms.length === 0) {
+        refreshDmRooms?.();
+      }
     }
-  }, [dmMode, currentUserId]);
-  
+  }, [dmMode, currentUserId, ready, refreshDmRooms]);
+
+  // ✅ 디버깅용 로그 추가
+  useEffect(() => {
+    console.log("📋 Sidebar2 DM 목록 상태:", {
+      dmRoomsCount: dmRooms.length,
+      dmRooms: dmRooms,
+      ready: ready,
+      dmMode: dmMode
+    });
+  }, [dmRooms, ready, dmMode]);
 
   function handleCreateChannel() {
     if (!newName.trim()) return;
@@ -98,6 +112,24 @@ export default function Sidebar2({
     setInviteChannelId(null);
   }
 
+  function handleDeleteDmRoom(roomId) {
+    if (!window.confirm("이 DM방을 목록에서 삭제하시겠습니까?")) return;
+
+    axios.delete(`/dm/room/${roomId}/hide/${currentUserId}`)
+      .then(() => {
+        // ✅ 전역 상태에서도 즉시 제거
+        dispatch({
+          type: "SET_DM_ROOMS",
+          payload: state.dmRooms.filter((room) => room.id !== roomId)
+        });
+        console.log("✅ DM방 삭제 완료 - UI에서 즉시 제거됨");
+      })
+      .catch(err => {
+        console.error("❌ DM 삭제 실패:", err);
+        alert("DM 삭제에 실패했습니다.");
+      });
+  }
+
   const textChannels = channels.filter(ch => (ch?.type || '').toUpperCase().trim() === "TEXT");
   const voiceChannels = channels.filter(ch => (ch?.type || '').toUpperCase().trim() === "VOICE");
 
@@ -112,21 +144,65 @@ export default function Sidebar2({
             친구
           </button>
         </div>
-        <div className="text-xs text-zinc-400 px-4 py-3 font-bold">다이렉트 메시지</div>
-        <ul className="px-2">
-        {dmRooms.map((room) => (
-  <li
-    key={room.id}
-    className="px-3 py-2 rounded flex items-center hover:bg-zinc-800 cursor-pointer transition"
-    onClick={() => onSelectDMRoom(room.id)}  // ✅ 클릭 시 해당 DM방 오픈
-          >         
-            {/* <span className="w-8 h-8 rounded-full bg-[#232428] flex items-center justify-center mr-2">
-              프로필or아이콘 자리
-            </span> */}
+        
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="text-xs text-zinc-400 font-bold">다이렉트 메시지</div>
+          {/* ✅ 디버깅용 새로고침 버튼 (필요시 제거) */}
+          <button
+            onClick={refreshDmRooms}
+            className="text-xs text-zinc-500 hover:text-white transition"
+            title="DM 목록 새로고침"
+          >
+            🔄
+          </button>
+        </div>
 
-    <span className="text-base">{room?.name || "이름없음"}</span>  
-  </li>
-))}
+        <ul className="px-2 flex-1 overflow-y-auto">
+          {/* ✅ 로딩 상태 표시 */}
+          {!ready && (
+            <li className="px-3 py-2 text-zinc-500 text-sm">
+              연결 중...
+            </li>
+          )}
+          
+          {/* ✅ DM 목록이 비어있을 때 */}
+          {ready && dmRooms.length === 0 && (
+            <li className="px-3 py-2 text-zinc-500 text-sm">
+              DM 목록이 없습니다
+            </li>
+          )}
+
+          {/* ✅ DM 목록 렌더링 */}
+          {dmRooms.map((room) => (
+            <li
+              key={room.id}
+              className="px-3 py-2 rounded group flex items-center justify-between hover:bg-zinc-800 cursor-pointer transition"
+              onClick={() => onSelectDMRoom(room.id)}
+            >         
+              <span className="text-base truncate flex-1">
+                {room?.name || "이름없음"}
+              </span>
+              <button
+                className="dm-delete-btn text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition ml-2 flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteDmRoom(room.id);
+                }}
+                title="DM 삭제"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>  
+            </li>
+          ))}
         </ul>
       </div>
     );
@@ -195,7 +271,6 @@ export default function Sidebar2({
                   await createSendTransport();
                   await sendAudio();
                   await createRecvTransport();
-                  // consume은 newProducer 이벤트로 자동 처리
                   console.log("🎤 음성 채널 입장 완료:", ch.id);
                 } catch (err) {
                   console.error("❌ 음성 송수신 실패:", err);

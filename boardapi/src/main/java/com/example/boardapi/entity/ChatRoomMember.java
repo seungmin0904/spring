@@ -1,5 +1,7 @@
 package com.example.boardapi.entity;
 
+import org.hibernate.annotations.ColumnDefault;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,4 +25,10 @@ public class ChatRoomMember {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
+
+    @Builder.Default
+    @Column(nullable = false)
+    @ColumnDefault("1")
+    private boolean visible = true;
+
 }

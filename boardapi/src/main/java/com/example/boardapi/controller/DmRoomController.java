@@ -44,4 +44,14 @@ public class DmRoomController {
         List<Member> members = dmRoomService.getMembers(roomId);
         return members.stream().map(MemberMapper::toDTO).toList();
     }
+
+    @DeleteMapping("/room/{roomId}/hide/{memberId}")
+    public void hideDmRoom(@PathVariable Long roomId, @PathVariable Long memberId) {
+        dmRoomService.hideDmRoom(roomId, memberId);
+    }
+
+    @PostMapping("/room/{roomId}/restore/{memberId}")
+    public void restoreDmRoom(@PathVariable Long roomId, @PathVariable Long memberId) {
+        dmRoomService.restoreDmIfHidden(roomId, memberId);
+    }
 }

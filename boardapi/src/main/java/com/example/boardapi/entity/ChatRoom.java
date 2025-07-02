@@ -24,8 +24,9 @@ public class ChatRoom {
     private String description; // 방 설명
 
     // (양방향 옵션)
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL)
-    private List<ChatMessageEntity> messages;
+    @Builder.Default
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMessageEntity> messages = new ArrayList<>();
 
     // 채널 타입 (TEXT, VOICE)
     @Enumerated(EnumType.STRING)

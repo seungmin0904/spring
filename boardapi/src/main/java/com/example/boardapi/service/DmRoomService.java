@@ -1,7 +1,11 @@
 package com.example.boardapi.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardapi.dto.ChatRoomResponseDTO;
 import com.example.boardapi.entity.ChannelType;
@@ -14,93 +18,158 @@ import com.example.boardapi.repository.ChatRoomRepository;
 import com.example.boardapi.repository.MemberRepository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DmRoomService {
+
         private final ChatRoomRepository chatRoomRepository;
         private final ChatRoomMemberRepository chatRoomMemberRepository;
         private final MemberRepository memberRepository;
+        private final SimpMessagingTemplate messagingTemplate;
 
-        // 1:1 DM방 생성 또는 조회
-        // ✅ 1:1 DM방 생성 또는 기존 방 조회 (중복 Unique Constraint 방지)
+        // ✅ 1:1 DM방 생성 또는 기존방 조회 (중복 방지)
+        @Transactional
         public ChatRoom getOrCreateDmRoom(Long memberAId, Long memberBId) {
-                System.out.println("🔍 DM 생성 요청: memberAId=" + memberAId + ", memberBId=" + memberBId);
+                log.info("🔍 DM 생성 or 조회 요청: memberAId={}, memberBId={}", memberAId, memberBId);
 
                 if (memberAId == null || memberBId == null) {
-                        throw new IllegalArgumentException("❌ memberAId, memberBId는 null일 수 없습니다.");
+                        throw new IllegalArgumentException("memberAId, memberBId는 null 불가");
                 }
 
                 Long minId = Math.min(memberAId, memberBId);
                 Long maxId = Math.max(memberAId, memberBId);
 
-                // ✅ 두 유저 존재 여부 체크 (DB 유효성 확인)
                 boolean minUserExists = memberRepository.existsById(minId);
                 boolean maxUserExists = memberRepository.existsById(maxId);
-                System.out.println("✅ minId 존재?: " + minUserExists + ", maxId 존재?: " + maxUserExists);
 
                 if (!minUserExists || !maxUserExists) {
-                        throw new IllegalArgumentException(
-                                        "❌ 대상 유저 중 하나가 존재하지 않습니다. minId=" + minId + ", maxId=" + maxId);
+                        throw new IllegalArgumentException("❌ 대상 유저 없음");
                 }
 
-                // ✅ 이미 존재하는 DM방 조회
-                Optional<ChatRoom> existingRoom = chatRoomRepository.findDmRoomBetween(minId, maxId);
-                if (existingRoom.isPresent()) {
-                        System.out.println("✅ 기존 DM방 존재 → 기존 방 반환: roomId=" + existingRoom.get().getId());
-                        return existingRoom.get();
+                Optional<ChatRoom> existingRoomOpt = chatRoomRepository.findDmRoomBetween(minId, maxId);
+                if (existingRoomOpt.isPresent()) {
+                        ChatRoom existingRoom = existingRoomOpt.get();
+                        log.info("✅ 기존 DM방 반환: roomId={}", existingRoom.getId());
+
+                        // ✅ 숨김 상태였으면 복구
+                        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomId(existingRoom.getId());
+                        boolean restored = false;
+                        for (ChatRoomMember member : members) {
+                                if (!member.isVisible()) {
+                                        member.setVisible(true);
+                                        chatRoomMemberRepository.save(member);
+                                        restored = true;
+                                        log.info("✅ DM 숨김 해제됨: memberId={}", member.getMember().getMno());
+                                }
+                        }
+
+                        // ✅ 만약 방금 visible 복구가 있었다면 WebSocket 복구 알림 전송
+                        if (restored) {
+                                for (ChatRoomMember member : members) {
+                                        messagingTemplate.convertAndSendToUser(
+                                                        member.getMember().getUsername(),
+                                                        "/queue/dm-restore",
+                                                        Map.of("roomId", existingRoom.getId(), "status", "RESTORE"));
+                                        log.info("📡 DM 복구 WebSocket 전송 → {}", member.getMember().getUsername());
+                                }
+                        }
+
+                        return existingRoom;
                 }
 
-                // ✅ 새 방 생성
+                // ✅ 새 방 생성 로직 (기존 그대로 유지)
                 ChatRoom newRoom = ChatRoom.builder()
-                                .name("DM-" + minId + "-" + maxId) // ✅ 항상 두 유저 ID 기준 고정
+                                .name("DM-" + minId + "-" + maxId)
                                 .roomType(ChatRoomType.DM)
                                 .type(ChannelType.TEXT)
                                 .server(null)
                                 .build();
                 chatRoomRepository.save(newRoom);
 
-                // ✅ 멤버 객체 가져오기
                 Member minUser = memberRepository.findById(minId)
                                 .orElseThrow(() -> new RuntimeException("❌ minId 유저 없음"));
                 Member maxUser = memberRepository.findById(maxId)
                                 .orElseThrow(() -> new RuntimeException("❌ maxId 유저 없음"));
 
-                // ✅ 방 멤버 저장
-                ChatRoomMember member1 = ChatRoomMember.builder()
-                                .chatRoom(newRoom)
-                                .member(minUser)
-                                .build();
+                chatRoomMemberRepository.save(ChatRoomMember.builder().chatRoom(newRoom).member(minUser).build());
+                chatRoomMemberRepository.save(ChatRoomMember.builder().chatRoom(newRoom).member(maxUser).build());
 
-                ChatRoomMember member2 = ChatRoomMember.builder()
-                                .chatRoom(newRoom)
-                                .member(maxUser)
-                                .build();
+                log.info("✅ 새 DM방 생성 완료: roomId={}", newRoom.getId());
 
-                chatRoomMemberRepository.save(member1);
-                chatRoomMemberRepository.save(member2);
+                for (Long targetId : List.of(minId, maxId)) {
+                        Member targetUser = memberRepository.findById(targetId)
+                                        .orElseThrow(() -> new RuntimeException("❌ target 유저 없음"));
 
-                System.out.println("✅ 새 DM방 생성 완료: roomId=" + newRoom.getId());
+                        messagingTemplate.convertAndSendToUser(
+                                        targetUser.getUsername(),
+                                        "/queue/dm-restore",
+                                        Map.of("roomId", newRoom.getId(), "status", "NEW"));
+                        log.info("📡 WebSocket 전송 → targetUser={}", targetUser.getUsername());
+                }
+
                 return newRoom;
         }
 
-        // 내 DM방 리스트
-        // public List<ChatRoom> findMyDmRooms(Long memberId) {
-        // return chatRoomRepository.findMyDmRooms(memberId);
-        // }
+        // ✅ 내가 속한 DM방 목록 반환 (visible = true 만)
+        public List<ChatRoomResponseDTO> findMyDmRooms(Long myId) {
+                log.info("📥 DM방 리스트 조회 요청: memberId={}", myId);
+                List<ChatRoomMember> rooms = chatRoomMemberRepository.findByMemberMnoAndVisibleTrue(myId);
 
-        // DM방 참여자 리스트
+                return rooms.stream()
+                                .map(room -> ChatRoomResponseDTO.from(room.getChatRoom(), myId))
+                                .toList();
+        }
+
+        // ✅ 특정 DM방 참여자 리스트 반환
         public List<Member> getMembers(Long roomId) {
+                log.info("📥 DM 참여자 리스트 조회: roomId={}", roomId);
                 return chatRoomMemberRepository.findByChatRoomId(roomId)
                                 .stream().map(ChatRoomMember::getMember).toList();
         }
 
-        public List<ChatRoomResponseDTO> findMyDmRooms(Long myId) {
-                List<ChatRoom> rooms = chatRoomRepository.findByRoomTypeAndMembersMemberMno(ChatRoomType.DM, myId);
+        @Transactional
+        public void hideDmRoom(Long roomId, Long memberId) {
+                log.info("🛑 DM 숨김 요청: roomId={}, memberId={}", roomId, memberId);
 
-                return rooms.stream()
-                                .map(room -> ChatRoomResponseDTO.from(room, myId))
+                ChatRoom room = chatRoomRepository.findById(roomId)
+                                .orElseThrow(() -> new RuntimeException("채팅방 없음"));
+
+                if (room.getRoomType() != ChatRoomType.DM) {
+                        log.error("❌ DM방 아님 → 숨김 불가");
+                        throw new IllegalStateException("서버 채널은 숨길 수 없음");
+                }
+
+                ChatRoomMember roomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberMno(roomId, memberId)
+                                .orElseThrow(() -> new RuntimeException("DM 멤버 정보 없음"));
+
+                roomMember.setVisible(false);
+                chatRoomMemberRepository.save(roomMember);
+                log.info("✅ DM 숨김 처리 완료");
+        }
+
+        @Transactional
+        public void restoreDmIfHidden(Long roomId, Long memberId) {
+                log.info("🔄 DM 복구 요청: roomId={}, memberId={}", roomId, memberId);
+
+                chatRoomMemberRepository.findByChatRoomIdAndMemberMno(roomId, memberId).ifPresent(cm -> {
+                        if (!cm.isVisible()) {
+                                cm.setVisible(true);
+                                chatRoomMemberRepository.save(cm);
+                                log.info("✅ DM visible 복구 완료");
+                        }
+                });
+        }
+
+        // ✅ visible=true인 DM방 리스트만 리턴 (다른 곳에서 사용 가능성 있음)
+        public List<ChatRoom> getVisibleDmRooms(Long memberId) {
+                log.info("📥 visible=true DM방만 조회: memberId={}", memberId);
+                List<ChatRoomMember> visibleRooms = chatRoomMemberRepository.findByMemberMnoAndVisibleTrue(memberId);
+                return visibleRooms.stream()
+                                .map(ChatRoomMember::getChatRoom)
                                 .toList();
         }
 }

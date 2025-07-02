@@ -38,9 +38,11 @@ public class Server {
     private String description;
 
     // 서버 삭제시 연관 된 채팅방,참여자도 삭제
+    @Builder.Default
     @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ServerMember> members = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "server", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChatRoom> channels = new ArrayList<>();
 

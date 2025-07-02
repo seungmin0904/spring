@@ -15,6 +15,7 @@ const initialState = {
   receivedRequests: [],
   sentRequests: [],
   friends: [],
+  dmRooms: [],
 };
 
 function realtimeReducer(state, action) {
@@ -48,6 +49,20 @@ function realtimeReducer(state, action) {
         ...state,
         friends: state.friends.filter(f => f.friendId !== action.payload)
       };
+    case 'SET_DM_ROOMS':
+      return { ...state, dmRooms: action.payload };
+    // ✅ 개별 DM방 추가/업데이트 액션 추가
+    case 'ADD_OR_UPDATE_DM_ROOM':
+      const existingIndex = state.dmRooms.findIndex(room => room.id === action.payload.id);
+      if (existingIndex >= 0) {
+        // 기존 방 업데이트
+        const updatedRooms = [...state.dmRooms];
+        updatedRooms[existingIndex] = action.payload;
+        return { ...state, dmRooms: updatedRooms };
+      } else {
+        // 새 방 추가
+        return { ...state, dmRooms: [...state.dmRooms, action.payload] };
+      }
     default:
       return state;
   }
@@ -65,24 +80,38 @@ export function RealtimeProvider({ children, socket }) {
 
   const initFriendState = async () => {
     try {
-      const [friendsRes, receivedRes, sentRes, onlineRes] = await Promise.all([
+      const [friendsRes, receivedRes, sentRes, onlineRes, dmRoomsRes] = await Promise.all([
         axiosInstance.get("/friends"),
         axiosInstance.get("/friends/requests/received"),
         axiosInstance.get("/friends/requests/sent"),
         axiosInstance.get("/friends/online"),
+        axiosInstance.get(`/dm/rooms/${user.id}`),
       ]);
       dispatch({ type: "SET_FRIENDS", payload: friendsRes.data || [] });
       dispatch({ type: "SET_RECEIVED", payload: receivedRes.data || [] });
       dispatch({ type: "SET_SENT", payload: sentRes.data || [] });
       dispatch({ type: "SET_ONLINE_USERS", payload: onlineRes.data || [] });
+      dispatch({ type: "SET_DM_ROOMS", payload: dmRoomsRes.data || [] });
       console.log("✅ 친구 상태 초기화 완료");
     } catch (err) {
       console.error("❌ 친구 상태 초기화 실패:", err);
     }
   };
 
+  // ✅ DM 목록 새로고침 함수 추가
+  const refreshDmRooms = async () => {
+    try {
+      console.log("🔄 DM 목록 새로고침 시작...");
+      const dmRoomsRes = await axiosInstance.get(`/dm/rooms/${user.id}`);
+      dispatch({ type: "SET_DM_ROOMS", payload: dmRoomsRes.data || [] });
+      console.log("✅ DM 목록 새로고침 완료:", dmRoomsRes.data);
+    } catch (err) {
+      console.error("❌ DM 목록 새로고침 실패:", err);
+    }
+  };
+
   useEffect(() => {
-    if (token) {
+    if (token && user?.id) {
       console.log("🟥 RealtimeProvider Mounted");
 
       connect(token, () => {
@@ -102,10 +131,15 @@ export function RealtimeProvider({ children, socket }) {
     return () => {
       disconnect();
     };
-  }, [token]);
+  }, [token, user?.id]); // ✅ user.id 의존성 추가
 
   function subscribeAll() {
-    if (!username) return () => {};
+    if (!username || !user?.id) {
+      console.warn("⚠️ username 또는 user.id가 없어서 구독을 건너뜁니다.");
+      return () => {};
+    }
+
+    console.log("🔔 WebSocket 구독 시작:", username);
 
     const subStatus = subscribe(`/user/queue/status`, ev => {
       console.log("🟢 실시간 상태 수신:", ev);
@@ -159,17 +193,52 @@ export function RealtimeProvider({ children, socket }) {
       }
     });
 
+    // ✅ ✅ ✅ DM 복구 알림 구독 (핵심 수정 부분)
+    const subDmRestore = subscribe(`/user/queue/dm-restore`, async (payload) => {
+      console.log("📥 DM 복구 알림 수신:", payload);
+      
+      try {
+        // ✅ 즉시 DM 목록 새로고침
+        await refreshDmRooms();
+        
+        // ✅ 사용자에게 알림 표시
+        toast({
+          title: "💬 DM 복구",
+          description: payload.status === "NEW" ? "새로운 DM방이 생성되었습니다." : "숨겨진 DM방이 복구되었습니다.",
+        });
+      } catch (err) {
+        console.error("❌ DM 복구 처리 실패:", err);
+      }
+    });
+
+    console.log("✅ 모든 WebSocket 구독 완료");
+
     // ✅ 안전 unsubscribe 반환
     return () => {
-      subStatus?.unsubscribe?.();
-      subBroadcast?.unsubscribe?.();
-      subNoti?.unsubscribe?.();
-      subFriend?.unsubscribe?.();
+      console.log("🔄 WebSocket 구독 해제 시작");
+      try {
+        subStatus?.unsubscribe?.();
+        subBroadcast?.unsubscribe?.();
+        subNoti?.unsubscribe?.();
+        subFriend?.unsubscribe?.();
+        subDmRestore?.unsubscribe?.();
+        console.log("✅ WebSocket 구독 해제 완료");
+      } catch (err) {
+        console.error("❌ WebSocket 구독 해제 중 오류:", err);
+      }
     };
   }
 
+  // ✅ Context value에 refreshDmRooms 함수 추가
+  const contextValue = {
+    state,
+    dispatch,
+    ready,
+    refreshDmRooms, // 외부에서 수동으로 DM 목록 새로고침 가능
+  };
+
   return (
-    <RealtimeContext.Provider value={{ state, dispatch }}>
+    <RealtimeContext.Provider value={contextValue}>
       {children}
     </RealtimeContext.Provider>
   );
