@@ -85,7 +85,7 @@ export const useWebSocket = (token, onConnect) => {
     client.connect(
       { Authorization: "Bearer " + authToken },
       () => {
-        console.log("✅ WebSocket connected");
+        console.log("✅ WebSocket, STOMP CONNECTED");
         setConnected(true);
         reconnectAttempt.current = 0;
         reconnectTimer.current = null;
@@ -120,6 +120,7 @@ export const useWebSocket = (token, onConnect) => {
     reconnectTimer.current = setTimeout(() => {
       reconnectTimer.current = null;
       reconnectAttempt.current += 1;
+      console.log(`🔁 [STOMP RECONNECT ATTEMPT ${reconnectAttempt.current}] Starting retry...`);
       connect(tokenRef.current);
     }, delay);
 
