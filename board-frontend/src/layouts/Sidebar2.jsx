@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "@/lib/axiosInstance";
 import { useUser } from "@/context/UserContext";
 import useMediasoupClient from "@/hooks/useMediaSoupClient";
@@ -27,6 +27,7 @@ export default function Sidebar2({
   const [newType, setNewType] = useState("TEXT");
   const [inviteCode, setInviteCode] = useState("");
   const [inviteChannelId, setInviteChannelId] = useState(null);
+  const initialLoadRef = useRef(false);
   
   // ✅ RealtimeContext에서 dmRooms와 refreshDmRooms 가져오기
   const { state, dispatch, ready, refreshDmRooms } = useRealtime();
@@ -54,13 +55,13 @@ export default function Sidebar2({
   // ✅ DM 모드일 때만 DM 목록 초기 로딩 (RealtimeContext에서 관리)
   useEffect(() => {
     if (dmMode && user?.id && ready) {
-      console.log("🔄 Sidebar2: DM 목록 초기 로드 시작");
-      // RealtimeContext에서 이미 로드했지만, 혹시 누락된 경우를 위해 추가 호출
-      if (dmRooms.length === 0) {
+      if (dmRooms.length === 0 && !initialLoadRef.current) {
+        console.log("🟢 Sidebar2: 최초 DM 목록 로드 수행");
         refreshDmRooms?.();
+        initialLoadRef.current = true;
       }
     }
-  }, [dmMode, currentUserId, ready, refreshDmRooms]);
+  }, [dmMode, user?.id, ready]);
 
   // ✅ 디버깅용 로그 추가
   useEffect(() => {
@@ -173,7 +174,9 @@ export default function Sidebar2({
           )}
 
           {/* ✅ DM 목록 렌더링 */}
-          {dmRooms.map((room) => (
+          {dmRooms
+            ?.filter(room => room.visible)
+            .map((room) => (
             <li
               key={room.id}
               className="px-3 py-2 rounded group flex items-center justify-between hover:bg-zinc-800 cursor-pointer transition"

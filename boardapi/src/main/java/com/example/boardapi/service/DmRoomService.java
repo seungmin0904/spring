@@ -17,6 +17,7 @@ import com.example.boardapi.repository.ChatRoomMemberRepository;
 import com.example.boardapi.repository.ChatRoomRepository;
 import com.example.boardapi.repository.MemberRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -143,12 +144,8 @@ public class DmRoomService {
                         throw new IllegalStateException("서버 채널은 숨길 수 없음");
                 }
 
-                ChatRoomMember roomMember = chatRoomMemberRepository.findByChatRoomIdAndMemberMno(roomId, memberId)
-                                .orElseThrow(() -> new RuntimeException("DM 멤버 정보 없음"));
-
-                roomMember.setVisible(false);
-                chatRoomMemberRepository.save(roomMember);
-                log.info("✅ DM 숨김 처리 완료");
+                chatRoomMemberRepository.markAsHidden(roomId, memberId, LocalDateTime.now());
+                log.info("✅ [JPQL] DM 숨김 처리 완료");
         }
 
         @Transactional

@@ -32,11 +32,19 @@ public class ChatMessageService {
         private final ChatRoomMemberRepository chatRoomMemberRepository;
 
         // 채팅방 메시지 조회
-        public List<ChatMessageEntity> getMessagesByRoomId(Long roomId) {
+        public List<ChatMessageEntity> getMessagesByRoomId(Long roomId, Long memberId) {
                 log.info("🔍 메시지 조회 요청: roomId={}", roomId);
                 ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                                 .orElseThrow(() -> new IllegalArgumentException("채팅방 없음"));
-                return chatMessageRepository.findByRoomOrderBySentAtAsc(chatRoom);
+                LocalDateTime leftAt = chatRoomMemberRepository.findByChatRoomIdAndMemberMno(roomId, memberId)
+                                .map(ChatRoomMember::getLeftAt)
+                                .orElse(null);
+
+                if (leftAt != null) {
+                        return chatMessageRepository.findByRoomAndSentAtAfterOrderBySentAtAsc(chatRoom, leftAt);
+                } else {
+                        return chatMessageRepository.findByRoomOrderBySentAtAsc(chatRoom);
+                }
         }
 
         @Transactional

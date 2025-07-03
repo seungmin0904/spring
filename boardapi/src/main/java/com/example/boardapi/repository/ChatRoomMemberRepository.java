@@ -1,9 +1,14 @@
 package com.example.boardapi.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardapi.entity.ChatRoomMember;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +27,14 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
 
     // ✅ ✅ 추가: visible=true인 DM 목록 조회용
     List<ChatRoomMember> findByMemberMnoAndVisibleTrue(Long memberId);
+
+    @Transactional
+    @Modifying
+    @Query("""
+                UPDATE ChatRoomMember cm
+                SET cm.visible = false, cm.leftAt = :leftAt
+                WHERE cm.chatRoom.id = :roomId AND cm.member.mno = :memberId
+            """)
+    void markAsHidden(@Param("roomId") Long roomId, @Param("memberId") Long memberId,
+            @Param("leftAt") LocalDateTime leftAt);
 }
