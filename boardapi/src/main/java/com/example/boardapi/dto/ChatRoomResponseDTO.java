@@ -23,6 +23,7 @@ public class ChatRoomResponseDTO {
     private ChatRoomType roomType;
     private Long serverId;
     private String serverName;
+    private Boolean visible;
     // 필요하면 ownerName 등 추가
 
     public static ChatRoomResponseDTO from(ChatRoom room) {
@@ -42,9 +43,16 @@ public class ChatRoomResponseDTO {
                 .findFirst()
                 .orElse(null);
 
+        Boolean visible = room.getMembers().stream()
+                .filter(cm -> cm.getMember().getMno().equals(myId))
+                .map(ChatRoomMember::isVisible)
+                .findFirst()
+                .orElse(true);
+
         return ChatRoomResponseDTO.builder()
                 .id(room.getId())
                 .name(opponent != null ? opponent.getName() : "상대 없음")
+                .visible(visible)
                 .build();
     }
 }

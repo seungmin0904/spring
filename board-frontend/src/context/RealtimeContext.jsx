@@ -116,9 +116,9 @@ export function RealtimeProvider({ children, socket }) {
 
       connect(token, () => {
         console.log("🟢 WebSocket connected → setReady(true)");
-        initFriendState();
         const unsubscribeFn = subscribeAll();
         setReady(true);
+        initFriendState();
 
         // ✅ cleanup 시 구독 해제
         return () => {
