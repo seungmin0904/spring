@@ -9,6 +9,8 @@ export const useWebSocket = (token, onConnect) => {
   const tokenRef = useRef(token);
   const reconnectAttempt = useRef(0);
   const reconnectTimer = useRef(null);
+  const subscriptionsRef = useRef([]);
+
 
   useEffect(() => {
     tokenRef.current = token;
@@ -91,6 +93,16 @@ export const useWebSocket = (token, onConnect) => {
         reconnectTimer.current = null;
         onConnect?.();
         callback?.();
+        subscriptionsRef.current.forEach(({ topic, callback }) => {
+      try {
+        client.subscribe(topic, msg => {
+          callback(JSON.parse(msg.body));
+        });
+        console.log(`🔁 재구독 완료: ${topic}`);
+      } catch (e) {
+        console.error(`❌ 재구독 실패: ${topic}`, e);
+      }
+    });
       },
       async (err) => {
         const msg = err?.headers?.message || "";
@@ -138,6 +150,11 @@ export const useWebSocket = (token, onConnect) => {
   }, []);
 
   const subscribe = useCallback((topic, callback) => {
+  const alreadyExists = subscriptionsRef.current.some(sub => sub.topic === topic);
+  if (!alreadyExists) {
+  subscriptionsRef.current.push({ topic, callback });
+  }
+
     const client = stompRef.current;
     const wsReady = client?.ws && client.ws.readyState === WebSocket.OPEN;
 
@@ -159,16 +176,26 @@ export const useWebSocket = (token, onConnect) => {
         callback(JSON.parse(msg.body));
       });
 
-      return subscription;
-    } catch (e) {
-      console.error(`❌ Error subscribing to ${topic}:`, e);
-      return {
-        unsubscribe: () => {
-          console.warn(`⛔ Dummy unsubscribe after subscribe error for ${topic}`);
+       return {
+      unsubscribe: () => {
+        try {
+          subscription.unsubscribe();
+          subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub.topic !== topic);
+          console.log(`🧹 구독 해제 완료: ${topic}`);
+        } catch (err) {
+          console.warn(`❌ unsubscribe 실패: ${topic}`, err);
         }
-      };
-    }
-  }, []);
+      }
+    };
+  } catch (e) {
+    console.error(`❌ Error subscribing to ${topic}:`, e);
+    return {
+      unsubscribe: () => {
+        console.warn(`⛔ Dummy unsubscribe after subscribe error for ${topic}`);
+      }
+    };
+  }
+}, []);
 
   const send = useCallback((destination, body) => {
     const socketReady =

@@ -4,6 +4,7 @@ import com.example.boardapi.entity.ChatMessageEntity;
 import com.example.boardapi.entity.ChatRoom;
 import com.example.boardapi.entity.ChatRoomMember;
 import com.example.boardapi.entity.Member;
+import com.example.boardapi.messaging.DmRestoreEvent;
 import com.example.boardapi.repository.ChatMessageRepository;
 import com.example.boardapi.repository.ChatRoomMemberRepository;
 import com.example.boardapi.repository.ChatRoomRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.hibernate.Hibernate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class ChatMessageService {
         private final SimpMessagingTemplate messagingTemplate;
         private final ChatRoomRepository chatRoomRepository;
         private final ChatRoomMemberRepository chatRoomMemberRepository;
+        private final ApplicationEventPublisher eventPublisher;
 
         // 채팅방 메시지 조회
         public List<ChatMessageEntity> getMessagesByRoomId(Long roomId, Long memberId) {
@@ -68,11 +71,8 @@ public class ChatMessageService {
                                         log.info("✅ 숨김 해제 및 visible 복구: memberId={}", memberId);
                                         Hibernate.initialize(member.getMember());
                                         // WebSocket 알림
-                                        messagingTemplate.convertAndSendToUser(
-                                                        member.getMember().getUsername(),
-                                                        "/queue/dm-restore",
-                                                        Map.of("roomId", roomId, "status", "RESTORE"));
-                                        log.info("📡 DM 복구 WebSocket 전송 → {}", member.getMember().getUsername());
+                                        eventPublisher.publishEvent(
+                                                        new DmRestoreEvent(member.getMember().getUsername(), roomId));
                                 }
                         }
                 }
