@@ -14,10 +14,15 @@ import com.example.boardapi.entity.ChannelRole;
 import com.example.boardapi.entity.ChatRoom;
 import com.example.boardapi.entity.Invite;
 import com.example.boardapi.entity.Member;
+import com.example.boardapi.entity.Server;
+import com.example.boardapi.entity.ServerMember;
+import com.example.boardapi.entity.ServerRole;
 import com.example.boardapi.repository.ChannelMemberRepository;
 import com.example.boardapi.repository.ChatRoomRepository;
 import com.example.boardapi.repository.InviteRepository;
 import com.example.boardapi.repository.MemberRepository;
+import com.example.boardapi.repository.ServerMemberRepository;
+import com.example.boardapi.repository.ServerRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,11 +30,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 
 public class InviteService {
-
-    private final ChatRoomRepository chatRoomRepository;
+    private final ServerRepository serverRepository;
     private final MemberRepository memberRepository;
     private final InviteRepository inviteRepository;
-    private final ChannelMemberRepository channelMemberRepository;
+    private final ServerMemberRepository serverMemberRepository;
 
     // 랜덤 코드 생성 유틸
     private String generateRandomCode() {
@@ -38,8 +42,9 @@ public class InviteService {
     }
 
     public Invite createInvite(Long creatorId, InviteRequestDTO dto) {
-        ChatRoom room = chatRoomRepository.findById(dto.getRoomId())
-                .orElseThrow(() -> new IllegalArgumentException("채팅방 없음"));
+        Long serverId = dto.getServerId();
+        Server server = serverRepository.findById(serverId)
+                .orElseThrow(() -> new IllegalArgumentException("서버 없음"));
 
         Member creator = memberRepository.findById(creatorId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
@@ -52,7 +57,7 @@ public class InviteService {
 
         Invite invite = Invite.builder()
                 .code(code)
-                .room(room)
+                .server(server)
                 .creator(creator)
                 .expireAt(dto.getExpireAt())
                 .maxUses(dto.getMaxUses())
@@ -78,9 +83,8 @@ public class InviteService {
         // DTO 변환
         InviteResponseDTO dto = new InviteResponseDTO();
         dto.setInviteCode(invite.getCode());
-        dto.setRoomId(invite.getRoom().getId());
-        dto.setRoomName(invite.getRoom().getName());
-        dto.setRoomDescription(invite.getRoom().getDescription());
+        dto.setServerId(invite.getServer().getId());
+        dto.setServerName(invite.getServer().getName());
         dto.setCreatorName(invite.getCreator().getName());
         dto.setExpireAt(invite.getExpireAt());
         dto.setMaxUses(invite.getMaxUses());
@@ -107,24 +111,23 @@ public class InviteService {
         }
 
         // 3. 방 멤버십 체크 (이미 입장된 사용자면 예외)
-        ChatRoom room = invite.getRoom();
-        boolean isMember = channelMemberRepository.existsByRoomIdAndMemberMno(room.getId(), memberId);
+        Long serverId = invite.getServer().getId();
+        boolean isMember = serverMemberRepository.existsByMemberMnoAndServerId(memberId, serverId);
         if (isMember) {
             throw new IllegalStateException("이미 참여 중인 방입니다.");
         }
 
         // 4. 방 멤버 등록
+        Server server = invite.getServer();
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NoSuchElementException("사용자 없음"));
 
-        ChannelMember newMember = ChannelMember.builder()
-                .room(room)
+        ServerMember newMember = ServerMember.builder()
+                .server(server)
                 .member(member)
-                .role(ChannelRole.USER) // 이거 반드시 추가!!
-                .muted(false)
-                .banned(false)
+                .role(ServerRole.USER) // 이거 반드시 추가!!
                 .build();
-        channelMemberRepository.save(newMember);
+        serverMemberRepository.save(newMember);
 
         // 5. 사용횟수 증가, 최대치 도달시 active=false
         invite.setUses(invite.getUses() + 1);
@@ -133,6 +136,6 @@ public class InviteService {
         }
         inviteRepository.save(invite);
 
-        return room.getId();
+        return server.getId();
     }
 }

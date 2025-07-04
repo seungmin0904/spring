@@ -101,12 +101,21 @@ export default function Sidebar2({
   }
 
   function handleInviteCode(channelId) {
-    axios.post(`/chatrooms/${channelId}/invite`)
-      .then(res => {
-        setInviteCode(res.data.code || res.data.inviteCode || "");
-        setInviteChannelId(channelId);
-      });
-  }
+    axios.post(`/invites`, {
+    roomId: channelId,   // ✅ 필수 값
+    expireAt: null,      // ✅ 선택 값 (무제한일 경우 null)
+    maxUses: null,       // ✅ 선택 값 (무제한일 경우 null)
+    memo: ""             // ✅ 선택 값 (없으면 빈 문자열)
+  })
+  .then(res => {
+    setInviteCode(res.data.code || res.data.inviteCode || "");
+    setInviteChannelId(channelId);
+  })
+  .catch(err => {
+    console.error("❌ 초대코드 생성 실패", err?.response?.data || err.message);
+    alert("초대코드 생성에 실패했습니다.");
+  });
+}
 
   function closeInviteModal() {
     setInviteCode("");
@@ -318,24 +327,48 @@ export default function Sidebar2({
 
         {/* 초대코드 모달 */}
         {inviteCode && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-zinc-900 p-4 rounded w-80 flex flex-col gap-2">
-              <div className="text-white font-bold mb-2">초대코드</div>
-              <div className="bg-zinc-800 rounded px-4 py-2 font-mono text-xl text-center mb-2">
-                {inviteCode}
-              </div>
-              <button
-                onClick={() => navigator.clipboard.writeText(inviteCode)}
-                className="bg-blue-600 text-white rounded px-3 py-1 mb-2"
-              >코드 복사</button>
-              <button
-                onClick={closeInviteModal}
-                className="bg-zinc-700 text-white rounded px-3 py-1"
-              >닫기</button>
-            </div>
-          </div>
-        )}
+  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="bg-zinc-900 p-5 rounded-xl w-[360px] flex flex-col gap-4 shadow-lg">
+      <div className="text-white font-bold text-lg">📨 초대 코드</div>
+
+      {/* 🔢 코드 표시 */}
+      <div className="flex items-center justify-between bg-zinc-800 px-4 py-2 rounded">
+        <span className="font-mono text-white text-base">{inviteCode}</span>
+        <button
+          onClick={() => navigator.clipboard.writeText(inviteCode)}
+          className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+        >코드 복사</button>
       </div>
+
+      {/* 🌐 링크 표시 */}
+      <div className="flex flex-col gap-1">
+        <label className="text-sm text-zinc-300">초대 링크</label>
+        <input
+          className="w-full bg-zinc-800 text-white text-sm px-3 py-2 rounded"
+          readOnly
+          value={`${import.meta.env.VITE_BASE_URL || window.location.origin}/invite/${inviteCode}`}
+        />
+        <div className="flex justify-end">
+          <button
+            onClick={() =>
+              navigator.clipboard.writeText(
+                `${import.meta.env.VITE_BASE_URL || window.location.origin}/invite/${inviteCode}`
+              )
+            }
+            className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+          >링크 복사</button>
+        </div>
+      </div>
+
+      {/* 닫기 버튼 */}
+      <button
+        onClick={closeInviteModal}
+        className="mt-2 bg-zinc-700 text-white px-3 py-1 rounded hover:bg-zinc-600"
+      >닫기</button>
     </div>
-  );
+  </div>
+  )}
+  </div>
+</div>
+ );
 }

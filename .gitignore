@@ -12,6 +12,7 @@ build/
 # 환경 변수 파일 무시
 .env
 .env.local
+.env.production
 
 # 로그 파일 무시
 npm-debug.log*

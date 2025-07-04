@@ -17,6 +17,7 @@ import axiosInstance from "@/lib/axiosInstance";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WebSocketContext } from "@/context/WebSocketContext";
 import { Toaster } from "@/components/ui/toaster";
+import InviteJoinPage from "@/pages/InviteJoinPage";
 
 
 function App() {
@@ -109,6 +110,7 @@ function App() {
                   <Route path="mypage" element={<MyPage />} />
                 </Route>
                 <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+                <Route path="/invite/:code" element={<InviteJoinPage />} />
               </Routes>
             </BrowserRouter>
           </RealtimeProvider>

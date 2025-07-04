@@ -4,6 +4,7 @@ import com.example.boardapi.dto.ChatRoomResponseDTO;
 import com.example.boardapi.dto.ServerRequestDTO;
 import com.example.boardapi.dto.ServerResponseDTO;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
+import com.example.boardapi.service.InviteService;
 import com.example.boardapi.service.ServerService;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class ServerController {
 
     private final ServerService serverService;
+    private final InviteService inviteService;
 
     // 전체 서버 검색용
     @GetMapping
@@ -56,7 +58,7 @@ public class ServerController {
         return ResponseEntity.ok(result);
     }
 
-    // 서버 참여
+    // 서버 참여 (직접 검색 등)
     @PostMapping("/{serverId}/join")
     public ResponseEntity<Void> joinServer(
             @AuthenticationPrincipal MemberSecurityDTO member,
@@ -64,6 +66,19 @@ public class ServerController {
         if (member == null)
             return ResponseEntity.status(401).build();
         serverService.joinServer(serverId, member.getMno());
+        return ResponseEntity.ok().build();
+    }
+
+    // 초대코드 참여
+    @PostMapping("/join")
+    public ResponseEntity<Void> joinByCode(
+            @AuthenticationPrincipal MemberSecurityDTO member,
+            @RequestBody Map<String, String> body) {
+        if (member == null)
+            return ResponseEntity.status(401).build();
+
+        String code = body.get("code");
+        inviteService.joinByInvite(code, member.getMno()); // 초대코드 → 서버 참여 처리
         return ResponseEntity.ok().build();
     }
 

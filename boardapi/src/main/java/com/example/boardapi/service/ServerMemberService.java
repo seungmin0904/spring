@@ -73,4 +73,18 @@ public class ServerMemberService {
         Optional<ServerMember> sm = serverMemberRepository.findByMemberMnoAndServerId(memberId, serverId);
         return sm.map(serverMember -> serverMember.getRole().name()).orElse(null);
     }
+
+    // ✅ 서버 탈퇴 (본인만 가능, ADMIN은 탈퇴 불가)
+    @Transactional
+    public void leaveServer(Long serverId, Long memberId) {
+        ServerMember serverMember = serverMemberRepository
+                .findByMemberMnoAndServerId(memberId, serverId)
+                .orElseThrow(() -> new IllegalArgumentException("서버 참여 정보가 없습니다."));
+
+        if (serverMember.getRole() == ServerRole.ADMIN) {
+            throw new IllegalStateException("서버 개설자는 탈퇴할 수 없습니다. 삭제만 가능합니다.");
+        }
+
+        serverMemberRepository.delete(serverMember);
+    }
 }

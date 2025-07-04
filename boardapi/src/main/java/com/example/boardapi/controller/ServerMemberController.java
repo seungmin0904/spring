@@ -2,9 +2,11 @@ package com.example.boardapi.controller;
 
 import com.example.boardapi.dto.ServerMemberResponseDTO;
 import com.example.boardapi.entity.ServerRole;
+import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.ServerMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,5 +62,13 @@ public class ServerMemberController {
         if (role == null)
             return ResponseEntity.notFound().build();
         return ResponseEntity.ok(role);
+    }
+
+    @DeleteMapping("/leave")
+    public ResponseEntity<?> leaveServer(
+            @PathVariable Long serverId,
+            @AuthenticationPrincipal MemberSecurityDTO principal) {
+        serverMemberService.leaveServer(serverId, principal.getMno());
+        return ResponseEntity.ok("서버에서 탈퇴했습니다.");
     }
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
+import { toast } from "@/hooks/use-toast";
 
 export default function Sidebar1({ onSelectDM, onSelectServer }) {
   const [servers, setServers] = useState([]);
@@ -34,11 +35,28 @@ export default function Sidebar1({ onSelectDM, onSelectServer }) {
   };
 
   // 서버 탈퇴/삭제
-  const handleLeave = async (id) => {
-    if (!window.confirm("정말 탈퇴/삭제하시겠습니까?")) return;
-    await axios.delete(`/servers/${id}`);
-    fetchServers();
-  };
+  const handleLeaveOrDelete = async (serverId, userRole) => {
+  const isAdmin = userRole === "ADMIN"; // 🔑 권한에 따라 분기
+
+  const confirmMsg = isAdmin
+    ? "정말 이 서버를 삭제하시겠습니까? 삭제 시 복구할 수 없습니다."
+    : "정말 이 서버에서 탈퇴하시겠습니까?";
+
+  if (!window.confirm(confirmMsg)) return;
+
+  try {
+    if (isAdmin) {
+      await axios.delete(`/servers/${serverId}`); // 서버 삭제
+    } else {
+      await axios.delete(`/servers/${serverId}/members/leave`); // 서버 탈퇴
+    }
+
+    toast.success(isAdmin ? "서버 삭제 완료" : "서버 탈퇴 완료");
+    fetchServers(); // 🔁 사이드바 갱신
+  } catch (err) {
+    toast({ title: "서버 탈퇴 실패", description: err.message || "잠시 후 다시 시도하세요." });
+  }
+};
 
   return (
     <div className="w-[72px] bg-[#1e1f22] flex flex-col items-center py-3 gap-2 border-r border-[#232428] h-full">
@@ -85,7 +103,7 @@ export default function Sidebar1({ onSelectDM, onSelectServer }) {
             
             {/* 우클릭 메뉴 또는 삭제 버튼 */}
             <button
-              onClick={() => handleLeave(server.id)}
+              onClick={() => handleLeaveOrDelete(server.id, server.role)}
               className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 flex items-center justify-center"
               title="서버 탈퇴"
             >
