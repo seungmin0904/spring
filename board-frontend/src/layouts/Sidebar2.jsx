@@ -97,19 +97,25 @@ export default function Sidebar2({
 
   function handleDeleteChannel(channelId) {
     if (!window.confirm("정말 삭제할까요?")) return;
-    axios.delete(`/chatrooms/${channelId}`).then(fetchChannels);
-  }
-
-  function handleInviteCode(channelId) {
+    axios.delete(`/chatrooms/${channelId}`)
+    .then(() => {
+      setChannels(prev => prev.filter(ch => ch.id !== channelId));
+      fetchChannels(); // 💡 여기에서 강제 리렌더
+    })
+    .catch((err) => {
+      console.error("❌ 삭제 실패", err);
+    });
+}
+  function handleInviteCode(serverId) {
+    console.log("📨 invite 요청 serverId:", serverId);
     axios.post(`/invites`, {
-    roomId: channelId,   // ✅ 필수 값
+    serverId: serverId,   // ✅ 필수 값
     expireAt: null,      // ✅ 선택 값 (무제한일 경우 null)
     maxUses: null,       // ✅ 선택 값 (무제한일 경우 null)
     memo: ""             // ✅ 선택 값 (없으면 빈 문자열)
   })
   .then(res => {
     setInviteCode(res.data.code || res.data.inviteCode || "");
-    setInviteChannelId(channelId);
   })
   .catch(err => {
     console.error("❌ 초대코드 생성 실패", err?.response?.data || err.message);
@@ -252,7 +258,7 @@ export default function Sidebar2({
               >－</button>
               <button
                 className="text-xs bg-zinc-700 text-white rounded px-2 py-0.5 ml-1"
-                onClick={e => { e.stopPropagation(); handleInviteCode(ch.id); }}
+                onClick={e => { e.stopPropagation(); handleInviteCode(serverId); }}
               >초대</button>
             </li>
           ))}

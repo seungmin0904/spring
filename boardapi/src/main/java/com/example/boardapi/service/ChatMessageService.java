@@ -1,10 +1,10 @@
 package com.example.boardapi.service;
 
+import com.example.boardapi.dto.event.DmRestoreEvent;
 import com.example.boardapi.entity.ChatMessageEntity;
 import com.example.boardapi.entity.ChatRoom;
 import com.example.boardapi.entity.ChatRoomMember;
 import com.example.boardapi.entity.Member;
-import com.example.boardapi.messaging.DmRestoreEvent;
 import com.example.boardapi.repository.ChatMessageRepository;
 import com.example.boardapi.repository.ChatRoomMemberRepository;
 import com.example.boardapi.repository.ChatRoomRepository;

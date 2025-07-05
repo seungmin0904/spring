@@ -1,7 +1,7 @@
 package com.example.boardapi.config;
 
-import com.example.boardapi.dto.FriendEvent;
-import com.example.boardapi.dto.StatusChangeEvent;
+import com.example.boardapi.dto.event.FriendEvent;
+import com.example.boardapi.dto.event.StatusChangeEvent;
 import com.example.boardapi.entity.Member;
 import com.example.boardapi.repository.MemberRepository;
 import com.example.boardapi.service.FriendService;

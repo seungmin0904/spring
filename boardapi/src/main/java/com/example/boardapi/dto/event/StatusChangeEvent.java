@@ -1,4 +1,4 @@
-package com.example.boardapi.dto;
+package com.example.boardapi.dto.event;
 
 import java.io.Serializable;
 

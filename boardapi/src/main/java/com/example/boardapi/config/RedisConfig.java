@@ -36,7 +36,7 @@ public class RedisConfig {
         return template;
     }
 
-    @Bean(name = "friendEventRedisTemplate")
+    @Bean(name = "EventRedisTemplate")
     public RedisTemplate<String, Object> redisTemplateForObject(RedisConnectionFactory cf) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(cf);
@@ -58,18 +58,28 @@ public class RedisConfig {
     }
 
     @Bean
-    public MessageListenerAdapter friendRequestListener(RedisSubscriber subscriber) {
+    public MessageListenerAdapter redisMessageListenerAdapter(RedisSubscriber subscriber) {
         return new MessageListenerAdapter(subscriber);
     }
 
     @Bean
     public RedisMessageListenerContainer redisContainer(
             RedisConnectionFactory connectionFactory,
-            MessageListenerAdapter friendRequestListener) {
+            MessageListenerAdapter redisMessageListenerAdapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
-        container.addMessageListener(friendRequestListener,
+
+        container.addMessageListener(redisMessageListenerAdapter,
                 new ChannelTopic(RedisChannelConstants.FRIEND_REQUEST_CHANNEL));
+        container.addMessageListener(redisMessageListenerAdapter,
+                new ChannelTopic(RedisChannelConstants.SERVER_MEMBER_CHANGE));
+        container.addMessageListener(redisMessageListenerAdapter,
+                new ChannelTopic(RedisChannelConstants.STATUS_CHANGE));
+        container.addMessageListener(redisMessageListenerAdapter,
+                new ChannelTopic(RedisChannelConstants.SERVER_CHANGE));
+        container.addMessageListener(redisMessageListenerAdapter,
+                new ChannelTopic(RedisChannelConstants.INVITE_CHANGE));
+
         return container;
     }
 

@@ -68,10 +68,27 @@ export default function MainLayout() {
     localStorage.setItem('friendMode', 'false');
   }
 
+  // 서버 탈퇴/삭제 시 상태 초기화 함수
+  function resetServerSelection() {
+  setSelectedDM(false);
+  setSelectedServerId(null);
+  setSelectedRoomId(null);
+  setFriendMode(false);
+
+  localStorage.removeItem("selectedDM");
+  localStorage.removeItem("selectedServerId");
+  localStorage.removeItem("selectedRoomId");
+  localStorage.removeItem("friendMode");
+  }
+
   return (
     <div className="fixed inset-0 flex flex-col pt-16">
       <div className="flex flex-1 min-h-0">
-        <Sidebar1 onSelectDM={handleSelectDM} onSelectServer={handleSelectServer} />
+        <Sidebar1
+          onSelectDM={handleSelectDM}
+          onSelectServer={handleSelectServer}
+          onLeaveOrDeleteServer={resetServerSelection}
+        />
         <Sidebar2
           dmMode={selectedDM}
           serverId={selectedServerId}

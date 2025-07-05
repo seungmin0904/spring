@@ -12,24 +12,6 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @Configuration
 public class RabbitMQConfig {
-    // ==== Presence ====
-    public static final String PRESENCE_EXCHANGE = "presence.fanout";
-    public static final String PRESENCE_QUEUE = "presence.queue";
-
-    @Bean
-    public FanoutExchange presenceExchange() {
-        return new FanoutExchange(PRESENCE_EXCHANGE, true, false);
-    }
-
-    @Bean
-    public Queue presenceQueue() {
-        return QueueBuilder.durable(PRESENCE_QUEUE).build();
-    }
-
-    @Bean
-    public Binding presenceBinding(Queue presenceQueue, FanoutExchange presenceExchange) {
-        return BindingBuilder.bind(presenceQueue).to(presenceExchange);
-    }
 
     // ==== Friend ====
     public static final String FRIEND_EVENT_EXCHANGE = "friend.event.exchange";

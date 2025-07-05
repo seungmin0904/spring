@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "@/lib/axiosInstance";
 import { toast } from "@/hooks/use-toast";
 
-export default function Sidebar1({ onSelectDM, onSelectServer }) {
+export default function Sidebar1({ onSelectDM, onSelectServer, onLeaveOrDeleteServer }) {
   const [servers, setServers] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
@@ -10,7 +10,7 @@ export default function Sidebar1({ onSelectDM, onSelectServer }) {
   const [joinCode, setJoinCode] = useState("");
 
   const fetchServers = () =>
-    axios.get("/servers").then(res => setServers(res.data));
+    axios.get("/servers/my").then(res => setServers(res.data));
 
   useEffect(() => {
     fetchServers();
@@ -36,28 +36,36 @@ export default function Sidebar1({ onSelectDM, onSelectServer }) {
 
   // 서버 탈퇴/삭제
   const handleLeaveOrDelete = async (serverId, userRole) => {
-  const isAdmin = userRole === "ADMIN"; // 🔑 권한에 따라 분기
+    const isAdmin = (userRole?.toUpperCase?.() === "ADMIN"); // 🔑 권한에 따라 분기
+    console.log("🧪 서버 ID:", serverId, "역할:", userRole);
+    const confirmMsg = isAdmin
+      ? "정말 이 서버를 삭제하시겠습니까? 삭제 시 복구할 수 없습니다."
+      : "정말 이 서버에서 탈퇴하시겠습니까?";
 
-  const confirmMsg = isAdmin
-    ? "정말 이 서버를 삭제하시겠습니까? 삭제 시 복구할 수 없습니다."
-    : "정말 이 서버에서 탈퇴하시겠습니까?";
+    if (!window.confirm(confirmMsg)) return;
 
-  if (!window.confirm(confirmMsg)) return;
+    try {
+      if (isAdmin) {
+        await axios.delete(`/servers/${serverId}`);
+      } else {
+        await axios.delete(`/servers/${serverId}/members/leave`);
+      }
 
-  try {
-    if (isAdmin) {
-      await axios.delete(`/servers/${serverId}`); // 서버 삭제
-    } else {
-      await axios.delete(`/servers/${serverId}/members/leave`); // 서버 탈퇴
+      
+  
+      toast({ title: "알림", description: isAdmin ? "서버를 삭제했습니다." : "서버에서 나갔습니다." });
+      fetchServers(); // ✅ 성공 시에만
+      // 상태 초기화 함수
+      onLeaveOrDeleteServer();
+    } catch (err) {
+      console.error("❌ 서버 탈퇴/삭제 실패", err);
+      toast({
+        title: "오류 발생",
+        description: err.response?.data?.message || err.message || "서버에서 오류가 발생했습니다.",
+        variant: "destructive",
+      });
     }
-
-    toast.success(isAdmin ? "서버 삭제 완료" : "서버 탈퇴 완료");
-    fetchServers(); // 🔁 사이드바 갱신
-  } catch (err) {
-    toast({ title: "서버 탈퇴 실패", description: err.message || "잠시 후 다시 시도하세요." });
   }
-};
-
   return (
     <div className="w-[72px] bg-[#1e1f22] flex flex-col items-center py-3 gap-2 border-r border-[#232428] h-full">
       {/* DM 버튼 */}

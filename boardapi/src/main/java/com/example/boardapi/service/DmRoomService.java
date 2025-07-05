@@ -9,12 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardapi.dto.ChatRoomResponseDTO;
+import com.example.boardapi.dto.event.DmRestoreEvent;
 import com.example.boardapi.entity.ChannelType;
 import com.example.boardapi.entity.ChatRoom;
 import com.example.boardapi.entity.ChatRoomMember;
 import com.example.boardapi.entity.ChatRoomType;
 import com.example.boardapi.entity.Member;
-import com.example.boardapi.messaging.DmRestoreEvent;
 import com.example.boardapi.repository.ChatRoomMemberRepository;
 import com.example.boardapi.repository.ChatRoomRepository;
 import com.example.boardapi.repository.MemberRepository;

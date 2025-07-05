@@ -1,13 +1,11 @@
 package com.example.boardapi.service;
 
 import com.example.boardapi.dto.ServerMemberResponseDTO;
-import com.example.boardapi.entity.Server;
-import com.example.boardapi.entity.ServerMember;
-import com.example.boardapi.entity.ServerRole;
-import com.example.boardapi.entity.Member;
-import com.example.boardapi.repository.ServerMemberRepository;
-import com.example.boardapi.repository.ServerRepository;
-import com.example.boardapi.repository.MemberRepository;
+import com.example.boardapi.dto.event.ServerMemberEvent;
+import com.example.boardapi.entity.*;
+import com.example.boardapi.infra.EventPublisher;
+import com.example.boardapi.repository.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +20,8 @@ public class ServerMemberService {
     private final ServerRepository serverRepository;
     private final ServerMemberRepository serverMemberRepository;
     private final MemberRepository memberRepository;
+    private final EventPublisher eventPublisher;
 
-    // 서버 참여자 목록 반환
     @Transactional(readOnly = true)
     public List<ServerMemberResponseDTO> getServerMembers(Long serverId) {
         Server server = serverRepository.findById(serverId)
@@ -32,59 +30,64 @@ public class ServerMemberService {
         return list.stream().map(ServerMemberResponseDTO::from).toList();
     }
 
-    // 서버 멤버 강퇴
     @Transactional
     public void removeServerMember(Long serverId, Long memberId) {
         ServerMember serverMember = serverMemberRepository.findByMemberMnoAndServerId(memberId, serverId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멤버가 서버에 없음"));
         serverMemberRepository.delete(serverMember);
+
+        // 실시간 퇴장 전파
+        ServerMemberEvent event = new ServerMemberEvent(serverId, memberId, "KICK");
+        eventPublisher.publishServerMemberEvent(event);
     }
 
-    // 서버 멤버 권한 변경
     @Transactional
     public void changeServerMemberRole(Long serverId, Long memberId, ServerRole newRole) {
         ServerMember serverMember = serverMemberRepository.findByMemberMnoAndServerId(memberId, serverId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 멤버가 서버에 없음"));
         serverMember.setRole(newRole);
         serverMemberRepository.save(serverMember);
+        // 권한 변경 추가예정
     }
 
-    // 중복 참여 체크 및 참여 추가
     @Transactional
     public void joinServer(Long serverId, Long memberId) {
         boolean exists = serverMemberRepository.existsByMemberMnoAndServerId(memberId, serverId);
         if (exists)
             throw new IllegalStateException("이미 참여 중");
+
         Server server = serverRepository.findById(serverId)
                 .orElseThrow(() -> new IllegalArgumentException("서버 없음"));
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+
         ServerMember serverMember = ServerMember.builder()
                 .server(server)
                 .member(member)
                 .role(ServerRole.USER)
                 .build();
         serverMemberRepository.save(serverMember);
+
+        // 실시간 입장 전파
+        ServerMemberEvent event = new ServerMemberEvent(serverId, memberId, "JOIN");
+        eventPublisher.publishServerMemberEvent(event);
     }
 
-    // (선택) 참여자의 권한 반환
     @Transactional(readOnly = true)
     public String getMemberRole(Long serverId, Long memberId) {
         Optional<ServerMember> sm = serverMemberRepository.findByMemberMnoAndServerId(memberId, serverId);
         return sm.map(serverMember -> serverMember.getRole().name()).orElse(null);
     }
 
-    // ✅ 서버 탈퇴 (본인만 가능, ADMIN은 탈퇴 불가)
     @Transactional
     public void leaveServer(Long serverId, Long memberId) {
         ServerMember serverMember = serverMemberRepository
                 .findByMemberMnoAndServerId(memberId, serverId)
                 .orElseThrow(() -> new IllegalArgumentException("서버 참여 정보가 없습니다."));
-
-        if (serverMember.getRole() == ServerRole.ADMIN) {
-            throw new IllegalStateException("서버 개설자는 탈퇴할 수 없습니다. 삭제만 가능합니다.");
-        }
-
         serverMemberRepository.delete(serverMember);
+
+        // 실시간 퇴장 전파
+        ServerMemberEvent event = new ServerMemberEvent(serverId, memberId, "LEAVE");
+        eventPublisher.publishServerMemberEvent(event);
     }
 }

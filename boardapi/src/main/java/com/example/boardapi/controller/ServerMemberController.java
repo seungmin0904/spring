@@ -24,15 +24,6 @@ public class ServerMemberController {
         return ResponseEntity.ok(serverMemberService.getServerMembers(serverId));
     }
 
-    // 서버에 참여 (추가)
-    @PostMapping("/{memberId}")
-    public ResponseEntity<Void> joinServer(
-            @PathVariable Long serverId,
-            @PathVariable Long memberId) {
-        serverMemberService.joinServer(serverId, memberId);
-        return ResponseEntity.ok().build();
-    }
-
     // 강퇴
     @DeleteMapping("/{memberId}")
     public ResponseEntity<Void> removeServerMember(
@@ -64,6 +55,7 @@ public class ServerMemberController {
         return ResponseEntity.ok(role);
     }
 
+    // 서버 탈퇴
     @DeleteMapping("/leave")
     public ResponseEntity<?> leaveServer(
             @PathVariable Long serverId,

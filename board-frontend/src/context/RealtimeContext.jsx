@@ -15,6 +15,8 @@ const initialState = {
   sentRequests: [],
   friends: [],
   dmRooms: [],
+  serverMembers: {},
+  loadingServerMembers: new Set(),
 };
 
 function realtimeReducer(state, action) {
@@ -50,7 +52,7 @@ function realtimeReducer(state, action) {
       };
     case 'SET_DM_ROOMS':
       return { ...state, dmRooms: [...action.payload] }; // ✅ 얕은 복사 강제 렌더링
-    case 'ADD_OR_UPDATE_DM_ROOM':
+    case 'ADD_OR_UPDATE_DM_ROOM': {
       const existingIndex = state.dmRooms.findIndex(room => room.id === action.payload.id);
       if (existingIndex >= 0) {
         const updatedRooms = [...state.dmRooms];
@@ -58,6 +60,28 @@ function realtimeReducer(state, action) {
         return { ...state, dmRooms: updatedRooms };
       } else {
         return { ...state, dmRooms: [...state.dmRooms, action.payload] };
+      }
+    }
+    case 'SET_SERVER_MEMBERS':
+      return {
+        ...state,
+        serverMembers: {
+          ...state.serverMembers,
+          [action.serverId]: action.payload
+        }
+      };
+      case 'START_LOADING_SERVER_MEMBERS':
+        return {
+          ...state,
+          loadingServerMembers: new Set(state.loadingServerMembers).add(action.payload),
+      };
+      case 'FINISH_LOADING_SERVER_MEMBERS': {
+        const newSet = new Set(state.loadingServerMembers);
+        newSet.delete(action.payload);
+        return {
+          ...state,
+          loadingServerMembers: newSet,
+        };
       }
     default:
       return state;
@@ -107,6 +131,16 @@ export function RealtimeProvider({ children, socket }) {
       console.error("❌ DM 목록 새로고침 실패:", err);
     }
   };
+
+  const fetchAndSetServerMembers = async (serverId) => {
+    try {
+      const res = await axiosInstance.get(`/servers/${serverId}/members`);
+      dispatch({ type: 'SET_SERVER_MEMBERS', serverId, payload: res.data });
+    } catch (err) {
+      console.error(`❌ 서버 멤버 갱신 실패 (serverId=${serverId}):`, err);
+    }
+  };
+
   
   useEffect(() => {
     if (token && user?.id) {
@@ -175,7 +209,7 @@ export function RealtimeProvider({ children, socket }) {
           dispatch({ type: "SET_SENT", payload: sentRes.data || [] });
           dispatch({ type: "SET_ONLINE_USERS", payload: onlineRes.data || [] });
         } else if (type === "FRIEND_DELETED") {
-          const friendId = payload.payload?.requestId;
+          const friendId = payload.payload?.friendId;
           if (friendId) {
             dispatch({ type: "REMOVE_FRIEND", payload: friendId });
           } else {
@@ -200,6 +234,11 @@ export function RealtimeProvider({ children, socket }) {
       }
     });
 
+    const subServerMemberEvent = subscribe(`/topic/server.*.members`, async payload => {
+      if (!payload.serverId) return;
+      await fetchAndSetServerMembers(payload.serverId);
+    });
+
     console.log("✅ 모든 WebSocket 구독 완료");
 
     return () => {
@@ -210,6 +249,7 @@ export function RealtimeProvider({ children, socket }) {
         subNoti?.unsubscribe?.();
         subFriend?.unsubscribe?.();
         subDmRestore?.unsubscribe?.();
+        subServerMemberEvent?.unsubscribe?.();
         console.log("✅ WebSocket 구독 해제 완료");
       } catch (err) {
         console.error("❌ 구독 해제 중 오류:", err);
@@ -218,7 +258,7 @@ export function RealtimeProvider({ children, socket }) {
   }
 
   return (
-    <RealtimeContext.Provider value={{ state, dispatch, ready, refreshDmRooms }}>
+    <RealtimeContext.Provider value={{ state, dispatch, ready, refreshDmRooms, fetchAndSetServerMembers, }}>
       {children}
     </RealtimeContext.Provider>
   );

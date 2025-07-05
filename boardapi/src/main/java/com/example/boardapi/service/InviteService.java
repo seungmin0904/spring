@@ -4,11 +4,15 @@ import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.boardapi.dto.InviteRequestDTO;
 import com.example.boardapi.dto.InviteResponseDTO;
+import com.example.boardapi.dto.event.ServerMemberEvent;
 import com.example.boardapi.entity.ChannelMember;
 import com.example.boardapi.entity.ChannelRole;
 import com.example.boardapi.entity.ChatRoom;
@@ -17,6 +21,8 @@ import com.example.boardapi.entity.Member;
 import com.example.boardapi.entity.Server;
 import com.example.boardapi.entity.ServerMember;
 import com.example.boardapi.entity.ServerRole;
+import com.example.boardapi.enums.RedisChannelConstants;
+import com.example.boardapi.infra.EventPublisher;
 import com.example.boardapi.repository.ChannelMemberRepository;
 import com.example.boardapi.repository.ChatRoomRepository;
 import com.example.boardapi.repository.InviteRepository;
@@ -34,6 +40,7 @@ public class InviteService {
     private final MemberRepository memberRepository;
     private final InviteRepository inviteRepository;
     private final ServerMemberRepository serverMemberRepository;
+    private final EventPublisher eventPublisher;
 
     // 랜덤 코드 생성 유틸
     private String generateRandomCode() {
@@ -135,6 +142,8 @@ public class InviteService {
             invite.setActive(false);
         }
         inviteRepository.save(invite);
+        ServerMemberEvent event = new ServerMemberEvent(serverId, memberId, "JOIN");
+        eventPublisher.publishServerMemberEvent(event);
 
         return server.getId();
     }

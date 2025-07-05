@@ -77,13 +77,15 @@ public class ChatRoomService {
 
     @Transactional
     public void deleteRoom(Long roomId, Long currentUserId) {
-        // 현재 유저가 ADMIN인지 확인
-        ChannelMember cm = channelMemberRepository.findByRoomIdAndMemberMno(roomId, currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("채널에 참여한 적이 없음"));
+        // 현재 유저가 ADMIN인지 확인, 개발중에는 주석처리(삭제하기개빡셈)
 
-        if (cm.getRole() != ChannelRole.ADMIN) {
-            throw new IllegalStateException("방장만 방을 삭제할 수 있습니다.");
-        }
+        // ChannelMember cm = channelMemberRepository.findByRoomIdAndMemberMno(roomId,
+        // currentUserId)
+        // .orElseThrow(() -> new IllegalArgumentException("채널에 참여한 적이 없음"));
+
+        // if (cm.getRole() != ChannelRole.ADMIN) {
+        // throw new IllegalStateException("방장만 방을 삭제할 수 있습니다.");
+        // }
 
         // 1. 메시지 삭제
         chatMessageRepository.deleteByRoomId(roomId);

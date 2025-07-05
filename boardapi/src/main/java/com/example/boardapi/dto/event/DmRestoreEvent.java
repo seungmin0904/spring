@@ -1,4 +1,4 @@
-package com.example.boardapi.messaging;
+package com.example.boardapi.dto.event;
 
 public class DmRestoreEvent {
 

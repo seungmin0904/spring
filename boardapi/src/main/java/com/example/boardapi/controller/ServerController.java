@@ -5,6 +5,7 @@ import com.example.boardapi.dto.ServerRequestDTO;
 import com.example.boardapi.dto.ServerResponseDTO;
 import com.example.boardapi.security.dto.MemberSecurityDTO;
 import com.example.boardapi.service.InviteService;
+import com.example.boardapi.service.ServerMemberService;
 import com.example.boardapi.service.ServerService;
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +23,7 @@ public class ServerController {
 
     private final ServerService serverService;
     private final InviteService inviteService;
+    private final ServerMemberService serverMemberService;
 
     // 전체 서버 검색용
     @GetMapping
@@ -65,7 +67,7 @@ public class ServerController {
             @PathVariable Long serverId) {
         if (member == null)
             return ResponseEntity.status(401).build();
-        serverService.joinServer(serverId, member.getMno());
+        serverMemberService.joinServer(serverId, member.getMno());
         return ResponseEntity.ok().build();
     }
 

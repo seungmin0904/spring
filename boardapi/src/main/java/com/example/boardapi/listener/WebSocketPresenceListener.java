@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WebSocketPresenceListener {
 
+    // WebSocket 연결 상태를 Redis에 저장하고 사용자 온라인/오프라인 상태를 관리
     private final @Qualifier("redisTemplate") RedisTemplate<String, String> redis;
-    private final SimpMessagingTemplate broker;
     private final UserStatusService userStatusService;
 
     // 연결 시
