@@ -58,6 +58,10 @@ public class MemberSecurityDTO implements UserDetails, Principal {
         return username; // 또는 name
     }
 
+    public String getNickname() {
+        return name;
+    }
+
     public static MemberSecurityDTO from(Member member) {
         return MemberSecurityDTO.builder()
                 .mno(member.getMno())

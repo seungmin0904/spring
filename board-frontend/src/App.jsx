@@ -72,6 +72,7 @@ function App() {
 
       const res = await axiosInstance.get("/members/me");
       const full = { ...res.data, token };
+      console.log("👤 /members/me 결과:", full);
       localStorage.setItem("user", JSON.stringify(full));
       setUser(full);
 

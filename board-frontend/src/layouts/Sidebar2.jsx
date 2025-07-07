@@ -17,8 +17,16 @@ export default function Sidebar2({
     createSendTransport,
     sendAudio,
     createRecvTransport,
-    consumeSpecificAudio
-  } = useMediasoupClient();
+    consumeSpecificAudio,
+    joinVoiceChannel,
+    leaveVoiceChannel,
+    voiceParticipantsMap
+  } = useMediasoupClient(user?.id, user?.nickname);
+  
+ useEffect(() => {
+  console.log("🎯 userContext 값:", user);
+}, []);
+  
 
   const [friends, setFriends] = useState([]);
   const [channels, setChannels] = useState([]);
@@ -160,65 +168,33 @@ export default function Sidebar2({
             친구
           </button>
         </div>
-        
         <div className="flex items-center justify-between px-4 py-3">
           <div className="text-xs text-zinc-400 font-bold">다이렉트 메시지</div>
-          {/* ✅ 디버깅용 새로고침 버튼 (필요시 제거) */}
           <button
             onClick={refreshDmRooms}
             className="text-xs text-zinc-500 hover:text-white transition"
             title="DM 목록 새로고침"
-          >
-            🔄
-          </button>
+          >🔄</button>
         </div>
-
         <ul className="px-2 flex-1 overflow-y-auto">
-          {/* ✅ 로딩 상태 표시 */}
-          {!ready && (
-            <li className="px-3 py-2 text-zinc-500 text-sm">
-              연결 중...
-            </li>
-          )}
-          
-          {/* ✅ DM 목록이 비어있을 때 */}
-          {ready && dmRooms.length === 0 && (
-            <li className="px-3 py-2 text-zinc-500 text-sm">
-              DM 목록이 없습니다
-            </li>
-          )}
-
-          {/* ✅ DM 목록 렌더링 */}
-          {dmRooms
-            ?.filter(room => room.visible)
-            .map((room) => (
+          {!ready && <li className="px-3 py-2 text-zinc-500 text-sm">연결 중...</li>}
+          {ready && dmRooms.length === 0 && <li className="px-3 py-2 text-zinc-500 text-sm">DM 목록이 없습니다</li>}
+          {dmRooms?.filter(room => room.visible).map((room) => (
             <li
               key={room.id}
               className="px-3 py-2 rounded group flex items-center justify-between hover:bg-zinc-800 cursor-pointer transition"
               onClick={() => onSelectDMRoom(room.id)}
-            >         
-              <span className="text-base truncate flex-1">
-                {room?.name || "이름없음"}
-              </span>
+            >
+              <span className="text-base truncate flex-1">{room?.name || "이름없음"}</span>
               <button
                 className="dm-delete-btn text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition ml-2 flex-shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteDmRoom(room.id);
-                }}
+                onClick={(e) => { e.stopPropagation(); handleDeleteDmRoom(room.id); }}
                 title="DM 삭제"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>  
+              </button>
             </li>
           ))}
         </ul>
@@ -229,152 +205,90 @@ export default function Sidebar2({
   return (
     <div className="w-[260px] min-w-[200px] max-w-[320px] h-full bg-[#2b2d31] flex flex-col border-r border-[#232428]">
       <div className="flex-1 flex flex-col">
-        {/* 텍스트 채널 */}
         <div className="flex items-center justify-between px-4 mt-4 mb-1">
           <span className="text-xs text-zinc-400 font-bold">텍스트 채널</span>
-          <button
-            className="text-xs text-[#3ba55d] hover:text-white bg-[#232428] rounded px-2 py-1 ml-2"
-            onClick={() => {
-              setNewType("TEXT");
-              setShowCreate(true);
-            }}
-            title="채널 생성"
-          >＋</button>
+          <button className="text-xs text-[#3ba55d] hover:text-white bg-[#232428] rounded px-2 py-1 ml-2" onClick={() => { setNewType("TEXT"); setShowCreate(true); }} title="채널 생성">＋</button>
         </div>
         <ul className="mb-3 px-2">
           {textChannels.length === 0 && <div className="text-zinc-500 px-2 py-2">없음</div>}
           {textChannels.map((ch, i) => (
-            <li
-              key={ch.id ?? `textch-${i}`}
-              className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-              onClick={() => onSelectChannel && onSelectChannel(ch.id)}
-            >
+            <li key={ch.id ?? `textch-${i}`} className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition" onClick={() => onSelectChannel && onSelectChannel(ch.id)}>
               <span className="text-[#8e9297] font-bold">#</span>
               <span className="flex-1">{ch?.name || "이름없음"}</span>
-              <button
-                className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }}
-                title="채널 삭제"
-              >－</button>
-              <button
-                className="text-xs bg-zinc-700 text-white rounded px-2 py-0.5 ml-1"
-                onClick={e => { e.stopPropagation(); handleInviteCode(serverId); }}
-              >초대</button>
+              <button className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제">－</button>
+              <button className="text-xs bg-zinc-700 text-white rounded px-2 py-0.5 ml-1" onClick={e => { e.stopPropagation(); handleInviteCode(serverId); }}>초대</button>
             </li>
           ))}
         </ul>
 
-        {/* 음성 채널 */}
         <div className="flex items-center justify-between px-4 mt-2 mb-1">
           <span className="text-xs text-zinc-400 font-bold">음성 채널</span>
-          <button
-            className="text-xs text-[#3ba55d] hover:text-white bg-[#232428] rounded px-2 py-1 ml-2"
-            onClick={() => {
-              setNewType("VOICE");
-              setShowCreate(true);
-            }}
-            title="음성 채널 생성"
-          >＋</button>
+          <button className="text-xs text-[#3ba55d] hover:text-white bg-[#232428] rounded px-2 py-1 ml-2" onClick={() => { setNewType("VOICE"); setShowCreate(true); }} title="음성 채널 생성">＋</button>
         </div>
         <ul className="px-2">
           {voiceChannels.length === 0 && <div className="text-zinc-500 px-2 py-2">없음</div>}
           {voiceChannels.map((ch, i) => (
-            <li
-              key={ch.id ?? `voicech-${i}`}
-              className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition"
-              onClick={async () => {
-                console.log("🔊 음성 채널 클릭:", ch.id);
+            <li key={ch.id ?? `voicech-${i}`} className="flex flex-col px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition">
+              <div className="flex items-center gap-2" onClick={async () => {
                 if (onSelectChannel) onSelectChannel(ch.id);
                 try {
+                  joinVoiceChannel(ch.id);
                   await createSendTransport();
                   await sendAudio();
                   await createRecvTransport();
-                  console.log("🎤 음성 채널 입장 완료:", ch.id);
                 } catch (err) {
                   console.error("❌ 음성 송수신 실패:", err);
                 }
-              }}
-            >
-              <span>🔊</span>
-              <span className="flex-1">{ch?.name || "이름없음"}</span>
-              <button
-                className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }}
-                title="채널 삭제"
-              >－</button>
+              }}>
+                <span>🔊</span>
+                <span className="flex-1">{ch?.name || "이름없음"}</span>
+                <button className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제">－</button>
+              </div>
+              {voiceParticipantsMap.get(ch.id)?.map(({ userId, nickname }) => (
+  <div key={userId} className="ml-4 text-sm text-white flex justify-between">
+    <span>{nickname}</span>
+    {userId === currentUserId && (
+      <button onClick={leaveVoiceChannel} className="text-red-400 text-xs">-</button>
+    )}
+                </div>
+              ))}
             </li>
           ))}
         </ul>
+      </div>
 
-        {/* 채널 생성 모달 */}
-        {showCreate && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40">
-            <div className="bg-zinc-900 p-4 rounded w-80 flex flex-col gap-2">
-              <div className="text-white font-bold mb-2">채널 개설</div>
-              <input
-                className="p-2 rounded"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                placeholder="채널명"
-              />
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={handleCreateChannel}
-                  className="flex-1 bg-blue-600 text-white rounded py-1"
-                >생성</button>
-                <button
-                  onClick={() => setShowCreate(false)}
-                  className="flex-1 bg-zinc-700 text-white rounded py-1"
-                >취소</button>
-              </div>
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-40">
+          <div className="bg-zinc-900 p-4 rounded w-80 flex flex-col gap-2">
+            <div className="text-white font-bold mb-2">채널 개설</div>
+            <input className="p-2 rounded" value={newName} onChange={e => setNewName(e.target.value)} placeholder="채널명" />
+            <div className="flex gap-2 mt-2">
+              <button onClick={handleCreateChannel} className="flex-1 bg-blue-600 text-white rounded py-1">생성</button>
+              <button onClick={() => setShowCreate(false)} className="flex-1 bg-zinc-700 text-white rounded py-1">취소</button>
             </div>
           </div>
-        )}
-
-        {/* 초대코드 모달 */}
-        {inviteCode && (
-  <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-    <div className="bg-zinc-900 p-5 rounded-xl w-[360px] flex flex-col gap-4 shadow-lg">
-      <div className="text-white font-bold text-lg">📨 초대 코드</div>
-
-      {/* 🔢 코드 표시 */}
-      <div className="flex items-center justify-between bg-zinc-800 px-4 py-2 rounded">
-        <span className="font-mono text-white text-base">{inviteCode}</span>
-        <button
-          onClick={() => navigator.clipboard.writeText(inviteCode)}
-          className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
-        >코드 복사</button>
-      </div>
-
-      {/* 🌐 링크 표시 */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm text-zinc-300">초대 링크</label>
-        <input
-          className="w-full bg-zinc-800 text-white text-sm px-3 py-2 rounded"
-          readOnly
-          value={`${import.meta.env.VITE_BASE_URL || window.location.origin}/invite/${inviteCode}`}
-        />
-        <div className="flex justify-end">
-          <button
-            onClick={() =>
-              navigator.clipboard.writeText(
-                `${import.meta.env.VITE_BASE_URL || window.location.origin}/invite/${inviteCode}`
-              )
-            }
-            className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
-          >링크 복사</button>
         </div>
-      </div>
+      )}
 
-      {/* 닫기 버튼 */}
-      <button
-        onClick={closeInviteModal}
-        className="mt-2 bg-zinc-700 text-white px-3 py-1 rounded hover:bg-zinc-600"
-      >닫기</button>
+      {inviteCode && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 p-5 rounded-xl w-[360px] flex flex-col gap-4 shadow-lg">
+            <div className="text-white font-bold text-lg">📨 초대 코드</div>
+            <div className="flex items-center justify-between bg-zinc-800 px-4 py-2 rounded">
+              <span className="font-mono text-white text-base">{inviteCode}</span>
+              <button onClick={() => navigator.clipboard.writeText(inviteCode)} className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">코드 복사</button>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm text-zinc-300">초대 링크</label>
+              <input className="w-full bg-zinc-800 text-white text-sm px-3 py-2 rounded" readOnly value={`${import.meta.env.VITE_BASE_URL || window.location.origin}/invite/${inviteCode}`} />
+              <div className="flex justify-end">
+                <button onClick={() => navigator.clipboard.writeText(`${import.meta.env.VITE_BASE_URL || window.location.origin}/invite/${inviteCode}`)} className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded">링크 복사</button>
+              </div>
+            </div>
+            <button onClick={closeInviteModal} className="mt-2 bg-zinc-700 text-white px-3 py-1 rounded hover:bg-zinc-600">닫기</button>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-  )}
-  </div>
-</div>
- );
+  );
 }

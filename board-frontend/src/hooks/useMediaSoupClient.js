@@ -1,14 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import * as mediasoupClient from 'mediasoup-client';
 
 const SERVER_URL = 'http://localhost:4000';
 
-export default function useMediasoupClient() {
+export default function useMediasoupClient(userId, nickname) {
   const socketRef = useRef(null);
   const deviceRef = useRef(null);
   const sendTransportRef = useRef(null);
   const recvTransportRef = useRef(null);
+  const producerRef = useRef(null);
+  const currentChannelIdRef = useRef(null);
+  const participantsRef = useRef(new Map());
+  const consumerRefs = useRef([]);
+  const streamRef = useRef(null);
+  const [voiceParticipantsMap, setVoiceParticipantsMap] = useState(new Map());
 
   const iceServers = [
     {
@@ -23,6 +29,8 @@ export default function useMediasoupClient() {
 
     socketRef.current.on('connect', async () => {
       console.log('✅ Connected to mediasoup server');
+      console.log("📌 register emit:", { userId, nickname });
+      socketRef.current.emit('register', { userId, nickname });
 
       const device = new mediasoupClient.Device();
       deviceRef.current = device;
@@ -34,13 +42,82 @@ export default function useMediasoupClient() {
       });
     });
 
+    socketRef.current.on('voiceParticipantsUpdate', ({ channelId, participants }) => {
+      participantsRef.current.set(channelId, participants);
+      setVoiceParticipantsMap(new Map(participantsRef.current));
+    });
+
     socketRef.current.on('newProducer', async ({ producerId }) => {
       console.log("🎧 New producer detected:", producerId);
       await consumeSpecificAudio(producerId);
     });
 
     return () => socketRef.current.disconnect();
-  }, []);
+  }, [userId,nickname]);
+
+  const joinVoiceChannel = (channelId) => {
+    socketRef.current.emit('joinVoiceChannel', { channelId });
+    currentChannelIdRef.current = channelId;
+  };
+
+  const leaveVoiceChannel = () => {
+    if (currentChannelIdRef.current) {
+      socketRef.current.emit('leaveVoiceChannel', { channelId: currentChannelIdRef.current });
+      currentChannelIdRef.current = null;
+    }
+    
+    // Audio 트랙 정지
+    if (streamRef.current) {
+    streamRef.current.getTracks().forEach(track => {
+      track.stop();
+    });
+    streamRef.current = null;
+   }
+      // Producer 정리
+  if (producerRef.current) {
+    try {
+      producerRef.current.close();
+    } catch (e) {
+      console.warn("❗ producer close 에러:", e);
+    }
+    producerRef.current = null;
+  }
+
+    // sendTransport 정리
+  if (sendTransportRef.current) {
+    try {
+      sendTransportRef.current.close();
+    } catch (e) {
+      console.warn("❗ sendTransport close 에러:", e);
+    }
+    sendTransportRef.current = null;
+  }
+
+    // recvTransport 정리
+  if (recvTransportRef.current) {
+    try {
+      recvTransportRef.current.close();
+    } catch (e) {
+      console.warn("❗ recvTransport close 에러:", e);
+    }
+    recvTransportRef.current = null;
+    }
+    // consumer 전부 해제
+    consumerRefs.current.forEach(c => {
+      try { c.close(); } catch {}
+    });
+    consumerRefs.current = [];
+
+
+  // 오디오 엘리먼트 제거
+  document.querySelectorAll("audio").forEach((audio) => {
+    if (audio.srcObject instanceof MediaStream) {
+      audio.pause();
+      audio.srcObject = null;
+      audio.remove();
+    }
+  });
+  };
 
   const createSendTransport = async () => {
     return new Promise((resolve, reject) => {
@@ -87,7 +164,6 @@ export default function useMediasoupClient() {
           noiseSuppression: false,
           autoGainControl: false
         }
-      
       });
       const track = stream.getAudioTracks()[0];
       console.log("🎙️ Got local audio track:", track.label);
@@ -180,6 +256,7 @@ export default function useMediasoupClient() {
             kind,
             rtpParameters,
           });
+          consumerRefs.current.push(consumer);
 
           console.log("👂 consumer.track:", consumer.track);
           console.log('👂 consumer.track.muted:', consumer.track.muted);
@@ -198,13 +275,6 @@ export default function useMediasoupClient() {
           audioContext.onstatechange = () => {
             console.log("📻 AudioContext state changed to:", audioContext.state);
           };
-
-          // const source = audioContext.createMediaStreamSource(stream);
-          // const gainNode = audioContext.createGain();
-          // gainNode.gain.value = 3.0;
-
-          // source.connect(gainNode);
-          // gainNode.connect(audioContext.destination);
 
           try {
             await audioContext.resume();
@@ -249,5 +319,8 @@ export default function useMediasoupClient() {
     sendAudio,
     createRecvTransport,
     consumeSpecificAudio,
+    joinVoiceChannel,
+    leaveVoiceChannel,
+    voiceParticipantsMap
   };
 }

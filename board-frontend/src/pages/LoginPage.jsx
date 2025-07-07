@@ -22,7 +22,7 @@ const LoginPage = ({ onLogin }) => {
 
       const result = response.data;
 
-      if (result.token && result.username) {
+      if (result.token && result.username && result.name) {
         localStorage.setItem("token", result.token);
         localStorage.setItem("username", result.username); // 이메일
         localStorage.setItem("name", result.name);         // 닉네임
