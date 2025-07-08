@@ -14,6 +14,9 @@ export default function useMediasoupClient(userId, nickname) {
   const participantsRef = useRef(new Map());
   const consumerRefs = useRef([]);
   const streamRef = useRef(null);
+  const micIntervalRef = useRef(null);
+  const [micVolume, setMicVolume] = useState(0); // 0~100
+const [speakingUserIds, setSpeakingUserIds] = useState(new Set());
   const [voiceParticipantsMap, setVoiceParticipantsMap] = useState(new Map());
 
   const iceServers = [
@@ -55,79 +58,74 @@ export default function useMediasoupClient(userId, nickname) {
     return () => socketRef.current.disconnect();
   }, [userId,nickname]);
 
-  const joinVoiceChannel = (newChannelId) => {
-  if (currentChannelIdRef.current && currentChannelIdRef.current !== newChannelId) {
-    // ✅ 기존 채널에서 먼저 나가기
-    socketRef.current.emit('leaveVoiceChannel', { channelId: currentChannelIdRef.current });
-  }
+  const joinVoiceChannel = async (newChannelId) => {
+    if (currentChannelIdRef.current && currentChannelIdRef.current !== newChannelId) {
+      // 기존 채널 먼저 정리
+      await leaveVoiceChannel();
+    }
+  
+    // 새 채널 조인
+    socketRef.current.emit('joinVoiceChannel', { channelId: newChannelId });
+    currentChannelIdRef.current = newChannelId;
+  };
 
-  // ✅ 새 채널 입장
-  socketRef.current.emit('joinVoiceChannel', { channelId: newChannelId });
-  currentChannelIdRef.current = newChannelId;
-};
-
-  const leaveVoiceChannel = () => {
+  const leaveVoiceChannel = async () => {
     if (currentChannelIdRef.current) {
       socketRef.current.emit('leaveVoiceChannel', { channelId: currentChannelIdRef.current });
       currentChannelIdRef.current = null;
     }
-    
-    // Audio 트랙 정지
-    if (streamRef.current) {
-    streamRef.current.getTracks().forEach(track => {
-      track.stop();
-    });
-    streamRef.current = null;
-   }
-      // Producer 정리
-  if (producerRef.current) {
+  
     try {
-      producerRef.current.close();
-    } catch (e) {
-      console.warn("❗ producer close 에러:", e);
-    }
+      producerRef.current?.close();
+    } catch (e) {}
     producerRef.current = null;
-  }
-
-    // sendTransport 정리
-  if (sendTransportRef.current) {
+  
     try {
-      sendTransportRef.current.close();
-    } catch (e) {
-      console.warn("❗ sendTransport close 에러:", e);
-    }
+      sendTransportRef.current?.close();
+    } catch (e) {}
     sendTransportRef.current = null;
-  }
-
-    // recvTransport 정리
-  if (recvTransportRef.current) {
+  
     try {
-      recvTransportRef.current.close();
-    } catch (e) {
-      console.warn("❗ recvTransport close 에러:", e);
-    }
+      recvTransportRef.current?.close();
+    } catch (e) {}
     recvTransportRef.current = null;
-    }
-    // consumer 전부 해제
-    consumerRefs.current.forEach(c => {
+  
+    consumerRefs.current.forEach((c) => {
       try { c.close(); } catch {}
     });
     consumerRefs.current = [];
-
-
-  // 오디오 엘리먼트 제거
-  document.querySelectorAll("audio").forEach((audio) => {
-    if (audio.srcObject instanceof MediaStream) {
-      audio.pause();
-      audio.srcObject = null;
-      audio.remove();
+  
+    // ✅ 마이크 측정 타이머 정리
+    if (micIntervalRef.current) {
+      clearInterval(micIntervalRef.current);
+      micIntervalRef.current = null;
     }
-  });
+  
+    // stream 정리
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  
+    // DOM 오디오 제거
+    document.querySelectorAll("audio").forEach((audio) => {
+      if (audio.srcObject instanceof MediaStream) {
+        audio.pause();
+        audio.srcObject = null;
+        audio.remove();
+      }
+    });
   };
 
   const createSendTransport = async () => {
     return new Promise((resolve, reject) => {
       socketRef.current.emit('createWebRtcTransport', { direction: 'send' }, async (params) => {
+        console.log("🚚 createWebRtcTransport 응답:", params);
+        if (params.error) {
+          console.error("❌ Transport 생성 실패:", params.error);
+          return reject(params.error);
+        }
+      
         try {
           const transport = deviceRef.current.createSendTransport({
             ...params,
@@ -157,12 +155,12 @@ export default function useMediasoupClient(userId, nickname) {
 
   const sendAudio = async () => {
     console.log("🎤 sendAudio called");
-
+  
     if (!sendTransportRef.current) {
       console.warn("❌ sendTransportRef is null");
       return;
     }
-
+  
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -173,28 +171,56 @@ export default function useMediasoupClient(userId, nickname) {
       });
       const track = stream.getAudioTracks()[0];
       console.log("🎙️ Got local audio track:", track.label);
-
+  
       console.log("✅ sendTransport connectionState:", sendTransportRef.current.connectionState);
       console.log("✅ track.readyState:", track.readyState);
       console.log("✅ track.enabled:", track.enabled);
       console.log("✅ track.muted:", track.muted);
-
+  
       sendTransportRef.current.on('connectionstatechange', (state) => {
         console.log(`🚩 sendTransport connectionstatechange: ${state}`);
       });
-
+  
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       source.connect(analyser);
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      setInterval(() => {
+  
+      // 이전 타이머 제거
+      if (micIntervalRef.current) {
+        clearInterval(micIntervalRef.current);
+        micIntervalRef.current = null;
+      }
+  
+      // 마이크 레벨 측정 시작
+      micIntervalRef.current = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
         const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        setMicVolume(avg); //  내 마이크 게이지용
+
+        const threshold = 10; // 말하는 기준 볼륨
+      
+        // 자신을 말하는 사람으로 등록
+        if (avg > threshold) {
+          setSpeakingUserIds((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(userId);
+            return newSet;
+          });
+        } else {
+          setSpeakingUserIds((prev) => {
+            if (prev.has(userId)) {
+              const newSet = new Set(prev);
+              newSet.delete(userId);
+              return newSet;
+            }
+            return prev;
+          });
+        }
         console.log("🎙️ Mic volume level:", avg.toFixed(2));
       }, 500);
-
+  
       await sendTransportRef.current.produce({ track });
       console.log("📤 Audio produced successfully");
     } catch (err) {
@@ -327,6 +353,8 @@ export default function useMediasoupClient(userId, nickname) {
     consumeSpecificAudio,
     joinVoiceChannel,
     leaveVoiceChannel,
-    voiceParticipantsMap
+    voiceParticipantsMap,
+    speakingUserIds,
+    micVolume,
   };
 }

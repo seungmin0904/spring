@@ -20,7 +20,9 @@ export default function Sidebar2({
     consumeSpecificAudio,
     joinVoiceChannel,
     leaveVoiceChannel,
-    voiceParticipantsMap
+    voiceParticipantsMap,
+    speakingUserIds,
+    micVolume,
   } = useMediasoupClient(user?.id, user?.nickname);
   
  useEffect(() => {
@@ -232,7 +234,7 @@ export default function Sidebar2({
               <div className="flex items-center gap-2" onClick={async () => {
                 if (onSelectChannel) onSelectChannel(ch.id);
                 try {
-                  joinVoiceChannel(ch.id);
+                  await joinVoiceChannel(ch.id);
                   await createSendTransport();
                   await sendAudio();
                   await createRecvTransport();
@@ -244,45 +246,56 @@ export default function Sidebar2({
                 <span className="flex-1">{ch?.name || "이름없음"}</span>
                 <button className="text-[11px] text-red-400 border border-red-400 rounded-sm px-[4px] py-[1px] leading-tight opacity-0 group-hover:opacity-100 transition bg-[#2b2d31]" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제"></button>
               </div>
-             {voiceParticipantsMap.get(ch.id)?.map(({ userId, nickname }) => (
-                <div
-                  key={userId}
-                  className={`group flex items-center justify-between ml-3 mr-1 mt-0.5 px-2 py-[2px] rounded hover:bg-[#35373c] ${
-                    userId === currentUserId ? 'bg-[#40444b]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className="w-[18px] h-[18px] rounded-full bg-[#4f545c] text-white text-[10px] flex items-center justify-center font-bold">
-                      {nickname?.[0]?.toUpperCase() || "?"}
-                    </div>
-                    <span className="text-[13px] text-white leading-tight">
-                      {nickname}
-                      {userId === currentUserId && (
-                        <span className="text-[13px] text-zinc-400 ml-1">(나)</span>
-                      )}
-                    </span>
-                    <svg className="w-5 h-5 text-green-400 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 2a2 2 0 00-2 2v6a2 2 0 104 0V4a2 2 0 00-2-2z" />
-                      <path d="M4 10a6 6 0 0012 0h-1.5a4.5 4.5 0 01-9 0H4z" />
-                    </svg>
-                  </div>
-                  {userId === currentUserId && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        leaveVoiceChannel();
-                      }}
-                      className="text-[13px] bg-transparent text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition"
-                      title="나가기"
-                    >
-                      −
-                    </button>
-                  )}
+              {voiceParticipantsMap.get(ch.id)?.map(({ userId, nickname }) => (
+  <div
+    key={userId}
+    className={`group flex items-center justify-between ml-3 mr-1 mt-0.5 px-2 py-[2px] rounded hover:bg-[#35373c]
+      ${userId === currentUserId ? 'bg-[#40444b]' : ''}
+      ${speakingUserIds.has(userId) ? 'border border-green-400' : 'border border-transparent'}`}
+  >
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="w-[18px] h-[18px] rounded-full bg-[#4f545c] text-white text-[10px] flex items-center justify-center font-bold">
+        {nickname?.[0]?.toUpperCase() || "?"}
+      </div>
+      <span className="text-[13px] text-white leading-tight">
+        {nickname}
+        {userId === currentUserId && (
+          <span className="text-[13px] text-zinc-400 ml-1">(나)</span>
+        )}
+      </span>
+      <svg className="w-5 h-5 text-green-400 ml-1" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M10 2a2 2 0 00-2 2v6a2 2 0 104 0V4a2 2 0 00-2-2z" />
+        <path d="M4 10a6 6 0 0012 0h-1.5a4.5 4.5 0 01-9 0H4z" />
+      </svg>
     </div>
+    {userId === currentUserId && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          leaveVoiceChannel();
+        }}
+        className="text-[13px] bg-transparent text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition"
+        title="나가기"
+      >
+        −
+      </button>
+    )}
+  </div>
 ))}
             </li>
           ))}
         </ul>
+        {micVolume > 0 && (
+  <div className="px-4 pb-2 mt-2">
+    <div className="text-xs text-zinc-400">내 마이크</div>
+    <div className="h-2 bg-zinc-700 rounded overflow-hidden mt-1">
+      <div
+        className="h-full bg-green-400 transition-all duration-100"
+        style={{ width: `${Math.min(micVolume, 100)}%` }}
+      />
+    </div>
+  </div>
+)}
       </div>
 
       {showCreate && (
