@@ -17,7 +17,7 @@ export default function Sidebar4({ serverId, selectedMemberId, onSelectMember })
   if (!serverId) return null;
 
   return (
-    <div className="w-[220px] min-w-[180px] max-w-[260px] bg-[#232428] border-l border-[#232428] flex flex-col h-full">
+    <div className="w-[300px] min-w-[260px] max-w-[260px] bg-[#232428] border-l border-[#232428] flex flex-col h-full">
       <div className="font-bold text-base px-5 py-4 border-b border-[#232428]">참여자</div>
 
       {loading ? (

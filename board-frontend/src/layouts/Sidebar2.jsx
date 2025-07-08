@@ -203,11 +203,12 @@ export default function Sidebar2({
   }
 
   return (
-    <div className="w-[260px] min-w-[200px] max-w-[320px] h-full bg-[#2b2d31] flex flex-col border-r border-[#232428]">
+    <div className="w-[280px] min-w-[280px] max-w-[280px] h-full bg-[#2b2d31] flex flex-col border-r border-[#232428]">
       <div className="flex-1 flex flex-col">
+      <button className="text-xs bg-zinc-700 text-white rounded px-2 py-2 ml-1" onClick={e => { e.stopPropagation(); handleInviteCode(serverId); }}>서버 초대</button>
         <div className="flex items-center justify-between px-4 mt-4 mb-1">
           <span className="text-xs text-zinc-400 font-bold">텍스트 채널</span>
-          <button className="text-xs text-[#3ba55d] hover:text-white bg-[#232428] rounded px-2 py-1 ml-2" onClick={() => { setNewType("TEXT"); setShowCreate(true); }} title="채널 생성">＋</button>
+          <button className="text-xs text-[#3ba55d] bg-[#232428] rounded px-2 py-1 ml-2" onClick={() => { setNewType("TEXT"); setShowCreate(true); }} title="채널 생성">＋</button>
         </div>
         <ul className="mb-3 px-2">
           {textChannels.length === 0 && <div className="text-zinc-500 px-2 py-2">없음</div>}
@@ -215,15 +216,14 @@ export default function Sidebar2({
             <li key={ch.id ?? `textch-${i}`} className="flex items-center gap-2 px-2 py-2 rounded hover:bg-zinc-800 group cursor-pointer transition" onClick={() => onSelectChannel && onSelectChannel(ch.id)}>
               <span className="text-[#8e9297] font-bold">#</span>
               <span className="flex-1">{ch?.name || "이름없음"}</span>
-              <button className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제">－</button>
-              <button className="text-xs bg-zinc-700 text-white rounded px-2 py-0.5 ml-1" onClick={e => { e.stopPropagation(); handleInviteCode(serverId); }}>초대</button>
+              <button className="text-[11px] text-red-400 border border-red-400 rounded-sm px-[4px] py-[1px] leading-tight opacity-0 group-hover:opacity-100 transition bg-[#2b2d31]" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제"></button>
             </li>
           ))}
         </ul>
 
         <div className="flex items-center justify-between px-4 mt-2 mb-1">
           <span className="text-xs text-zinc-400 font-bold">음성 채널</span>
-          <button className="text-xs text-[#3ba55d] hover:text-white bg-[#232428] rounded px-2 py-1 ml-2" onClick={() => { setNewType("VOICE"); setShowCreate(true); }} title="음성 채널 생성">＋</button>
+          <button className="text-xs text-[#3ba55d] bg-[#232428] rounded px-2 py-1 ml-2" onClick={() => { setNewType("VOICE"); setShowCreate(true); }} title="음성 채널 생성">＋</button>
         </div>
         <ul className="px-2">
           {voiceChannels.length === 0 && <div className="text-zinc-500 px-2 py-2">없음</div>}
@@ -242,16 +242,44 @@ export default function Sidebar2({
               }}>
                 <span>🔊</span>
                 <span className="flex-1">{ch?.name || "이름없음"}</span>
-                <button className="text-xs text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제">－</button>
+                <button className="text-[11px] text-red-400 border border-red-400 rounded-sm px-[4px] py-[1px] leading-tight opacity-0 group-hover:opacity-100 transition bg-[#2b2d31]" onClick={e => { e.stopPropagation(); handleDeleteChannel(ch.id); }} title="채널 삭제"></button>
               </div>
-              {voiceParticipantsMap.get(ch.id)?.map(({ userId, nickname }) => (
-  <div key={userId} className="ml-4 text-sm text-white flex justify-between">
-    <span>{nickname}</span>
-    {userId === currentUserId && (
-      <button onClick={leaveVoiceChannel} className="text-red-400 text-xs">-</button>
-    )}
-                </div>
-              ))}
+             {voiceParticipantsMap.get(ch.id)?.map(({ userId, nickname }) => (
+                <div
+                  key={userId}
+                  className={`group flex items-center justify-between ml-3 mr-1 mt-0.5 px-2 py-[2px] rounded hover:bg-[#35373c] ${
+                    userId === currentUserId ? 'bg-[#40444b]' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="w-[18px] h-[18px] rounded-full bg-[#4f545c] text-white text-[10px] flex items-center justify-center font-bold">
+                      {nickname?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <span className="text-[13px] text-white leading-tight">
+                      {nickname}
+                      {userId === currentUserId && (
+                        <span className="text-[13px] text-zinc-400 ml-1">(나)</span>
+                      )}
+                    </span>
+                    <svg className="w-5 h-5 text-green-400 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2a2 2 0 00-2 2v6a2 2 0 104 0V4a2 2 0 00-2-2z" />
+                      <path d="M4 10a6 6 0 0012 0h-1.5a4.5 4.5 0 01-9 0H4z" />
+                    </svg>
+                  </div>
+                  {userId === currentUserId && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        leaveVoiceChannel();
+                      }}
+                      className="text-[13px] bg-transparent text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition"
+                      title="나가기"
+                    >
+                      −
+                    </button>
+                  )}
+    </div>
+))}
             </li>
           ))}
         </ul>

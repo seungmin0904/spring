@@ -55,10 +55,16 @@ export default function useMediasoupClient(userId, nickname) {
     return () => socketRef.current.disconnect();
   }, [userId,nickname]);
 
-  const joinVoiceChannel = (channelId) => {
-    socketRef.current.emit('joinVoiceChannel', { channelId });
-    currentChannelIdRef.current = channelId;
-  };
+  const joinVoiceChannel = (newChannelId) => {
+  if (currentChannelIdRef.current && currentChannelIdRef.current !== newChannelId) {
+    // ✅ 기존 채널에서 먼저 나가기
+    socketRef.current.emit('leaveVoiceChannel', { channelId: currentChannelIdRef.current });
+  }
+
+  // ✅ 새 채널 입장
+  socketRef.current.emit('joinVoiceChannel', { channelId: newChannelId });
+  currentChannelIdRef.current = newChannelId;
+};
 
   const leaveVoiceChannel = () => {
     if (currentChannelIdRef.current) {

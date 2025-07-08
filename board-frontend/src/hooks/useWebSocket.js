@@ -11,7 +11,6 @@ export const useWebSocket = (token, onConnect) => {
   const reconnectTimer = useRef(null);
   const subscriptionsRef = useRef([]);
 
-
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
@@ -32,6 +31,7 @@ export const useWebSocket = (token, onConnect) => {
       }
     }
     stompRef.current = null;
+    subscriptionsRef.current = [];
     setConnected(false);
   };
 
@@ -93,16 +93,18 @@ export const useWebSocket = (token, onConnect) => {
         reconnectTimer.current = null;
         onConnect?.();
         callback?.();
+
+        // 🔁 재구독
         subscriptionsRef.current.forEach(({ topic, callback }) => {
-      try {
-        client.subscribe(topic, msg => {
-          callback(JSON.parse(msg.body));
+          try {
+            client.subscribe(topic, msg => {
+              callback(JSON.parse(msg.body));
+            });
+            console.log(`🔁 재구독 완료: ${topic}`);
+          } catch (e) {
+            console.error(`❌ 재구독 실패: ${topic}`, e);
+          }
         });
-        console.log(`🔁 재구독 완료: ${topic}`);
-      } catch (e) {
-        console.error(`❌ 재구독 실패: ${topic}`, e);
-      }
-    });
       },
       async (err) => {
         const msg = err?.headers?.message || "";
@@ -150,19 +152,36 @@ export const useWebSocket = (token, onConnect) => {
   }, []);
 
   const subscribe = useCallback((topic, callback) => {
-  const alreadyExists = subscriptionsRef.current.some(sub => sub.topic === topic);
-  if (!alreadyExists) {
-  subscriptionsRef.current.push({ topic, callback });
-  }
+    const existing = subscriptionsRef.current.find(sub => sub.topic === topic);
+    if (existing) {
+      console.warn(`⚠️ Already subscribed to ${topic}`);
+      return {
+        unsubscribe: () => {
+          const client = stompRef.current;
+          const wsReady = client?.ws?.readyState === WebSocket.OPEN;
+
+          if (client?.connected && wsReady) {
+            try {
+              client.unsubscribe(topic);
+              subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub.topic !== topic);
+              console.log(`🧹 구독 해제 완료: ${topic}`);
+            } catch (e) {
+              console.warn(`❌ unsubscribe 실패: ${topic}`, e);
+            }
+          } else {
+            console.warn(`❌ WebSocket not ready. Cannot unsubscribe ${topic}`);
+          }
+        }
+      };
+    }
+
+    subscriptionsRef.current.push({ topic, callback });
 
     const client = stompRef.current;
-    const wsReady = client?.ws && client.ws.readyState === WebSocket.OPEN;
+    const wsReady = client?.ws?.readyState === WebSocket.OPEN;
 
     if (!client || !client.connected || !wsReady) {
-      console.warn(`⛔ Cannot subscribe to ${topic} – WebSocket not fully open`, {
-        clientConnected: client?.connected,
-        wsReadyState: client?.ws?.readyState,
-      });
+      console.warn(`⛔ Cannot subscribe to ${topic} – WebSocket not fully open`);
       return {
         unsubscribe: () => {
           console.warn(`⛔ Dummy unsubscribe for ${topic} (client not ready)`);
@@ -176,31 +195,33 @@ export const useWebSocket = (token, onConnect) => {
         callback(JSON.parse(msg.body));
       });
 
-       return {
-      unsubscribe: () => {
-        try {
-          subscription.unsubscribe();
-          subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub.topic !== topic);
-          console.log(`🧹 구독 해제 완료: ${topic}`);
-        } catch (err) {
-          console.warn(`❌ unsubscribe 실패: ${topic}`, err);
+      return {
+        unsubscribe: () => {
+          try {
+            if (client.connected && wsReady) {
+              subscription.unsubscribe();
+              subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub.topic !== topic);
+              console.log(`🧹 구독 해제 완료: ${topic}`);
+            } else {
+              console.warn(`❌ WebSocket not open – unsubscribe skipped for ${topic}`);
+            }
+          } catch (err) {
+            console.warn(`❌ unsubscribe 실패: ${topic}`, err);
+          }
         }
-      }
-    };
-  } catch (e) {
-    console.error(`❌ Error subscribing to ${topic}:`, e);
-    return {
-      unsubscribe: () => {
-        console.warn(`⛔ Dummy unsubscribe after subscribe error for ${topic}`);
-      }
-    };
-  }
-}, []);
+      };
+    } catch (e) {
+      console.error(`❌ Error subscribing to ${topic}:`, e);
+      return {
+        unsubscribe: () => {
+          console.warn(`⛔ Dummy unsubscribe after subscribe error for ${topic}`);
+        }
+      };
+    }
+  }, []);
 
   const send = useCallback((destination, body) => {
-    const socketReady =
-      stompRef.current?.ws && stompRef.current.ws.readyState === WebSocket.OPEN;
-
+    const socketReady = stompRef.current?.ws?.readyState === WebSocket.OPEN;
     if (stompRef.current && connected && socketReady) {
       stompRef.current.send(destination, {}, JSON.stringify(body));
     } else {
