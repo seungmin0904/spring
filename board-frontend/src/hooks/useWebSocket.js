@@ -148,21 +148,27 @@ export const useWebSocket = (token) => {
         console.log(`📉 실패 누적 카운트: ${reconnectFailureCount.current}`);
         console.log(`⏱️ 경과 시간(ms): ${timeElapsed}`);
 
-        if (msg.includes("Invalid JWT token") || msg.includes("Unauthorized")) {
-          alert("세션 만료 or 인증 실패");
-          localStorage.clear();
-          window.location.href = "/login";
-          return;
-        }
-
         if (msg.includes("Invalid JWT token")) {
           console.log("🔐 JWT 갱신 시도");
           const newToken = await attemptRefreshToken();
+        
           if (newToken) {
             console.log("🔄 토큰 갱신 성공 – 재연결 시도");
             connect(newToken);
             return;
+          } else {
+            alert("세션 만료 or 인증 실패");
+            localStorage.clear();
+            window.location.href = "/login";
+            return;
           }
+        }
+        
+        if (msg.includes("Unauthorized")) {
+          alert("세션 만료 or 인증 실패");
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
         }
 
         if (reconnectFailureCount.current >= maxFailedAttempts || timeElapsed >= maxTotalRetryDuration) {
