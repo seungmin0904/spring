@@ -218,7 +218,7 @@ const [speakingUserIds, setSpeakingUserIds] = useState(new Set());
             return prev;
           });
         }
-        console.log("🎙️ Mic volume level:", avg.toFixed(2));
+        console.log("🎙️ Mic volume level:", Math.round(avg));
       }, 500);
   
       await sendTransportRef.current.produce({ track });

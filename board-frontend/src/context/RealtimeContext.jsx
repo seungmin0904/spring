@@ -51,7 +51,7 @@ function realtimeReducer(state, action) {
         friends: state.friends.filter(f => f.friendId !== action.payload)
       };
     case 'SET_DM_ROOMS':
-      return { ...state, dmRooms: [...action.payload] }; // ✅ 얕은 복사 강제 렌더링
+      return { ...state, dmRooms: [...action.payload] };
     case 'ADD_OR_UPDATE_DM_ROOM': {
       const existingIndex = state.dmRooms.findIndex(room => room.id === action.payload.id);
       if (existingIndex >= 0) {
@@ -70,19 +70,19 @@ function realtimeReducer(state, action) {
           [action.serverId]: action.payload
         }
       };
-      case 'START_LOADING_SERVER_MEMBERS':
-        return {
-          ...state,
-          loadingServerMembers: new Set(state.loadingServerMembers).add(action.payload),
+    case 'START_LOADING_SERVER_MEMBERS':
+      return {
+        ...state,
+        loadingServerMembers: new Set(state.loadingServerMembers).add(action.payload),
       };
-      case 'FINISH_LOADING_SERVER_MEMBERS': {
-        const newSet = new Set(state.loadingServerMembers);
-        newSet.delete(action.payload);
-        return {
-          ...state,
-          loadingServerMembers: newSet,
-        };
-      }
+    case 'FINISH_LOADING_SERVER_MEMBERS': {
+      const newSet = new Set(state.loadingServerMembers);
+      newSet.delete(action.payload);
+      return {
+        ...state,
+        loadingServerMembers: newSet,
+      };
+    }
     default:
       return state;
   }
@@ -95,8 +95,8 @@ export function RealtimeProvider({ children, socket }) {
   const username = user?.username;
   const token = user?.token;
   const subscribeFnRef = useRef(null);
+  const unsubscribeFnRef = useRef(null); // ✅ 해제용 ref 추가
   const { connected, subscribe, connect, disconnect, send } = socket;
-  
   const { toast } = useToast();
   usePing();
 
@@ -124,11 +124,8 @@ export function RealtimeProvider({ children, socket }) {
     try {
       console.log("🔄 DM 목록 새로고침 시작...");
       const dmRoomsRes = await axiosInstance.get(`/dm/rooms/${user.id}`);
-      const newRooms = dmRoomsRes.data || [];
-  
-      // ✅ 비교 없이 무조건 dispatch
-      dispatch({ type: "SET_DM_ROOMS", payload: newRooms });
-      console.log("✅ DM 목록 새로고침 완료:", newRooms);
+      dispatch({ type: "SET_DM_ROOMS", payload: dmRoomsRes.data || [] });
+      console.log("✅ DM 목록 새로고침 완료:", dmRoomsRes.data);
     } catch (err) {
       console.error("❌ DM 목록 새로고침 실패:", err);
     }
@@ -143,36 +140,30 @@ export function RealtimeProvider({ children, socket }) {
     }
   };
 
-  
   useEffect(() => {
     if (token && user?.id) {
       console.log("🟥 RealtimeProvider Mounted");
 
       connect(token, () => {
         console.log("🟢 WebSocket connected → setReady(true)");
-        const unsubscribeFn = subscribeAll();
         subscribeFnRef.current = subscribeAll;
         setReady(true);
         initFriendState();
-
-        return () => {
-          unsubscribeFn?.();
-          disconnect();
-        };
       });
     }
 
     return () => {
+      unsubscribeFnRef.current?.();
       disconnect();
     };
   }, [token, user?.id]);
 
   useEffect(() => {
-  if (connected && ready && subscribeFnRef.current) {
-    console.log("🔄 재연결 후 수동 재구독 시도");
-    subscribeFnRef.current(); // 저장된 subscribeAll 실행
-  }
-}, [connected]);
+    if (connected && ready && subscribeFnRef.current) {
+      console.log("🔄 재연결 후 수동 재구독 시도");
+      subscribeFnRef.current(); // 내부에서 이전 구독을 해제함
+    }
+  }, [connected]);
 
   function subscribeAll() {
     if (!username || !user?.id) {
@@ -180,10 +171,15 @@ export function RealtimeProvider({ children, socket }) {
       return () => {};
     }
 
+    // ✅ 이전 구독 해제
+    if (unsubscribeFnRef.current) {
+      console.log("🧹 이전 구독 해제 시도...");
+      unsubscribeFnRef.current();
+    }
+
     console.log("🔔 WebSocket 구독 시작:", username);
 
     const subStatus = subscribe(`/user/queue/status`, ev => {
-      console.log("🟢 실시간 상태 수신:", ev);
       dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
 
       if (ev.username !== username) {
@@ -195,7 +191,6 @@ export function RealtimeProvider({ children, socket }) {
     });
 
     const subBroadcast = subscribe(`/topic/status`, ev => {
-      console.log("📣 브로드캐스트 수신:", ev);
       dispatch({ type: 'USER_STATUS_CHANGE', payload: ev });
     });
 
@@ -249,27 +244,32 @@ export function RealtimeProvider({ children, socket }) {
       await fetchAndSetServerMembers(payload.serverId);
     });
 
-    console.log("✅ 모든 WebSocket 구독 완료");
-    
-
-    return () => {
-      console.log("🔄 WebSocket 구독 해제 시작");
-      try {
-        subStatus?.unsubscribe?.();
-        subBroadcast?.unsubscribe?.();
-        subNoti?.unsubscribe?.();
-        subFriend?.unsubscribe?.();
-        subDmRestore?.unsubscribe?.();
-        subServerMemberEvent?.unsubscribe?.();
-        console.log("✅ WebSocket 구독 해제 완료");
-      } catch (err) {
-        console.error("❌ 구독 해제 중 오류:", err);
-      }
+    // ✅ 해제 함수 저장
+    const unsubscribe = () => {
+      subStatus?.unsubscribe?.();
+      subBroadcast?.unsubscribe?.();
+      subNoti?.unsubscribe?.();
+      subFriend?.unsubscribe?.();
+      subDmRestore?.unsubscribe?.();
+      subServerMemberEvent?.unsubscribe?.();
+      console.log("✅ WebSocket 구독 해제 완료");
     };
+
+    unsubscribeFnRef.current = unsubscribe;
+
+    console.log("✅ 모든 WebSocket 구독 완료");
+
+    return unsubscribe;
   }
 
   return (
-    <RealtimeContext.Provider value={{ state, dispatch, ready, refreshDmRooms, fetchAndSetServerMembers, }}>
+    <RealtimeContext.Provider value={{
+      state,
+      dispatch,
+      ready,
+      refreshDmRooms,
+      fetchAndSetServerMembers,
+    }}>
       {children}
     </RealtimeContext.Provider>
   );

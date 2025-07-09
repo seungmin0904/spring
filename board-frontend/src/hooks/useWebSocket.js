@@ -255,9 +255,7 @@ export const useWebSocket = (token) => {
               subscription.unsubscribe();
               subscriptionsRef.current = subscriptionsRef.current.filter(sub => sub.topic !== topic);
               console.log(`🧹 구독 해제 완료: ${topic}`);
-            } else {
-              console.warn(`❌ WebSocket not open – unsubscribe skipped for ${topic}`);
-            }
+            } 
           } catch (err) {
             console.warn(`❌ unsubscribe 실패: ${topic}`, err);
           }
