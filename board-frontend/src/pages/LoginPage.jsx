@@ -40,18 +40,24 @@ const LoginPage = ({ onLogin }) => {
       }
     } catch (error) {
       if (error.response?.status === 401 || error.response?.status === 403) {
-        toast({
-          title: "인증 오류",
-          description: "이메일 또는 비밀번호가 올바르지 않습니다.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "로그인 실패",
-          description: error.message || "예상치 못한 오류가 발생했습니다.",
-          variant: "destructive",
-        });
-      }
+    toast({
+      title: "인증 오류",
+      description: "이메일 또는 비밀번호가 올바르지 않습니다.",
+      variant: "destructive",
+    });
+  } else if (error.response?.status >= 500) {
+    toast({
+      title: "서버 점검 중",
+      description:"",
+      variant: "destructive",
+    });
+  } else {
+    toast({
+      title: "로그인 실패",
+      description: error.message || "예상치 못한 오류가 발생했습니다.",
+      variant: "destructive",
+    });
+  }
       onLogin(null);
       console.error("로그인 에러:", error);
     }

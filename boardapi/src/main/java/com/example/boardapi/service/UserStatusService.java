@@ -103,6 +103,7 @@ public class UserStatusService {
                 if (keys != null && !keys.isEmpty()) {
                         redisTemplate.delete(keys);
                 }
-                log.info("🧹 Redis 초기화: online_users 및 user:*:sessions 삭제 완료");
+
+                log.info("🧹 Redis 초기화: online_users 및 user:*:sessions, user:*:refresh 삭제 완료");
         }
 }

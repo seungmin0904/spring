@@ -2,7 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import Stomp from 'stompjs';
 import refreshAxios from '@/lib/axiosInstance';
 
-export const useWebSocket = (token, onConnect) => {
+export const useWebSocket = (token) => {
   const stompRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [reconnectTrigger, setReconnectTrigger] = useState(0);
@@ -10,20 +10,26 @@ export const useWebSocket = (token, onConnect) => {
   const reconnectAttempt = useRef(0);
   const reconnectTimer = useRef(null);
   const subscriptionsRef = useRef([]);
+  const maxFailedAttempts = 5;
+  const maxTotalRetryDuration = 36000;
+  const reconnectFailureCount = useRef(0);
+  const firstFailureTime = useRef(null);
 
   useEffect(() => {
     tokenRef.current = token;
   }, [token]);
 
   const hardDisconnect = () => {
+    console.log("🛑 hardDisconnect 호출됨");
     if (stompRef.current) {
       try {
         if (stompRef.current.connected) {
+          console.log("🔌 STOMP 연결 해제 시도 중...");
           stompRef.current.disconnect(() => {
-            console.log("🔌 STOMP disconnected");
+            console.log("🔌 STOMP disconnected (정상)");
           });
         } else if (stompRef.current.ws?.readyState !== WebSocket.CLOSED) {
-          console.log("❌ Forcibly closing socket");
+          console.log("❌ WebSocket 상태 비정상 – 강제 종료 시도");
           stompRef.current.ws.close();
         }
       } catch (e) {
@@ -33,6 +39,7 @@ export const useWebSocket = (token, onConnect) => {
     stompRef.current = null;
     subscriptionsRef.current = [];
     setConnected(false);
+    console.log("🧹 stompRef/subscriptions 초기화 완료");
   };
 
   const attemptRefreshToken = async () => {
@@ -55,31 +62,37 @@ export const useWebSocket = (token, onConnect) => {
   };
 
   const connect = useCallback(async (tokenArg, callback) => {
-    let authToken = tokenArg || tokenRef.current;
-    if (!authToken) return;
-
-    if (stompRef.current) {
-      try {
-        stompRef.current.disconnect();
-      } catch (e) {
-        console.warn("⚠️ Disconnect error during cleanup", e);
-      }
-      stompRef.current = null;
+    const authToken = tokenArg || tokenRef.current;
+    if (!authToken) {
+      console.warn("❌ Token 없음 – 연결 중단");
+      return;
     }
+
+    console.log("🌐 WebSocket 연결 시도 시작");
 
     const socket = new WebSocket("ws://localhost:8080/ws-chat");
     const client = Stomp.over(socket);
     client.debug = () => {};
+
+    if (stompRef.current) {
+      try {
+        console.log("🧹 이전 STOMP 인스턴스 정리 중...");
+        stompRef.current.disconnect();
+      } catch (e) {
+        console.warn("⚠️ Disconnect error during cleanup", e);
+      }
+    }
+
     stompRef.current = client;
 
     client.onWebSocketError = (e) => {
-      console.error("❌ WebSocket Error", e);
+      console.error("❌ WebSocket Error 발생", e);
       hardDisconnect();
       setReconnectTrigger(prev => prev + 1);
     };
 
     client.onWebSocketClose = () => {
-      console.warn("🔌 WebSocket Closed");
+      console.warn("🔌 WebSocket Closed 이벤트 발생");
       hardDisconnect();
       setReconnectTrigger(prev => prev + 1);
     };
@@ -87,54 +100,94 @@ export const useWebSocket = (token, onConnect) => {
     client.connect(
       { Authorization: "Bearer " + authToken },
       () => {
-        console.log("✅ WebSocket, STOMP CONNECTED");
+        console.log("✅ STOMP CONNECTED");
         setConnected(true);
+
         reconnectAttempt.current = 0;
         reconnectTimer.current = null;
-        onConnect?.();
-        callback?.();
+        reconnectFailureCount.current = 0;
+        firstFailureTime.current = null;
 
-        // 🔁 재구독
-        subscriptionsRef.current.forEach(({ topic, callback }) => {
-          try {
-            client.subscribe(topic, msg => {
-              callback(JSON.parse(msg.body));
-            });
-            console.log(`🔁 재구독 완료: ${topic}`);
-          } catch (e) {
-            console.error(`❌ 재구독 실패: ${topic}`, e);
-          }
-        });
+        console.log("🔁 재시도 관련 변수 초기화 완료");
+
+        try {
+          callback?.();
+          console.log("📞 onConnect, callback 실행 완료");
+        } catch (e) {
+          console.error("❌ callback 오류", e);
+        }
+
+        for (const { topic, callback } of subscriptionsRef.current) {
+  try {
+    const isReady = client.connected && client.ws?.readyState === WebSocket.OPEN;
+
+    if (!isReady) {
+      console.warn(`⛔ 구독 스킵: ${topic} (WebSocket not ready)`);
+      continue;
+    }
+
+    client.subscribe(topic, msg => {
+      callback(JSON.parse(msg.body));
+    });
+    console.log(`📡 재구독 완료: ${topic}`);
+  } catch (e) {
+    console.error(`❌ 재구독 실패: ${topic}`, e);
+  }
+}
       },
       async (err) => {
         const msg = err?.headers?.message || "";
-        console.warn("❌ STOMP connect error", msg);
+        console.warn("❌ STOMP connect error:", msg);
+
+        if (reconnectFailureCount.current === 0) {
+          firstFailureTime.current = Date.now();
+        }
+        reconnectFailureCount.current++;
+        const timeElapsed = Date.now() - firstFailureTime.current;
+
+        console.log(`📉 실패 누적 카운트: ${reconnectFailureCount.current}`);
+        console.log(`⏱️ 경과 시간(ms): ${timeElapsed}`);
+
+        if (msg.includes("Invalid JWT token") || msg.includes("Unauthorized")) {
+          alert("세션 만료 or 인증 실패");
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
+        }
 
         if (msg.includes("Invalid JWT token")) {
+          console.log("🔐 JWT 갱신 시도");
           const newToken = await attemptRefreshToken();
           if (newToken) {
-            console.log("🔄 Retrying connection with new token");
+            console.log("🔄 토큰 갱신 성공 – 재연결 시도");
             connect(newToken);
             return;
           }
+        }
+
+        if (reconnectFailureCount.current >= maxFailedAttempts || timeElapsed >= maxTotalRetryDuration) {
+          alert("연결 실패. 로그인 페이지로 이동");
+          localStorage.clear();
+          window.location.href = "/login";
+          return;
         }
 
         hardDisconnect();
         setReconnectTrigger(prev => prev + 1);
       }
     );
-  }, [onConnect]);
+  }, []);
 
   useEffect(() => {
     if (!tokenRef.current || reconnectTimer.current) return;
 
     const delay = Math.min(5000 * 2 ** reconnectAttempt.current, 30000);
-    console.warn(`🔁 Reconnecting in ${delay / 1000}s`);
+    console.warn(`⏳ ${reconnectAttempt.current}회차 재연결 시도 예정 – ${delay / 1000}s 후`);
 
     reconnectTimer.current = setTimeout(() => {
       reconnectTimer.current = null;
       reconnectAttempt.current += 1;
-      console.log(`🔁 [STOMP RECONNECT ATTEMPT ${reconnectAttempt.current}] Starting retry...`);
+      console.log(`🚀 [RETRY ${reconnectAttempt.current}] 연결 재시도 시작`);
       connect(tokenRef.current);
     }, delay);
 
@@ -144,7 +197,7 @@ export const useWebSocket = (token, onConnect) => {
         reconnectTimer.current = null;
       }
     };
-  }, [reconnectTrigger, connect]);
+  }, [reconnectTrigger]);
 
   const disconnect = useCallback(() => {
     hardDisconnect();
@@ -222,13 +275,13 @@ export const useWebSocket = (token, onConnect) => {
 
   const send = useCallback((destination, body) => {
     const socketReady = stompRef.current?.ws?.readyState === WebSocket.OPEN;
+    console.log("📤 메시지 전송 시도", { connected, socketReady });
+
     if (stompRef.current && connected && socketReady) {
       stompRef.current.send(destination, {}, JSON.stringify(body));
+      console.log("📤 메시지 전송 완료", destination);
     } else {
-      console.warn("❌ Cannot send message – WebSocket not ready", {
-        connected,
-        readyState: stompRef.current?.ws?.readyState,
-      });
+      console.warn("❌ 메시지 전송 실패 – WebSocket 미연결 상태");
     }
   }, [connected]);
 

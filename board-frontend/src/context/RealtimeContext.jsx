@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, useReducer, useEffect } from 'react';
+import { useState, createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import axiosInstance from '@/lib/axiosInstance';
 import { useUser } from './UserContext';
 import { usePing } from '@/hooks/usePing';
@@ -94,7 +94,9 @@ export function RealtimeProvider({ children, socket }) {
   const { user } = useUser();
   const username = user?.username;
   const token = user?.token;
-  const { connected, subscribe, connect, disconnect } = socket;
+  const subscribeFnRef = useRef(null);
+  const { connected, subscribe, connect, disconnect, send } = socket;
+  
   const { toast } = useToast();
   usePing();
 
@@ -149,6 +151,7 @@ export function RealtimeProvider({ children, socket }) {
       connect(token, () => {
         console.log("🟢 WebSocket connected → setReady(true)");
         const unsubscribeFn = subscribeAll();
+        subscribeFnRef.current = subscribeAll;
         setReady(true);
         initFriendState();
 
@@ -163,6 +166,13 @@ export function RealtimeProvider({ children, socket }) {
       disconnect();
     };
   }, [token, user?.id]);
+
+  useEffect(() => {
+  if (connected && ready && subscribeFnRef.current) {
+    console.log("🔄 재연결 후 수동 재구독 시도");
+    subscribeFnRef.current(); // 저장된 subscribeAll 실행
+  }
+}, [connected]);
 
   function subscribeAll() {
     if (!username || !user?.id) {
@@ -240,6 +250,7 @@ export function RealtimeProvider({ children, socket }) {
     });
 
     console.log("✅ 모든 WebSocket 구독 완료");
+    
 
     return () => {
       console.log("🔄 WebSocket 구독 해제 시작");

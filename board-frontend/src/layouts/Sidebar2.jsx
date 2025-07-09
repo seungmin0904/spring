@@ -65,11 +65,9 @@ export default function Sidebar2({
   // ✅ DM 모드일 때만 DM 목록 초기 로딩 (RealtimeContext에서 관리)
   useEffect(() => {
     if (dmMode && user?.id && ready) {
-      if (dmRooms.length === 0 && !initialLoadRef.current) {
         console.log("🟢 Sidebar2: 최초 DM 목록 로드 수행");
         refreshDmRooms?.();
         initialLoadRef.current = true;
-      }
     }
   }, [dmMode, user?.id, ready]);
 

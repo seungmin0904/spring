@@ -10,6 +10,7 @@ export default function FriendDropdown({ userId, userName, x, y, onClose, onSele
   const { user } = useUser();
   const myId = user?.id;
   const navigate = useNavigate();
+  const { refreshDmRooms } = useRealtime();
 
   // 친구 상태 조회
   useEffect(() => {
@@ -52,6 +53,8 @@ export default function FriendDropdown({ userId, userName, x, y, onClose, onSele
       });
       console.log("DM 요청 → 내 ID:", myId, "상대 ID:", userId);
       const roomId = res.data.id;
+      refreshDmRooms?.();
+
       if (onSelectDMRoom) onSelectDMRoom(roomId);
       onClose();
     } catch (err) {
